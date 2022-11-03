@@ -1,0 +1,2 @@
+Python==3.9.12
+case-converter==1.1.0
