@@ -32,7 +32,7 @@ Export your modd game json file from the website and then generate a project by 
 
 .. code:: sh
 
-    generate {PATH TO GAME JSON FILE}
+    generate-game {PATH TO GAME JSON FILE}
 
 
 Quick Script Example

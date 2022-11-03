@@ -4,12 +4,12 @@ if __name__ == '__main__':
     setup(
         name='pymodd',
         url='https://github.com/jeff5343/Pymodd',
-        version='0.1.0',
+        version='0.1.3',
         author='Jeff',
-        packages=['pymodd', 'pymodd.utils'],
+        packages=['pymodd', 'pymodd.utils', 'pymodd.console_scripts'],
         entry_points={
             'console_scripts': [
-                'generate-game = pymodd.bin.generate:main',
+                'generate-game = pymodd.console_scripts.generate:main',
             ]
         },
         license='MIT',
