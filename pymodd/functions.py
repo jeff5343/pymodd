@@ -1354,9 +1354,10 @@ class UnitParticle(Particle):
 
 
 class Variable(Function):
-    def __init__(self, variable_name):
+    def __init__(self, variable_name, variable_type=None):
         self.function = 'getVariable'
         self.name = variable_name
+        self.type = variable_type
         self.options = {
             'variableName': variable_name
         }

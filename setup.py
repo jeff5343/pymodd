@@ -4,7 +4,7 @@ if __name__ == '__main__':
     setup(
         name='pymodd',
         url='https://github.com/jeff5343/Pymodd',
-        version='0.1.3',
+        version='0.1.4',
         author='Jeff',
         packages=['pymodd', 'pymodd.utils', 'pymodd.console_scripts'],
         entry_points={

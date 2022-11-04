@@ -35,6 +35,9 @@ class Condition(Base):
         else:
             base_classes = item_a.__class__.mro()
             for i, base_class in enumerate(base_classes):
+                if base_class.__name__ == 'Variable':
+                    type_class = item_a.type
+                    break
                 if base_class.__name__ == 'Function':
                     type_class = base_classes[i-1].__name__.lower()
                     break
