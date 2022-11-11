@@ -1364,6 +1364,64 @@ class Variable(Function):
 
 
 # ---------------------------------------------------------------------------- #
+#                               Entity Variables                               #
+# ---------------------------------------------------------------------------- #
+
+
+class EntityVariable(Variable):
+    def __init__(self, variable_name, variable_type):
+        self.function = 'getEntityVariable'
+        self.type = variable_type
+        self.options = {
+            'variable': {
+                'text': f'{variable_name}',
+                'dataType': f'{variable_type}',
+                'entity': 'null',
+                'key': f'{variable_name}'
+            }
+        }
+
+
+class ValueOfEntityVariable(Variable):
+    def __init__(self, entity_variable_type, entity):
+        self.function = 'getValueOfEntityVariable'
+        self.type = entity_variable_type.type
+        self.options = {
+            'variable': entity_variable_type.to_dict(),
+            'entity': entity.to_dict()
+        }
+
+
+# ---------------------------------------------------------------------------- #
+#                               Player Variables                               #
+# ---------------------------------------------------------------------------- #
+
+
+class PlayerVariable(Variable):
+    def __init__(self, variable_name, variable_type):
+        self.function = 'getPlayerVariable'
+        self.type = variable_type
+        self.options = {
+            'variable': {
+                'text': f'{variable_name}',
+                'dataType': f'{variable_type}',
+                'entity': 'null',
+                'key': f'{variable_name}'
+            }
+        }
+
+
+class ValueOfPlayerVariable(Variable):
+    def __init__(self, player_variable_type, player):
+        self.function = 'getPlayerVariable'
+        self.type = player_variable_type.type
+        self.options = {
+            'variable': player_variable_type.to_dict(),
+            'player': player.to_dict()
+        }
+
+
+# ---------------------------------------------------------------------------- #
 #                                  Unit Types                                  #
 # ---------------------------------------------------------------------------- #
 

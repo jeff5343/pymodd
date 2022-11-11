@@ -8,9 +8,10 @@ from .utils.data_templates import SCRIPT_DATA_TEMPLATE
 def write_to_output(obj):
     if not os.path.isdir('output/'): os.mkdir('output/')
     file_name = f'{obj.__class__.__name__}.json'
+    print(f'\Generating {file_name} to json...')
     with open(f'output/{file_name}', 'w') as output:
         output.write(json.dumps(obj.to_dict()))
-        print(f'{file_name} was successfuly created in the output folder')
+        print(f' - {file_name}.json was successfully created in output/{file_name}\n')
 
 
 class Base():

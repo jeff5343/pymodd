@@ -70,6 +70,25 @@ class IfStatement(Action):
         }
 
 
+class SetPlayerVariable(Action):
+    def __init__(self, player, variable_type, value):
+        self.action = 'setPlayerVariable'
+        self.options = {
+            'player': player.to_dict(),
+            'variable': variable_type.to_dict(),
+            'value': value.to_dict(),
+        }
+
+
+class SetEntityVariable(Action):
+    def __init__(self, entity, variable_type, value):
+        self.action = 'setEntityVariable'
+        self.options = {
+            'entity': entity.to_dict(),
+            'variable': variable_type.to_dict(),
+            'value': value.to_dict(),
+        }
+
 
 class PlayAdForPlayer(Action):
     def __init__(self, entity):
