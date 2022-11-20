@@ -51,6 +51,10 @@ trigger_to_enum = {
 }
 
 function_to_class = {
+    'undefinedValue': {
+        'className': 'Undefined',
+        'arguments': []
+    },
     'getSelectedEntity': {
         'className': 'SelectedEntity',
         'arguments': []
@@ -659,9 +663,9 @@ function_to_class = {
     'calculate': {
         'className': 'Calculate',
         'arguments': [
-            'item_a: Number',
-            'operator: str',
-            'item_b: Number'
+            'item_a',
+            'operator',
+            'item_b'
         ]
     },
     'getEntityType': {
@@ -926,7 +930,7 @@ function_to_class = {
         'className': 'Variable',
         'arguments': [
             'variable_name',
-            'variable_type=None'
+            'variable_type'
         ]
     },
     'getEntityVariable': {
@@ -978,9 +982,7 @@ function_to_class = {
     },
     'selectedItemType': {
         'className': 'SelectedItemType',
-        'arguments': [
-            'item_type_id'
-        ]
+        'arguments': []
     },
     'getItemTypeOfItem': {
         'className': 'ItemTypeOfItem',
@@ -1023,10 +1025,10 @@ function_to_class = {
     'entitiesInRegionInFrontOfEntityAtDistance': {
         'className': 'EntitiesInRegionInFrontOfEntityAtDistance',
         'arguments': [
-            'width: Number',
-            'height: Number',
+            'width',
+            'height',
             'entity',
-            'distance: Number'
+            'distance'
         ]
     },
     'entitiesBetweenTwoPositions': {
@@ -1135,6 +1137,14 @@ function_to_class = {
 }
 
 action_to_class = {
+    'condition': {
+        'className': 'IfStatement',
+        'arguments': [
+            'condition',
+            'then_actions',
+            'else_actions'
+        ]
+    },
     'setPlayerVariable': {
         'className': 'SetPlayerVariable',
         'arguments': [

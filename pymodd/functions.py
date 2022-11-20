@@ -19,6 +19,65 @@ class Function(Base):
 
 
 # ---------------------------------------------------------------------------- #
+#                                     Other                                    #
+# ---------------------------------------------------------------------------- #
+
+
+class Condition(Function):
+    def __init__(self, item_a: Base, operator: str, item_b: Base):
+        """The comparison type of the condition is determined based on the type of item_a
+
+        Args:
+            item_a (Base): any object
+            operator (str): can be regular comparisons (==, !=, >=, ...) or 'AND' and 'OR'
+            item_b (Base): any object
+        """
+        # generation of this function is done directly in the generation.py (not included in class_dicts.py)
+
+        # find type of item_a for comparison type
+        type_class = None
+        if operator.lower() == 'and' or operator.lower() == 'or':
+            type_class = operator.lower()
+        else:
+            base_classes = item_a.__class__.mro()
+            for i, base_class in enumerate(base_classes):
+                if base_class.__name__ == 'Variable':
+                    type_class = item_a.type
+                    break
+                if base_class.__name__ == 'Function':
+                    type_class = base_classes[i-1].__name__.lower()
+                    break
+        self.comparison = type_class
+        self.item_a = item_a
+        self.operator = operator.upper()
+        self.item_b = item_b
+
+    def to_dict(self):
+        return [
+            {
+                'operandType': self.comparison,
+                'operator': self.operator,
+            },
+            self.item_a.to_dict(),
+            self.item_b.to_dict()
+        ]
+
+
+class Undefined(Function):
+    def __init__(self):
+        self.function = 'undefinedValue'
+        self.options = {}
+
+
+class Null(Function):
+    def __init__(self):
+        self.function = {
+            'direct': True,
+            'value': None,
+        }
+
+
+# ---------------------------------------------------------------------------- #
 #                                    Entitys                                   #
 # ---------------------------------------------------------------------------- #
 

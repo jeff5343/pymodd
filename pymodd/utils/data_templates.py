@@ -14,12 +14,3 @@ SCRIPT_DATA_TEMPLATE = {
     "key": None,
     "order": 0
 }
-
-CONDITION_DATA_TEMPLATE = [
-    {
-        'operandType': None,
-        'operator': None,
-    },
-    0,
-    0
-]

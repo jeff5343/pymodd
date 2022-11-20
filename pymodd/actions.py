@@ -1,9 +1,7 @@
 from __future__ import annotations
-from copy import deepcopy
 
 from .script import Base
-from .utils.data_templates import CONDITION_DATA_TEMPLATE
-from .functions import Number, String
+from .functions import Number, String, Condition
 
 
 class Action(Base):
@@ -19,44 +17,9 @@ class Action(Base):
         return data
 
 
-class Condition(Base):
-    def __init__(self, item_a: Base, operator: str, item_b: Base):
-        """The comparison type of the condition is determined based on the type of item_a
-
-        Args:
-            item_a (Base): any object
-            operator (str): can be regular comparisons (==, !=, >=, ...) or 'AND' and 'OR'
-            item_b (Base): any object
-        """
-
-        type_class = None
-        if operator.lower() == 'and' or operator.lower() == 'or':
-            type_class = operator.lower()
-        else:
-            base_classes = item_a.__class__.mro()
-            for i, base_class in enumerate(base_classes):
-                if base_class.__name__ == 'Variable':
-                    type_class = item_a.type
-                    break
-                if base_class.__name__ == 'Function':
-                    type_class = base_classes[i-1].__name__.lower()
-                    break
-        self.comparison = type_class
-        self.item_a = item_a
-        self.operator = operator.upper()
-        self.item_b = item_b
-
-    def to_dict(self):
-        data = deepcopy(CONDITION_DATA_TEMPLATE)
-        data[0]['operandType'] = self.comparison
-        data[0]['operator'] = self.operator
-        data[1] = self.item_a.to_dict()
-        data[2] = self.item_b.to_dict()
-        return data
-
-
 class IfStatement(Action):
     def __init__(self, condition: Condition, then_actions=[], else_actions=[]):
+        self.action = 'condition'
         self.condition = condition
         self.thenActions = [action.to_dict() for action in then_actions]
         self.elseActions = [action.to_dict() for action in else_actions]
