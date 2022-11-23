@@ -1,4 +1,4 @@
-trigger_to_enum = {
+TRIGGER_TO_ENUM = {
     'gameStart': 'GAME_START',
     'frameTick': 'EVERY_FRAME',
     'secondTick': 'EVERY_SECOND',
@@ -50,7 +50,7 @@ trigger_to_enum = {
     'debrisEntersRegion': 'DEBRIS_ENTERS_REGION'
 }
 
-function_to_class = {
+FUNCTION_TO_CLASS = {
     'undefinedValue': {
         'className': 'Undefined',
         'arguments': []
@@ -948,6 +948,13 @@ function_to_class = {
         ]
     },
     'getPlayerVariable': {
+        'className': 'PlayerVariable',
+        'arguments': [
+            'variable_name',
+            'variable_type'
+        ]
+    },
+    'getValueOfPlayerVariable': {
         'className': 'ValueOfPlayerVariable',
         'arguments': [
             'player_variable_type',
@@ -1136,7 +1143,7 @@ function_to_class = {
     }
 }
 
-action_to_class = {
+ACTION_TO_CLASS = {
     'condition': {
         'className': 'IfStatement',
         'arguments': [

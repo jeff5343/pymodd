@@ -7,12 +7,12 @@ Features
 -----------------------
 
 - generate modd.io scripts with python
-- more coming soon? (pls help)
+- more coming soon?
 
 Installing
 -----------------------
 
-**Python 3.8 or higher is required (i think)**
+**Python 3.8 or higher is required**
 
 To install the library run the following command:
 

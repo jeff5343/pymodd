@@ -5,13 +5,20 @@ from enum import Enum
 from .utils.data_templates import SCRIPT_DATA_TEMPLATE
 
 
+def to_dict(obj):
+    if isinstance(obj, Base):
+        return obj.to_dict()
+    return obj
+
+
 def write_to_output(obj):
-    if not os.path.isdir('output/'): os.mkdir('output/')
+    if not os.path.isdir('output/'):
+        os.mkdir('output/')
     file_name = f'{obj.__class__.__name__}.json'
-    print(f'\Generating {file_name} to json...')
+    print(f'\nGenerating {file_name}...')
     with open(f'output/{file_name}', 'w') as output:
         output.write(json.dumps(obj.to_dict()))
-        print(f' - {file_name}.json was successfully created in output/{file_name}\n')
+        print(f' - {file_name}.json was successfully created at output/{file_name}\n')
 
 
 class Base():

@@ -1,4 +1,6 @@
-from .script import Base
+from caseconverter import camelcase
+
+from .script import Base, to_dict
 
 
 class Function(Base):
@@ -35,22 +37,34 @@ class Condition(Function):
         # generation of this function is done directly in the generation.py (not included in class_dicts.py)
 
         # find type of item_a for comparison type
-        type_class = None
-        if operator.lower() == 'and' or operator.lower() == 'or':
-            type_class = operator.lower()
-        else:
-            base_classes = item_a.__class__.mro()
-            for i, base_class in enumerate(base_classes):
-                if base_class.__name__ == 'Variable':
-                    type_class = item_a.type
-                    break
-                if base_class.__name__ == 'Function':
-                    type_class = base_classes[i-1].__name__.lower()
-                    break
-        self.comparison = type_class
+        if not (comparison := self.type_of_item(item_a, operator)):
+            comparison = self.type_of_item(item_b, operator)
+        self.comparison = comparison
         self.item_a = item_a
         self.operator = operator.upper()
         self.item_b = item_b
+
+    def type_of_item(self, item, operator):
+        primitive_to_type = {
+            int: 'number',
+            bool: 'boolean',
+            str: 'string',
+        }
+
+        if (operator := operator.lower()) == 'and' or operator == 'or':
+            return operator
+        if (primitive := primitive_to_type.get(type(item))):
+            return primitive
+        if isinstance(item, Variable):
+            return camelcase(item.type)
+        if isinstance(item, (Undefined, Null)):
+            return None
+        if isinstance(item, Function):
+            base_classes = item.__class__.mro()
+            for i, base_class in enumerate(base_classes):
+                if base_class.__name__ == 'Function':
+                    return camelcase(base_classes[i-1].__name__)
+        return None
 
     def to_dict(self):
         return [
@@ -58,8 +72,8 @@ class Condition(Function):
                 'operandType': self.comparison,
                 'operator': self.operator,
             },
-            self.item_a.to_dict(),
-            self.item_b.to_dict()
+            to_dict(self.item_a),
+            to_dict(self.item_b)
         ]
 
 
@@ -123,7 +137,7 @@ class OwnerOfEntity(Player):
     def __init__(self, entity):
         self.function = 'getOwner'
         self.options = {
-            'entity': entity.to_dict(),
+            'entity': to_dict(entity),
         }
 
 
@@ -137,7 +151,7 @@ class PlayerFromId(Player):
     def __init__(self, string):
         self.function = 'getPlayerFromId'
         self.options = {
-            'string': string.to_dict(),
+            'string': to_dict(string),
         }
 
 
@@ -178,7 +192,7 @@ class SourceUnitOfProjectile(Unit):
     def __init__(self, entity):
         self.function = 'getSourceUnitOfProjectile'
         self.options = {
-            'entity': entity.to_dict(),
+            'entity': to_dict(entity),
         }
 
 
@@ -204,7 +218,7 @@ class OwnerOfItem(Unit):
     def __init__(self, entity):
         self.function = 'getOwnerOfItem'
         self.options = {
-            'entity': entity.to_dict(),
+            'entity': to_dict(entity),
         }
 
 
@@ -236,7 +250,7 @@ class OwnerUnitOfSensor(Unit):
     def __init__(self, sensor):
         self.function = 'ownerUnitOfSensor'
         self.options = {
-            'sensor': sensor.to_dict(),
+            'sensor': to_dict(sensor),
         }
 
 
@@ -244,7 +258,7 @@ class UnitFromId(Unit):
     def __init__(self, string):
         self.function = 'getUnitFromId'
         self.options = {
-            'string': string.to_dict(),
+            'string': to_dict(string),
         }
 
 
@@ -252,7 +266,7 @@ class TargetUnit(Unit):
     def __init__(self, unit):
         self.function = 'targetUnit'
         self.options = {
-            'unit': unit.to_dict(),
+            'unit': to_dict(unit),
         }
 
 
@@ -269,7 +283,7 @@ class ItemInFrontOfUnit(Item):
     def __init__(self, entity):
         self.function = 'getItemInFrontOfUnit'
         self.options = {
-            'entity': entity.to_dict(),
+            'entity': to_dict(entity),
         }
 
 
@@ -277,8 +291,8 @@ class ItemAtSlot(Item):
     def __init__(self, slot, unit):
         self.function = 'getItemAtSlot'
         self.options = {
-            'slot': slot.to_dict(),
-            'unit': unit.to_dict(),
+            'slot': to_dict(slot),
+            'unit': to_dict(unit),
         }
 
 
@@ -298,7 +312,7 @@ class ItemCurrentlyHeldByUnit(Item):
     def __init__(self, entity):
         self.function = 'getItemCurrentlyHeldByUnit'
         self.options = {
-            'entity': entity.to_dict(),
+            'entity': to_dict(entity),
         }
 
 
@@ -312,7 +326,7 @@ class SourceItemOfProjectile(Item):
     def __init__(self, entity):
         self.function = 'getSourceItemOfProjectile'
         self.options = {
-            'entity': entity.to_dict(),
+            'entity': to_dict(entity),
         }
 
 
@@ -332,8 +346,8 @@ class ItemInInventorySlot(Item):
     def __init__(self, slot, entity):
         self.function = 'getItemInInventorySlot'
         self.options = {
-            'slot': slot.to_dict(),
-            'entity': entity.to_dict(),
+            'slot': to_dict(slot),
+            'entity': to_dict(entity),
         }
 
 
@@ -422,8 +436,8 @@ class XyCoordinate(Position):
     def __init__(self, x, y):
         self.function = 'xyCoordinate'
         self.options = {
-            'x': x.to_dict(),
-            'y': y.to_dict(),
+            'x': to_dict(x),
+            'y': to_dict(y),
         }
 
 
@@ -431,7 +445,7 @@ class MouseCursorPosition(Position):
     def __init__(self, player):
         self.function = 'getMouseCursorPosition'
         self.options = {
-            'player': player.to_dict(),
+            'player': to_dict(player),
         }
 
 
@@ -439,7 +453,7 @@ class CenterOfRegion(Position):
     def __init__(self, region):
         self.function = 'centerOfRegion'
         self.options = {
-            'region': region.to_dict(),
+            'region': to_dict(region),
         }
 
 
@@ -447,7 +461,7 @@ class EntityLastRaycastCollisionPosition(Position):
     def __init__(self, entity):
         self.function = 'entityLastRaycastCollisionPosition'
         self.options = {
-            'entity': entity.to_dict(),
+            'entity': to_dict(entity),
         }
 
 
@@ -455,7 +469,7 @@ class EntityPosition(Position):
     def __init__(self, entity):
         self.function = 'getEntityPosition'
         self.options = {
-            'entity': entity.to_dict(),
+            'entity': to_dict(entity),
         }
 
 
@@ -463,7 +477,7 @@ class RandomPositionInRegion(Position):
     def __init__(self, region):
         self.function = 'getRandomPositionInRegion'
         self.options = {
-            'region': region.to_dict(),
+            'region': to_dict(region),
         }
 
 
@@ -498,7 +512,7 @@ class EntityBounds(Region):
     def __init__(self, entity):
         self.function = 'entityBounds'
         self.options = {
-            'entity': entity.to_dict(),
+            'entity': to_dict(entity),
         }
 
 
@@ -506,10 +520,10 @@ class DynamicRegion(Region):
     def __init__(self, x, y, width, height):
         self.function = 'dynamicRegion'
         self.options = {
-            'x': x.to_dict(),
-            'y': y.to_dict(),
-            'width': width.to_dict(),
-            'height': height.to_dict(),
+            'x': to_dict(x),
+            'y': to_dict(y),
+            'width': to_dict(width),
+            'height': to_dict(height),
         }
 
 
@@ -541,7 +555,7 @@ class SensorOfUnit(Sensor):
     def __init__(self, unit):
         self.function = 'getSensorOfUnit'
         self.options = {
-            'unit': unit.to_dict(),
+            'unit': to_dict(unit),
         }
 
 
@@ -568,7 +582,7 @@ class EntityState(State):
     def __init__(self, entity):
         self.function = 'getEntityState'
         self.options = {
-            'entity': entity.to_dict(),
+            'entity': to_dict(entity),
         }
 
 
@@ -589,8 +603,8 @@ class RandomNumberBetween(Number):
     def __init__(self, min, max):
         self.function = 'getRandomNumberBetween'
         self.options = {
-            'min': min.to_dict(),
-            'max': max.to_dict(),
+            'min': to_dict(min),
+            'max': to_dict(max),
         }
 
 
@@ -598,7 +612,7 @@ class UnitsFacingAngle(Number):
     def __init__(self, unit):
         self.function = 'unitsFacingAngle'
         self.options = {
-            'unit': unit.to_dict(),
+            'unit': to_dict(unit),
         }
 
 
@@ -612,8 +626,8 @@ class ToFixed(Number):
     def __init__(self, value, precision):
         self.function = 'toFixed'
         self.options = {
-            'value': value.to_dict(),
-            'precision': precision.to_dict(),
+            'value': to_dict(value),
+            'precision': to_dict(precision),
         }
 
 
@@ -621,7 +635,7 @@ class ItemQuantity(Number):
     def __init__(self, item):
         self.function = 'getItemQuantity'
         self.options = {
-            'item': item.to_dict(),
+            'item': to_dict(item),
         }
 
 
@@ -629,7 +643,7 @@ class Cos(Number):
     def __init__(self, angle):
         self.function = 'cos'
         self.options = {
-            'angle': angle.to_dict(),
+            'angle': to_dict(angle),
         }
 
 
@@ -637,7 +651,7 @@ class EntityHeight(Number):
     def __init__(self, entity):
         self.function = 'entityHeight'
         self.options = {
-            'entity': entity.to_dict(),
+            'entity': to_dict(entity),
         }
 
 
@@ -645,8 +659,8 @@ class PlayerAttributeMax(Number):
     def __init__(self, attribute, entity):
         self.function = 'playerAttributeMax'
         self.options = {
-            'attribute': attribute.to_dict(),
-            'entity': entity.to_dict(),
+            'attribute': to_dict(attribute),
+            'entity': to_dict(entity),
         }
 
 
@@ -654,8 +668,8 @@ class PlayerAttribute(Number):
     def __init__(self, attribute, entity):
         self.function = 'getPlayerAttribute'
         self.options = {
-            'attribute': attribute.to_dict(),
-            'entity': entity.to_dict(),
+            'attribute': to_dict(attribute),
+            'entity': to_dict(entity),
         }
 
 
@@ -669,7 +683,7 @@ class EntityWidth(Number):
     def __init__(self, entity):
         self.function = 'entityWidth'
         self.options = {
-            'entity': entity.to_dict(),
+            'entity': to_dict(entity),
         }
 
 
@@ -683,7 +697,7 @@ class Arctan(Number):
     def __init__(self, number):
         self.function = 'arctan'
         self.options = {
-            'number': number.to_dict(),
+            'number': to_dict(number),
         }
 
 
@@ -691,7 +705,7 @@ class MathFloor(Number):
     def __init__(self, value):
         self.function = 'mathFloor'
         self.options = {
-            'value': value.to_dict(),
+            'value': to_dict(value),
         }
 
 
@@ -699,7 +713,7 @@ class YCoordinateOfRegion(Number):
     def __init__(self, region):
         self.function = 'getYCoordinateOfRegion'
         self.options = {
-            'region': region.to_dict(),
+            'region': to_dict(region),
         }
 
 
@@ -707,7 +721,7 @@ class SquareRoot(Number):
     def __init__(self, number):
         self.function = 'squareRoot'
         self.options = {
-            'number': number.to_dict(),
+            'number': to_dict(number),
         }
 
 
@@ -721,8 +735,8 @@ class AngleBetweenPositions(Number):
     def __init__(self, position_a, position_b):
         self.function = 'angleBetweenPositions'
         self.options = {
-            'positionA': position_a.to_dict(),
-            'positionB': position_b.to_dict(),
+            'positionA': to_dict(position_a),
+            'positionB': to_dict(position_b),
         }
 
 
@@ -730,7 +744,7 @@ class WidthOfRegion(Number):
     def __init__(self, region):
         self.function = 'getWidthOfRegion'
         self.options = {
-            'region': region.to_dict(),
+            'region': to_dict(region),
         }
 
 
@@ -738,8 +752,8 @@ class EntityAttributeMin(Number):
     def __init__(self, attribute, entity):
         self.function = 'entityAttributeMin'
         self.options = {
-            'attribute': attribute.to_dict(),
-            'entity': entity.to_dict(),
+            'attribute': to_dict(attribute),
+            'entity': to_dict(entity),
         }
 
 
@@ -747,7 +761,7 @@ class StringToNumber(Number):
     def __init__(self, value):
         self.function = 'stringToNumber'
         self.options = {
-            'value': value.to_dict(),
+            'value': to_dict(value),
         }
 
 
@@ -755,8 +769,8 @@ class QuantityOfUnitTypeInUnitTypeGroup(Number):
     def __init__(self, unit_type, unit_type_group):
         self.function = 'getQuantityOfUnitTypeInUnitTypeGroup'
         self.options = {
-            'unitType': unit_type.to_dict(),
-            'unitTypeGroup': unit_type_group.to_dict(),
+            'unitType': to_dict(unit_type),
+            'unitTypeGroup': to_dict(unit_type_group),
         }
 
 
@@ -764,7 +778,7 @@ class PositionY(Number):
     def __init__(self, position):
         self.function = 'getPositionY'
         self.options = {
-            'position': position.to_dict(),
+            'position': to_dict(position),
         }
 
 
@@ -772,8 +786,8 @@ class DistanceBetweenPositions(Number):
     def __init__(self, position_a, position_b):
         self.function = 'distanceBetweenPositions'
         self.options = {
-            'positionA': position_a.to_dict(),
-            'positionB': position_b.to_dict(),
+            'positionA': to_dict(position_a),
+            'positionB': to_dict(position_b),
         }
 
 
@@ -781,8 +795,8 @@ class EntityAttributeMax(Number):
     def __init__(self, attribute, entity):
         self.function = 'entityAttributeMax'
         self.options = {
-            'attribute': attribute.to_dict(),
-            'entity': entity.to_dict(),
+            'attribute': to_dict(attribute),
+            'entity': to_dict(entity),
         }
 
 
@@ -790,8 +804,8 @@ class PlayerAttributeMin(Number):
     def __init__(self, attribute, entity):
         self.function = 'playerAttributeMin'
         self.options = {
-            'attribute': attribute.to_dict(),
-            'entity': entity.to_dict(),
+            'attribute': to_dict(attribute),
+            'entity': to_dict(entity),
         }
 
 
@@ -799,7 +813,7 @@ class Sin(Number):
     def __init__(self, angle):
         self.function = 'sin'
         self.options = {
-            'angle': angle.to_dict(),
+            'angle': to_dict(angle),
         }
 
 
@@ -807,7 +821,7 @@ class XCoordinateOfRegion(Number):
     def __init__(self, region):
         self.function = 'getXCoordinateOfRegion'
         self.options = {
-            'region': region.to_dict(),
+            'region': to_dict(region),
         }
 
 
@@ -815,7 +829,7 @@ class EntityVelocityY(Number):
     def __init__(self, entity):
         self.function = 'getEntityVelocityY'
         self.options = {
-            'entity': entity.to_dict(),
+            'entity': to_dict(entity),
         }
 
 
@@ -823,7 +837,7 @@ class PositionX(Number):
     def __init__(self, position):
         self.function = 'getPositionX'
         self.options = {
-            'position': position.to_dict(),
+            'position': to_dict(position),
         }
 
 
@@ -831,7 +845,7 @@ class LastPlayedTimeOfPlayer(Number):
     def __init__(self, player):
         self.function = 'lastPlayedTimeOfPlayer'
         self.options = {
-            'player': player.to_dict(),
+            'player': to_dict(player),
         }
 
 
@@ -839,8 +853,8 @@ class Max(Number):
     def __init__(self, num_a, num_b):
         self.function = 'getMax'
         self.options = {
-            'num1': num_a.to_dict(),
-            'num2': num_b.to_dict(),
+            'num1': to_dict(num_a),
+            'num2': to_dict(num_b),
         }
 
 
@@ -848,7 +862,7 @@ class RotateSpeed(Number):
     def __init__(self, unit_type):
         self.function = 'getRotateSpeed'
         self.options = {
-            'unitType': unit_type.to_dict(),
+            'unitType': to_dict(unit_type),
         }
 
 
@@ -856,7 +870,7 @@ class CurrentAmmoOfItem(Number):
     def __init__(self, item):
         self.function = 'getCurrentAmmoOfItem'
         self.options = {
-            'item': item.to_dict(),
+            'item': to_dict(item),
         }
 
 
@@ -864,7 +878,7 @@ class HeightOfRegion(Number):
     def __init__(self, region):
         self.function = 'getHeightOfRegion'
         self.options = {
-            'region': region.to_dict(),
+            'region': to_dict(region),
         }
 
 
@@ -872,7 +886,7 @@ class ItemMaxQuantity(Number):
     def __init__(self, item):
         self.function = 'getItemMaxQuantity'
         self.options = {
-            'item': item.to_dict(),
+            'item': to_dict(item),
         }
 
 
@@ -880,7 +894,7 @@ class AbsoluteValueOfNumber(Number):
     def __init__(self, number):
         self.function = 'absoluteValueOfNumber'
         self.options = {
-            'number': number.to_dict(),
+            'number': to_dict(number),
         }
 
 
@@ -888,8 +902,8 @@ class EntityAttribute(Number):
     def __init__(self, attribute, entity):
         self.function = 'getEntityAttribute'
         self.options = {
-            'attribute': attribute.to_dict(),
-            'entity': entity.to_dict(),
+            'attribute': to_dict(attribute),
+            'entity': to_dict(entity),
         }
 
 
@@ -903,7 +917,7 @@ class EntityVelocityX(Number):
     def __init__(self, entity):
         self.function = 'getEntityVelocityX'
         self.options = {
-            'entity': entity.to_dict(),
+            'entity': to_dict(entity),
         }
 
 
@@ -911,7 +925,7 @@ class DefaultQuantityOfItemType(Number):
     def __init__(self, item_type):
         self.function = 'defaultQuantityOfItemType'
         self.options = {
-            'itemType': item_type.to_dict(),
+            'itemType': to_dict(item_type),
         }
 
 
@@ -919,8 +933,8 @@ class QuantityOfItemTypeInItemTypeGroup(Number):
     def __init__(self, item_type, item_type_group):
         self.function = 'getQuantityOfItemTypeInItemTypeGroup'
         self.options = {
-            'itemType': item_type.to_dict(),
-            'itemTypeGroup': item_type_group.to_dict(),
+            'itemType': to_dict(item_type),
+            'itemTypeGroup': to_dict(item_type_group),
         }
 
 
@@ -934,8 +948,8 @@ class Min(Number):
     def __init__(self, num_a, num_b):
         self.function = 'getMin'
         self.options = {
-            'num1': num_a.to_dict(),
-            'num2': num_b.to_dict(),
+            'num1': to_dict(num_a),
+            'num2': to_dict(num_b),
         }
 
 
@@ -943,7 +957,7 @@ class MaxValueOfItemType(Number):
     def __init__(self, item_type):
         self.function = 'maxValueOfItemType'
         self.options = {
-            'itemType': item_type.to_dict(),
+            'itemType': to_dict(item_type),
         }
 
 
@@ -951,7 +965,7 @@ class AngleBetweenMouseAndWindowCenter(Number):
     def __init__(self, player):
         self.function = 'angleBetweenMouseAndWindowCenter'
         self.options = {
-            'player': player.to_dict(),
+            'player': to_dict(player),
         }
 
 
@@ -959,8 +973,8 @@ class Exponent(Number):
     def __init__(self, base, power):
         self.function = 'getExponent'
         self.options = {
-            'base': base.to_dict(),
-            'power': power.to_dict(),
+            'base': to_dict(base),
+            'power': to_dict(power),
         }
 
 
@@ -968,7 +982,7 @@ class NumberOfUnitsOfUnitType(Number):
     def __init__(self, unit_type):
         self.function = 'getNumberOfUnitsOfUnitType'
         self.options = {
-            'unitType': unit_type.to_dict(),
+            'unitType': to_dict(unit_type),
         }
 
 
@@ -976,7 +990,7 @@ class NumberOfPlayersOfPlayerType(Number):
     def __init__(self, player_type):
         self.function = 'getNumberOfPlayersOfPlayerType'
         self.options = {
-            'playerType': player_type.to_dict(),
+            'playerType': to_dict(player_type),
         }
 
 
@@ -984,7 +998,7 @@ class LengthOfString(Number):
     def __init__(self, string):
         self.function = 'getLengthOfString'
         self.options = {
-            'string': string.to_dict(),
+            'string': to_dict(string),
         }
 
 
@@ -992,7 +1006,7 @@ class StringArrayLength(Number):
     def __init__(self, string):
         self.function = 'getStringArrayLength'
         self.options = {
-            'string': string.to_dict(),
+            'string': to_dict(string),
         }
 
 
@@ -1000,7 +1014,7 @@ class SelectedInventorySlot(Number):
     def __init__(self, unit):
         self.function = 'selectedInventorySlot'
         self.options = {
-            'unit': unit.to_dict(),
+            'unit': to_dict(unit),
         }
 
 
@@ -1008,7 +1022,7 @@ class LogBase10(Number):
     def __init__(self, value):
         self.function = 'log10'
         self.options = {
-            'value': value.to_dict(),
+            'value': to_dict(value),
         }
 
 
@@ -1016,7 +1030,7 @@ class UnitSensorRadius(Number):
     def __init__(self, unit):
         self.function = 'unitSensorRadius'
         self.options = {
-            'unit': unit.to_dict(),
+            'unit': to_dict(unit),
         }
 
 
@@ -1028,8 +1042,8 @@ class Calculate(Number):
                 {
                     'operator': operator
                 },
-                item_a.to_dict(),
-                item_b.to_dict(),
+                to_dict(item_a),
+                to_dict(item_b),
             ]
         }
 
@@ -1051,7 +1065,7 @@ class EntityType(String):
     def __init__(self, entity):
         self.function = 'getEntityType'
         self.options = {
-            'entity': entity.to_dict(),
+            'entity': to_dict(entity),
         }
 
 
@@ -1059,7 +1073,7 @@ class PlayerCustomInput(String):
     def __init__(self, player):
         self.function = 'playerCustomInput'
         self.options = {
-            'player': player.to_dict(),
+            'player': to_dict(player),
         }
 
 
@@ -1067,8 +1081,8 @@ class Concat(String):
     def __init__(self, text_a, text_b):
         self.function = 'concat'
         self.options = {
-            'textA': text_a.to_dict(),
-            'textB': text_b.to_dict(),
+            'textA': to_dict(text_a),
+            'textB': to_dict(text_b),
         }
 
 
@@ -1076,7 +1090,7 @@ class PlayerName(String):
     def __init__(self, entity):
         self.function = 'getPlayerName'
         self.options = {
-            'entity': entity.to_dict(),
+            'entity': to_dict(entity),
         }
 
 
@@ -1084,7 +1098,7 @@ class UnitTypeName(String):
     def __init__(self, unit_type):
         self.function = 'getUnitTypeName'
         self.options = {
-            'unitType': unit_type.to_dict(),
+            'unitType': to_dict(unit_type),
         }
 
 
@@ -1092,7 +1106,7 @@ class NameOfRegion(String):
     def __init__(self, region):
         self.function = 'nameOfRegion'
         self.options = {
-            'region': region.to_dict(),
+            'region': to_dict(region),
         }
 
 
@@ -1100,7 +1114,7 @@ class ItemTypeName(String):
     def __init__(self, item_type):
         self.function = 'getItemTypeName'
         self.options = {
-            'itemType': item_type.to_dict(),
+            'itemType': to_dict(item_type),
         }
 
 
@@ -1108,9 +1122,9 @@ class SubstringOf(String):
     def __init__(self, string, from_index, to_index):
         self.function = 'substringOf'
         self.options = {
-            'string': string.to_dict(),
-            'fromIndex': from_index.to_dict(),
-            'toIndex': to_index.to_dict(),
+            'string': to_dict(string),
+            'fromIndex': to_dict(from_index),
+            'toIndex': to_dict(to_index),
         }
 
 
@@ -1118,7 +1132,7 @@ class LastChatMessageSentByPlayer(String):
     def __init__(self, player):
         self.function = 'getLastChatMessageSentByPlayer'
         self.options = {
-            'player': player.to_dict(),
+            'player': to_dict(player),
         }
 
 
@@ -1126,7 +1140,7 @@ class ToLowerCase(String):
     def __init__(self, string):
         self.function = 'toLowerCase'
         self.options = {
-            'string': string.to_dict(),
+            'string': to_dict(string),
         }
 
 
@@ -1134,9 +1148,9 @@ class ReplaceValuesInString(String):
     def __init__(self, match_string, source_string, new_string):
         self.function = 'replaceValuesInString'
         self.options = {
-            'matchString': match_string.to_dict(),
-            'sourceString': source_string.to_dict(),
-            'newString': new_string.to_dict(),
+            'matchString': to_dict(match_string),
+            'sourceString': to_dict(source_string),
+            'newString': to_dict(new_string),
         }
 
 
@@ -1144,7 +1158,7 @@ class TimeString(String):
     def __init__(self, seconds):
         self.function = 'getTimeString'
         self.options = {
-            'seconds': seconds.to_dict(),
+            'seconds': to_dict(seconds),
         }
 
 
@@ -1152,7 +1166,7 @@ class ItemDescription(String):
     def __init__(self, item):
         self.function = 'getItemDescription'
         self.options = {
-            'item': item.to_dict(),
+            'item': to_dict(item),
         }
 
 
@@ -1160,7 +1174,7 @@ class UnitData(String):
     def __init__(self, unit):
         self.function = 'getUnitData'
         self.options = {
-            'unit': unit.to_dict(),
+            'unit': to_dict(unit),
         }
 
 
@@ -1168,7 +1182,7 @@ class PlayerData(String):
     def __init__(self, player):
         self.function = 'getPlayerData'
         self.options = {
-            'player': player.to_dict(),
+            'player': to_dict(player),
         }
 
 
@@ -1176,7 +1190,7 @@ class UnitId(String):
     def __init__(self, unit):
         self.function = 'getUnitId'
         self.options = {
-            'unit': unit.to_dict(),
+            'unit': to_dict(unit),
         }
 
 
@@ -1184,7 +1198,7 @@ class PlayerId(String):
     def __init__(self, player):
         self.function = 'getPlayerId'
         self.options = {
-            'player': player.to_dict(),
+            'player': to_dict(player),
         }
 
 
@@ -1192,8 +1206,8 @@ class StringArrayElement(String):
     def __init__(self, number, string):
         self.function = 'getStringArrayElement'
         self.options = {
-            'number': number.to_dict(),
-            'string': string.to_dict(),
+            'number': to_dict(number),
+            'string': to_dict(string),
         }
 
 
@@ -1201,8 +1215,8 @@ class InsertStringArrayElement(String):
     def __init__(self, value, string):
         self.function = 'insertStringArrayElement'
         self.options = {
-            'value': value.to_dict(),
-            'string': string.to_dict(),
+            'value': to_dict(value),
+            'string': to_dict(string),
         }
 
 
@@ -1210,9 +1224,9 @@ class UpdateStringArrayElement(String):
     def __init__(self, number, string, value):
         self.function = 'updateStringArrayElement'
         self.options = {
-            'number': number.to_dict(),
-            'string': string.to_dict(),
-            'value': value.to_dict(),
+            'number': to_dict(number),
+            'string': to_dict(string),
+            'value': to_dict(value),
         }
 
 
@@ -1220,8 +1234,8 @@ class RemoveStringArrayElement(String):
     def __init__(self, number, string):
         self.function = 'removeStringArrayElement'
         self.options = {
-            'number': number.to_dict(),
-            'string': string.to_dict(),
+            'number': to_dict(number),
+            'string': to_dict(string),
         }
 
 
@@ -1229,7 +1243,7 @@ class EntityName(String):
     def __init__(self, entity):
         self.function = 'entityName'
         self.options = {
-            'entity': entity.to_dict(),
+            'entity': to_dict(entity),
         }
 
 
@@ -1250,7 +1264,7 @@ class IsPlayerLoggedIn(Boolean):
     def __init__(self, player):
         self.function = 'isPlayerLoggedIn'
         self.options = {
-            'player': player.to_dict(),
+            'player': to_dict(player),
         }
 
 
@@ -1258,8 +1272,8 @@ class PlayersAreFriendly(Boolean):
     def __init__(self, player_a, player_b):
         self.function = 'playersAreFriendly'
         self.options = {
-            'playerA': player_a.to_dict(),
-            'playerB': player_b.to_dict(),
+            'playerA': to_dict(player_a),
+            'playerB': to_dict(player_b),
         }
 
 
@@ -1267,7 +1281,7 @@ class PlayerIsControlledByHuman(Boolean):
     def __init__(self, player):
         self.function = 'playerIsControlledByHuman'
         self.options = {
-            'player': player.to_dict(),
+            'player': to_dict(player),
         }
 
 
@@ -1275,8 +1289,8 @@ class PlayersAreHostile(Boolean):
     def __init__(self, player_a, player_b):
         self.function = 'playersAreHostile'
         self.options = {
-            'playerA': player_a.to_dict(),
-            'playerB': player_b.to_dict(),
+            'playerA': to_dict(player_a),
+            'playerB': to_dict(player_b),
         }
 
 
@@ -1284,8 +1298,8 @@ class RegionOverlapsWithRegion(Boolean):
     def __init__(self, region_a, region_b):
         self.function = 'regionOverlapsWithRegion'
         self.options = {
-            'regionA': region_a.to_dict(),
-            'regionB': region_b.to_dict(),
+            'regionA': to_dict(region_a),
+            'regionB': to_dict(region_b),
         }
 
 
@@ -1293,8 +1307,8 @@ class PlayersAreNeutral(Boolean):
     def __init__(self, player_a, player_b):
         self.function = 'playersAreNeutral'
         self.options = {
-            'playerA': player_a.to_dict(),
-            'playerB': player_b.to_dict(),
+            'playerA': to_dict(player_a),
+            'playerB': to_dict(player_b),
         }
 
 
@@ -1302,7 +1316,7 @@ class PlayerHasAdblockEnabled(Boolean):
     def __init__(self, player):
         self.function = 'playerHasAdblockEnabled'
         self.options = {
-            'player': player.to_dict(),
+            'player': to_dict(player),
         }
 
 
@@ -1310,7 +1324,7 @@ class EntityExists(Boolean):
     def __init__(self, entity):
         self.function = 'entityExists'
         self.options = {
-            'entity': entity.to_dict(),
+            'entity': to_dict(entity),
         }
 
 
@@ -1318,8 +1332,8 @@ class IsPositionInWall(Boolean):
     def __init__(self, positionx, positiony):
         self.function = 'isPositionInWall'
         self.options = {
-            'position.x': positionx.to_dict(),
-            'position.y': positiony.to_dict(),
+            'position.x': to_dict(positionx),
+            'position.y': to_dict(positiony),
         }
 
 
@@ -1327,8 +1341,8 @@ class SubString(Boolean):
     def __init__(self, source_string, pattern_string):
         self.function = 'subString'
         self.options = {
-            'sourceString': source_string.to_dict(),
-            'patternString': pattern_string.to_dict(),
+            'sourceString': to_dict(source_string),
+            'patternString': to_dict(pattern_string),
         }
 
 
@@ -1336,8 +1350,8 @@ class StringStartsWith(Boolean):
     def __init__(self, source_string, pattern_string):
         self.function = 'stringStartsWith'
         self.options = {
-            'sourceString': source_string.to_dict(),
-            'patternString': pattern_string.to_dict(),
+            'sourceString': to_dict(source_string),
+            'patternString': to_dict(pattern_string),
         }
 
 
@@ -1345,8 +1359,8 @@ class StringEndsWith(Boolean):
     def __init__(self, source_string, pattern_string):
         self.function = 'stringEndsWith'
         self.options = {
-            'sourceString': source_string.to_dict(),
-            'patternString': pattern_string.to_dict(),
+            'sourceString': to_dict(source_string),
+            'patternString': to_dict(pattern_string),
         }
 
 
@@ -1354,7 +1368,7 @@ class IsAIEnabled(Boolean):
     def __init__(self, unit):
         self.function = 'isAIEnabled'
         self.options = {
-            'unit': unit.to_dict(),
+            'unit': to_dict(unit),
         }
 
 
@@ -1362,7 +1376,7 @@ class IsBotPlayer(Boolean):
     def __init__(self, player):
         self.function = 'isBotPlayer'
         self.options = {
-            'player': player.to_dict(),
+            'player': to_dict(player),
         }
 
 
@@ -1370,7 +1384,7 @@ class IsComputerPlayer(Boolean):
     def __init__(self, player_is_a_computer):
         self.function = 'isComputerPlayer'
         self.options = {
-            'player is a computer': player_is_a_computer.to_dict(),
+            'player is a computer': to_dict(player_is_a_computer),
         }
 
 
@@ -1387,8 +1401,8 @@ class ItemParticle(Particle):
     def __init__(self, particle_type, entity):
         self.function = 'getItemParticle'
         self.options = {
-            'particleType': particle_type.to_dict(),
-            'entity': entity.to_dict(),
+            'particleType': to_dict(particle_type),
+            'entity': to_dict(entity),
         }
 
 
@@ -1402,8 +1416,8 @@ class UnitParticle(Particle):
     def __init__(self, particle_type, entity):
         self.function = 'getUnitParticle'
         self.options = {
-            'particleType': particle_type.to_dict(),
-            'entity': entity.to_dict(),
+            'particleType': to_dict(particle_type),
+            'entity': to_dict(entity),
         }
 
 
@@ -1446,8 +1460,8 @@ class ValueOfEntityVariable(Variable):
         self.function = 'getValueOfEntityVariable'
         self.type = entity_variable_type.type
         self.options = {
-            'variable': entity_variable_type.to_dict(),
-            'entity': entity.to_dict()
+            'variable': to_dict(entity_variable_type),
+            'entity': to_dict(entity)
         }
 
 
@@ -1472,11 +1486,11 @@ class PlayerVariable(Variable):
 
 class ValueOfPlayerVariable(Variable):
     def __init__(self, player_variable_type, player):
-        self.function = 'getPlayerVariable'
+        self.function = 'getValueOfPlayerVariable'
         self.type = player_variable_type.type
         self.options = {
-            'variable': player_variable_type.to_dict(),
-            'player': player.to_dict()
+            'variable': to_dict(player_variable_type),
+            'player': to_dict(player)
         }
 
 
@@ -1497,7 +1511,7 @@ class UnitTypeOfUnit(UnitType):
     def __init__(self, entity):
         self.function = 'getUnitTypeOfUnit'
         self.options = {
-            'entity': entity.to_dict(),
+            'entity': to_dict(entity),
         }
 
 
@@ -1511,7 +1525,7 @@ class RandomUnitTypeFromUnitTypeGroup(UnitType):
     def __init__(self, unit_type_group):
         self.function = 'getRandomUnitTypeFromUnitTypeGroup'
         self.options = {
-            'unitTypeGroup': unit_type_group.to_dict(),
+            'unitTypeGroup': to_dict(unit_type_group),
         }
 
 
@@ -1538,7 +1552,7 @@ class PlayerTypeOfPlayer(PlayerType):
     def __init__(self, player):
         self.function = 'playerTypeOfPlayer'
         self.options = {
-            'player': player.to_dict(),
+            'player': to_dict(player),
         }
 
 
@@ -1565,7 +1579,7 @@ class ItemTypeOfItem(ItemType):
     def __init__(self, entity):
         self.function = 'getItemTypeOfItem'
         self.options = {
-            'entity': entity.to_dict(),
+            'entity': to_dict(entity),
         }
 
 
@@ -1573,7 +1587,7 @@ class RandomItemTypeFromItemTypeGroup(ItemType):
     def __init__(self, item_type_group):
         self.function = 'getRandomItemTypeFromItemTypeGroup'
         self.options = {
-            'itemTypeGroup': item_type_group.to_dict(),
+            'itemTypeGroup': to_dict(item_type_group),
         }
 
 
@@ -1594,7 +1608,7 @@ class ProjectileTypeOfProjectile(ProjectileType):
     def __init__(self, entity):
         self.function = 'getProjectileTypeOfProjectile'
         self.options = {
-            'entity': entity.to_dict(),
+            'entity': to_dict(entity),
         }
 
 
@@ -1615,7 +1629,7 @@ class AttributeTypeOfAttribute(AttributeType):
     def __init__(self, entity):
         self.function = 'getAttributeTypeOfAttribute'
         self.options = {
-            'entity': entity.to_dict(),
+            'entity': to_dict(entity),
         }
 
 
@@ -1653,7 +1667,7 @@ class EntitiesInRegion(EntityGroup):
     def __init__(self, region):
         self.function = 'entitiesInRegion'
         self.options = {
-            'region': region.to_dict(),
+            'region': to_dict(region),
         }
 
 
@@ -1661,10 +1675,10 @@ class EntitiesInRegionInFrontOfEntityAtDistance(EntityGroup):
     def __init__(self, width: Number, height: Number, entity, distance: Number):
         self.function = 'entitiesInRegionInFrontOfEntityAtDistance'
         self.options = {
-            'width': width.to_dict(),
-            'height': height.to_dict(),
-            'entity': entity.to_dict(),
-            'distance': distance.to_dict(),
+            'width': to_dict(width),
+            'height': to_dict(height),
+            'entity': to_dict(entity),
+            'distance': to_dict(distance),
         }
 
 
@@ -1672,8 +1686,8 @@ class EntitiesBetweenTwoPositions(EntityGroup):
     def __init__(self, position_a, position_b):
         self.function = 'entitiesBetweenTwoPositions'
         self.options = {
-            'positionA': position_a.to_dict(),
-            'positionB': position_b.to_dict(),
+            'positionA': to_dict(position_a),
+            'positionB': to_dict(position_b),
         }
 
 
@@ -1690,7 +1704,7 @@ class AllUnitsOwnedByPlayer(UnitGroup):
     def __init__(self, player):
         self.function = 'allUnitsOwnedByPlayer'
         self.options = {
-            'player': player.to_dict(),
+            'player': to_dict(player),
         }
 
 
@@ -1698,7 +1712,7 @@ class AllUnitsAttachedToUnit(UnitGroup):
     def __init__(self, entity):
         self.function = 'allUnitsAttachedToUnit'
         self.options = {
-            'entity': entity.to_dict(),
+            'entity': to_dict(entity),
         }
 
 
@@ -1712,7 +1726,7 @@ class AllUnitsAttachedToItem(UnitGroup):
     def __init__(self, entity):
         self.function = 'allUnitsAttachedToItem'
         self.options = {
-            'entity': entity.to_dict(),
+            'entity': to_dict(entity),
         }
 
 
@@ -1720,7 +1734,7 @@ class AllUnitsMountedOnUnit(UnitGroup):
     def __init__(self, entity):
         self.function = 'allUnitsMountedOnUnit'
         self.options = {
-            'entity': entity.to_dict(),
+            'entity': to_dict(entity),
         }
 
 
@@ -1728,7 +1742,7 @@ class AllUnitsInRegion(UnitGroup):
     def __init__(self, region):
         self.function = 'allUnitsInRegion'
         self.options = {
-            'region': region.to_dict(),
+            'region': to_dict(region),
         }
 
 
@@ -1745,7 +1759,7 @@ class AllProjectilesAttachedToUnit(ProjectileGroup):
     def __init__(self, entity):
         self.function = 'allProjectilesAttachedToUnit'
         self.options = {
-            'entity': entity.to_dict(),
+            'entity': to_dict(entity),
         }
 
 
@@ -1780,7 +1794,7 @@ class AllItemsAttachedToUnit(ItemGroup):
     def __init__(self, entity):
         self.function = 'allItemsAttachedToUnit'
         self.options = {
-            'entity': entity.to_dict(),
+            'entity': to_dict(entity),
         }
 
 
@@ -1788,7 +1802,7 @@ class AllItemsOwnedByUnit(ItemGroup):
     def __init__(self, entity):
         self.function = 'allItemsOwnedByUnit'
         self.options = {
-            'entity': entity.to_dict(),
+            'entity': to_dict(entity),
         }
 
 
