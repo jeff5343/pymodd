@@ -7,7 +7,7 @@ from ..utils.class_dicts import TRIGGER_TO_ENUM, FUNCTION_TO_CLASS, ACTION_TO_CL
 
 GENERATION_TYPE_CATEGORIES = [
     'entityTypeVariables', 'shops', 'animationTypes', 'states', 'projectileTypes', 'itemTypes', 'music',
-    'sound', 'unitTypes', 'variables', 'attributeTypes', 'playerTypes', 'playerTypeVariables'
+    'sound', 'unitTypes', 'variables', 'attributeTypes', 'playerTypes', 'playerTypeVariables', 'dialogues',
 ]
 
 # to put inside f-strings

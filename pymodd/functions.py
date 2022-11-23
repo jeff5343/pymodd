@@ -1949,3 +1949,16 @@ class Sound(Function):
             'direct': True,
             'value': sound_id,
         }
+
+
+# ---------------------------------------------------------------------------- #
+#                                   Dialogues                                  #
+# ---------------------------------------------------------------------------- #
+
+
+class Dialogue(Function):
+    def __init__(self, dialogue_id):
+        self.function = {
+            'direct': True,
+            'value': dialogue_id,
+        }
