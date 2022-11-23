@@ -145,14 +145,14 @@ class JsonActionsConverter():
         for arg, value in action.items():
             if arg in ('type', 'vars', 'function'):
                 continue
-            if (peculiar_args := self.handle_pecuilar_arguments(arg, value)) is not None:
+            if (peculiar_args := self.handle_weird_arguments(arg, value)) is not None:
                 args.extend(peculiar_args)
                 continue
             args.append({'name': arg, 'value': self.python_from_function(arg, value)})
 
         return self.align_arguments_with_class(args, action_class)
 
-    def handle_pecuilar_arguments(self, argument, value):
+    def handle_weird_arguments(self, argument, value):
         if type(value) is not dict:
             return None
         # xy force is returned as one argument by modd, but in actions.py there are two arguemnts for force_x and force_y

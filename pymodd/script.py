@@ -18,7 +18,7 @@ def write_to_output(obj):
     print(f'\nGenerating {file_name}...')
     with open(f'output/{file_name}', 'w') as output:
         output.write(json.dumps(obj.to_dict()))
-        print(f' - {file_name}.json was successfully created at output/{file_name}\n')
+        print(f' - {file_name} was successfully created at output/{file_name}\n')
 
 
 class Base():

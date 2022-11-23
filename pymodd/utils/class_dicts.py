@@ -1447,7 +1447,9 @@ ACTION_TO_CLASS = {
     },
     'comment': {
         'className': 'Comment',
-        'arguments': []
+        'arguments': [
+            'comment'
+        ]
     },
     'createEntityAtPositionWithDimensions': {
         'className': 'CreateEntityAtPositionWithDimensions',
