@@ -9,14 +9,14 @@ class EverySecond(Script):
     def __init__(self):
         self.triggers = [Trigger.EVERY_SECOND]
         self.actions = [
-            IncreaseVariableByNumber(Variables.BOSS_TIMER, Number(1)),
-            While(Condition(NumberOfUnitsOfUnitType(UnitTypes.FROG), '<', Number('5')), [
-                CreateUnitForPlayerAtPosition(UnitTypes.FROG, Variables.AI, RandomPositionInRegion(EntireMapRegion()), Number(0)),
+            IncreaseVariableByNumber(Variables.BOSS_TIMER, 1),
+            While(Condition(NumberOfUnitsOfUnitType(UnitTypes.FROG), '<', '5'), [
+                CreateUnitForPlayerAtPosition(UnitTypes.FROG, Variables.AI, RandomPositionInRegion(EntireMapRegion()), 0),
             ]),
-            IfStatement(Condition(Number(50), '<=', Variables.TIMER), [
-                CreateUnitForPlayerAtPosition(UnitTypes.FROG_BOSS, Variables.AI, RandomPositionInRegion(EntireMapRegion()), Number(0)),
-                SetVariable(Variables.TIMER, Number(0)),
-                SendChatMessage(String('The frog boss has spawned!'))
+            IfStatement(Condition(50, '<=', Variables.TIMER), [
+                CreateUnitForPlayerAtPosition(UnitTypes.FROG_BOSS, Variables.AI, RandomPositionInRegion(EntireMapRegion()), 0),
+                SetVariable(Variables.TIMER, 0),
+                SendChatMessage('The frog boss has spawned!')
             ]),
         ]
         # the order of the script in modd's project directory

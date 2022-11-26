@@ -2,23 +2,7 @@ import os
 import json
 from enum import Enum
 
-from .utils.data_templates import SCRIPT_DATA_TEMPLATE
-
-
-def to_dict(obj):
-    if isinstance(obj, Base):
-        return obj.to_dict()
-    return obj
-
-
-def write_to_output(obj):
-    if not os.path.isdir('output/'):
-        os.mkdir('output/')
-    file_name = f'{obj.__class__.__name__}.json'
-    print(f'\nGenerating {file_name}...')
-    with open(f'output/{file_name}', 'w') as output:
-        output.write(json.dumps(obj.to_dict()))
-        print(f' - {file_name} was successfully created at output/{file_name}\n')
+from caseconverter import snakecase
 
 
 class Base():
@@ -26,20 +10,147 @@ class Base():
         raise NotImplementedError("to_dict method not implemented")
 
 
-class Script(Base):
-    def __init__(self):
-        self.triggers = []
-        self.actions = []
-        self.order = 0
+class Game(Base):
+    def __init__(self, json_file):
+        with open(json_file, 'r') as file:
+            data = json.load(file)
+        self.name = data.get('title')
+        self.data = data
+        self.scripts = []
+        self.build()
+        # set position of scripts inside game
+        for i, script in enumerate(self.scripts):
+            script.set_position(i, None)
+
+    def build():
+        pass
 
     def to_dict(self):
-        data = SCRIPT_DATA_TEMPLATE
-        data['triggers'] = [{'type': trigger.value}
-                            for trigger in self.triggers]
-        data['actions'] = [action.to_dict() for action in self.actions]
-        data['name'] = self.__class__.__name__
-        data['order'] = self.order
-        return data
+        return None
+
+
+class File(Base):
+    def __init__(self):
+        self.name = None
+        self.key = None
+        self.parent = None
+        self.order = 0
+
+    def set_position(self, order, parent):
+        self.order = order
+        self.parent = parent
+
+
+class Folder(File):
+    def __init__(self, name, scripts: list):
+        super().__init__()
+        self.name = name
+        self.key = key_from_name(self.name)
+        self.scripts = scripts
+        # set position of scripts inside the folder
+        for i, script in enumerate(scripts):
+            script.set_position(i, self.key)
+
+    def to_dict(self):
+        return {
+            'key': self.key,
+            'folderName': self.name,
+            'parent': self.parent,
+            'order': self.order,
+            'expanded': True
+        }
+
+
+class Script(File):
+    def __init__(self):
+        super().__init__()
+        self.name = snakecase(self.__class__.__name__).replace('_', ' ')
+        self.key = key_from_name(self.name)
+        self.triggers = []
+        self.actions = []
+
+    def build(self):
+        pass
+
+    def to_dict(self):
+        self.build()
+        return {
+            'triggers': [{'type': trigger.value} for trigger in self.triggers],
+            'conditions': [{'operator': '==', 'operandType': 'boolean'}, True, True],
+            'actions': [action.to_dict() for action in self.actions],
+            'name': self.name,
+            'parent': self.parent,
+            'key': self.key,
+            'order': self.order
+        }
+
+
+def key_from_name(name):
+    return snakecase(name)
+
+
+def write_game_to_output(game):
+    base_path = f'{snakecase(game.name)}/output/'
+    print(f'\nWriting json files for {game.name}...')
+    write_scripts_to_output(f'{base_path}/all_files', game.scripts)
+    write_game_json(base_path, game)
+    print('\nFinished writing.\n')
+
+
+def write_game_json(path, game):
+    game_data = game.data
+    game_data['data']['scripts'] = {}
+    
+    scripts_queue = game.scripts
+    while len(scripts_queue) > 0:
+        script = scripts_queue.pop(0)
+        if isinstance(script, Folder):
+            scripts_queue += script.scripts
+        script_data = script.to_dict()
+        game_data['data']['scripts'][script_data['key']] = script_data
+
+    file_name = f'{game.name}.json'
+    with open(f'{path}/{file_name}', 'w') as output:
+        output.write(json.dumps(game_data, indent=4))
+    print(f'\n{file_name} successfuly created')
+
+
+def write_scripts_to_output(path, scripts):
+    for script in scripts:
+        write_to_output(path, script)
+
+
+def write_to_output(path, obj):
+    depth = path.count('/')
+    if not os.path.exists(f'{path}/'):
+        os.makedirs(f'{path}/')
+    # create scripts inside folders
+    if isinstance(obj, Folder):
+        folder_name = snakecase(obj.name)
+        print(f"{'  ' * depth} {folder_name}/")
+        write_scripts_to_output(f'{path}/{folder_name}', obj.scripts)
+        return
+
+    file_name = f'{obj.__class__.__name__}'
+    # use script name
+    if isinstance(obj, Script):
+        file_name = f'{snakecase(obj.name)}'
+    with open(f'{path}/{file_name}.json', 'w') as output:
+        output.write(json.dumps(obj.to_dict(), indent=4))
+        print(f"{'  ' * depth} - {file_name}")
+
+
+def to_dict(obj):
+    if isinstance(obj, Base):
+        return obj.to_dict()
+    if isinstance(obj, Enum):
+        return obj.value
+    return obj
+
+
+# ---------------------------------------------------------------------------- #
+#                                   Constants                                  #
+# ---------------------------------------------------------------------------- #
 
 
 class Trigger(Enum):
@@ -98,3 +209,16 @@ class Trigger(Enum):
     ENTITY_ENTERS_REGION = 'entityEntersRegion'
 
     DEBRIS_ENTERS_REGION = 'debrisEntersRegion'
+
+
+class UiTarget(Enum):
+    TOP = 'top'
+    CENTER = 'center-lg'
+    SCOREBOARD = 'scoreboard'
+
+
+class Flip(Enum):
+    NONE = 'none'
+    HORIZONTAL = 'horizontal'
+    VERTICAL = 'vertical'
+    BOTH = 'both'

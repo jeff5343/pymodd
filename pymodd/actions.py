@@ -867,6 +867,12 @@ class RemoveUnitFromUnitGroup(Action):
 
 class FlipEntitySprite(Action):
     def __init__(self, entity, flip):
+        """Flip entity sprite
+
+        Args:
+            entity (Entity): the entity who's sprite will be flipped
+            flip (Flip): the flip direction, corresponding class is the Flip enum
+        """
         self.action = 'flipEntitySprite'
         self.options = {
             'entity': to_dict(entity),
@@ -909,11 +915,11 @@ class GiveNewItemToUnit(Action):
 
 
 class StartUsingItem(Action):
-    def __init__(self, entity, hasFixedCSP):
+    def __init__(self, entity):
         self.action = 'startUsingItem'
         self.options = {
             'entity': to_dict(entity),
-            'hasFixedCSP': to_dict(hasFixedCSP),
+            'hasFixedCSP': None,
         }
 
 
@@ -1041,11 +1047,11 @@ class MakeUnitSelectItemAtSlot(Action):
 
 
 class StopUsingItem(Action):
-    def __init__(self, entity, hasFixedCSP):
+    def __init__(self, entity):
         self.action = 'stopUsingItem'
         self.options = {
             'entity': to_dict(entity),
-            'hasFixedCSP': to_dict(hasFixedCSP),
+            'hasFixedCSP': None,
         }
 
 

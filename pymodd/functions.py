@@ -482,52 +482,6 @@ class RandomPositionInRegion(Position):
 
 
 # ---------------------------------------------------------------------------- #
-#                                    Regions                                   #
-# ---------------------------------------------------------------------------- #
-
-
-class Region(Function):
-    pass
-
-
-class LastTriggeringRegion(Region):
-    def __init__(self):
-        self.function = 'getTriggeringRegion'
-        self.options = {}
-
-
-class EntireMapRegion(Region):
-    def __init__(self):
-        self.function = 'getEntireMapRegion'
-        self.options = {}
-
-
-class SelectedRegion(Region):
-    def __init__(self):
-        self.function = 'selectedRegion'
-        self.options = {}
-
-
-class EntityBounds(Region):
-    def __init__(self, entity):
-        self.function = 'entityBounds'
-        self.options = {
-            'entity': to_dict(entity),
-        }
-
-
-class DynamicRegion(Region):
-    def __init__(self, x, y, width, height):
-        self.function = 'dynamicRegion'
-        self.options = {
-            'x': to_dict(x),
-            'y': to_dict(y),
-            'width': to_dict(width),
-            'height': to_dict(height),
-        }
-
-
-# ---------------------------------------------------------------------------- #
 #                                  Attributes                                  #
 # ---------------------------------------------------------------------------- #
 
@@ -1491,6 +1445,52 @@ class ValueOfPlayerVariable(Variable):
         self.options = {
             'variable': to_dict(player_variable_type),
             'player': to_dict(player)
+        }
+
+
+# ---------------------------------------------------------------------------- #
+#                                    Regions                                   #
+# ---------------------------------------------------------------------------- #
+
+
+class Region(Variable):
+    pass
+
+
+class LastTriggeringRegion(Region):
+    def __init__(self):
+        self.function = 'getTriggeringRegion'
+        self.options = {}
+
+
+class EntireMapRegion(Region):
+    def __init__(self):
+        self.function = 'getEntireMapRegion'
+        self.options = {}
+
+
+class SelectedRegion(Region):
+    def __init__(self):
+        self.function = 'selectedRegion'
+        self.options = {}
+
+
+class EntityBounds(Region):
+    def __init__(self, entity):
+        self.function = 'entityBounds'
+        self.options = {
+            'entity': to_dict(entity),
+        }
+
+
+class DynamicRegion(Region):
+    def __init__(self, x, y, width, height):
+        self.function = 'dynamicRegion'
+        self.options = {
+            'x': to_dict(x),
+            'y': to_dict(y),
+            'width': to_dict(width),
+            'height': to_dict(height),
         }
 
 

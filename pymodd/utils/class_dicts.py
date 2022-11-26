@@ -50,6 +50,20 @@ TRIGGER_TO_ENUM = {
     'debrisEntersRegion': 'DEBRIS_ENTERS_REGION'
 }
 
+CONSTANTS_TO_ENUM = {
+    'ui_target_to_enum': {
+        'top': 'TOP',
+        'center-lg': 'CENTER',
+        'scoreboard': 'SCOREBOARD'
+    },
+    'flip_direction_to_enum': {
+        'none': 'NONE',
+        'horizontal': 'HORIZONTAL',
+        'vertical': 'VERTICAL',
+        'both': 'BOTH'
+    }
+}
+
 FUNCTION_TO_CLASS = {
     'undefinedValue': {
         'className': 'Undefined',
@@ -284,33 +298,6 @@ FUNCTION_TO_CLASS = {
         'className': 'RandomPositionInRegion',
         'arguments': [
             'region'
-        ]
-    },
-    'getTriggeringRegion': {
-        'className': 'LastTriggeringRegion',
-        'arguments': []
-    },
-    'getEntireMapRegion': {
-        'className': 'EntireMapRegion',
-        'arguments': []
-    },
-    'selectedRegion': {
-        'className': 'SelectedRegion',
-        'arguments': []
-    },
-    'entityBounds': {
-        'className': 'EntityBounds',
-        'arguments': [
-            'entity'
-        ]
-    },
-    'dynamicRegion': {
-        'className': 'DynamicRegion',
-        'arguments': [
-            'x',
-            'y',
-            'width',
-            'height'
         ]
     },
     'getTriggeringAttribute': {
@@ -959,6 +946,33 @@ FUNCTION_TO_CLASS = {
         'arguments': [
             'player_variable_type',
             'player'
+        ]
+    },
+    'getTriggeringRegion': {
+        'className': 'LastTriggeringRegion',
+        'arguments': []
+    },
+    'getEntireMapRegion': {
+        'className': 'EntireMapRegion',
+        'arguments': []
+    },
+    'selectedRegion': {
+        'className': 'SelectedRegion',
+        'arguments': []
+    },
+    'entityBounds': {
+        'className': 'EntityBounds',
+        'arguments': [
+            'entity'
+        ]
+    },
+    'dynamicRegion': {
+        'className': 'DynamicRegion',
+        'arguments': [
+            'x',
+            'y',
+            'width',
+            'height'
         ]
     },
     'getUnitTypeOfUnit': {
@@ -1832,8 +1846,7 @@ ACTION_TO_CLASS = {
     'startUsingItem': {
         'className': 'StartUsingItem',
         'arguments': [
-            'entity',
-            'hasFixedCSP'
+            'entity'
         ]
     },
     'moveEntity': {
@@ -1932,8 +1945,7 @@ ACTION_TO_CLASS = {
     'stopUsingItem': {
         'className': 'StopUsingItem',
         'arguments': [
-            'entity',
-            'hasFixedCSP'
+            'entity'
         ]
     },
     'makeUnitVisible': {
