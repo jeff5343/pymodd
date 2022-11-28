@@ -413,10 +413,10 @@ class CloseDialogueForPlayer(Action):
 
 
 class Comment(Action):
-    def __init__(self, comment: str):
+    def __init__(self, comment):
         self.action = 'comment'
         self.options = {
-            'comment': comment
+            'comment': to_dict(comment)
         }
 
 
@@ -598,8 +598,10 @@ class SetVelocityOfEntityXY(Action):
     def __init__(self, velocity_x: Number, velocity_y: Number, entity):
         self.action = 'setVelocityOfEntityXY'
         self.options = {
-            'velocity.x': to_dict(velocity_x),
-            'velocity.y': to_dict(velocity_y),
+            'velocity': {
+                'x': to_dict(velocity_x),
+                'y':to_dict(velocity_y),
+            },
             'entity': to_dict(entity),
         }
 
@@ -1380,8 +1382,10 @@ class ApplyImpulseOnEntityXY(Action):
     def __init__(self, impulse_x: Number, impulse_y: Number, entity):
         self.action = 'applyImpulseOnEntityXY'
         self.options = {
-            'impulse.x': to_dict(impulse_x),
-            'impulse.y': to_dict(impulse_y),
+            'impulse': {
+                'x': to_dict(impulse_x),
+                'y': to_dict(impulse_y),
+            },
             'entity': to_dict(entity),
         }
 

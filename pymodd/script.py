@@ -17,16 +17,35 @@ class Game(Base):
         self.name = data.get('title')
         self.data = data
         self.scripts = []
-        self.build()
+        self._build()
         # set position of scripts inside game
         for i, script in enumerate(self.scripts):
             script.set_position(i, None)
 
-    def build():
+    def _build():
         pass
 
     def to_dict(self):
-        return None
+        # replace game scripts with scripts defined in self.scripts
+        self.data['data']['scripts'] = self.flatten_scripts_data(self.scripts)
+        return self.data
+
+    def flatten_scripts_data(self, scripts):
+        """Takes all scripts out of folders, transforms them into json, and put them all into one dictionary with the rest of the game's scripts
+
+        Returns:
+            dict: keys are the script's key, values are the script's data
+        """
+        flattened_scripts = {}
+        scripts_queue = scripts.copy()
+        while len(scripts_queue) > 0:
+            script = scripts_queue.pop(0)
+            # add folder's scripts to the queue
+            if isinstance(script, Folder):
+                scripts_queue += script.scripts
+            script_data = script.to_dict()
+            flattened_scripts[script_data['key']] = script_data
+        return flattened_scripts
 
 
 class File(Base):
@@ -69,11 +88,11 @@ class Script(File):
         self.triggers = []
         self.actions = []
 
-    def build(self):
+    def _build(self):
         pass
 
     def to_dict(self):
-        self.build()
+        self._build()
         return {
             'triggers': [{'type': trigger.value} for trigger in self.triggers],
             'conditions': [{'operator': '==', 'operandType': 'boolean'}, True, True],
@@ -90,28 +109,19 @@ def key_from_name(name):
 
 
 def write_game_to_output(game):
-    base_path = f'{snakecase(game.name)}/output/'
     print(f'\nWriting json files for {game.name}...')
-    write_scripts_to_output(f'{base_path}/all_files', game.scripts)
-    write_game_json(base_path, game)
+
+    base_output_path = f'{snakecase(game.name)}/output/'
+    write_scripts_to_output(f'{base_output_path}/all_files', game.scripts)
+    write_game_json(base_output_path, game)
+
     print('\nFinished writing.\n')
 
 
 def write_game_json(path, game):
-    game_data = game.data
-    game_data['data']['scripts'] = {}
-    
-    scripts_queue = game.scripts
-    while len(scripts_queue) > 0:
-        script = scripts_queue.pop(0)
-        if isinstance(script, Folder):
-            scripts_queue += script.scripts
-        script_data = script.to_dict()
-        game_data['data']['scripts'][script_data['key']] = script_data
-
     file_name = f'{game.name}.json'
     with open(f'{path}/{file_name}', 'w') as output:
-        output.write(json.dumps(game_data, indent=4))
+        output.write(json.dumps(game.to_dict(), indent=4))
     print(f'\n{file_name} successfuly created')
 
 

@@ -20,7 +20,7 @@ parser = ArgumentParser(
 parser.add_argument('json_file', help='The exported game json file')
 
 
-class Generator():
+class GameGenerator():
     def __init__(self, json_file):
         if not json_file or not json_file.endswith('.json'):
             parser.error(f'{json_file} is not a json file')
@@ -31,33 +31,28 @@ class Generator():
             if game_dict is None or game_dict.get('data') is None:
                 parser.error(f'{json_file} contains invalid content')
         self.game_name = snakecase(game_dict.get('title'))
-        self.game_data = game_dict
-        self.game_dict = game_dict.get('data')
-        self.json_file_path = f'utils/game.json'
+        self.entire_game_json = game_dict
+        self.game_data = game_dict.get('data')
+        self.scripts_data = self.game_data.get('scripts').values()
+        self.json_file_path = '/utils/game.json'
 
     def generate_project(self):
-        print(f'\nGenerating project, {self.game_name}...')
+        files_to_generate = [
+            GameVariablesPy(self.game_data),
+            MappingPy(self.game_name, self.scripts_data, self.json_file_path),
+            ScriptsPy(self.scripts_data),
+            GameJson(self.json_file_path, self.entire_game_json),
+        ]
 
+        print(f'\nGenerating project, {self.game_name}...')
         if not os.path.isdir(f'{self.game_name}/'):
             os.mkdir(f'{self.game_name}/')
 
-        self.write_project_file('game_variables.py',
-                                self.create_game_variablespy_content())
-        print(f' - game_variables.py successfuly created/updated')
-
-        self.write_project_file('mapping.py', self.create_mappingpy_content())
-        print(f' - mapping.py successfuly written')
-
-        if self.can_write_project_file('scripts.py'):
-            self.write_project_file(
-                'scripts.py', self.create_scriptspy_content())
-            print(f' - scripts.py successfuly written')
-        
-        if not os.path.isdir(f'{self.game_name}/utils/'):
-            os.mkdir(f'{self.game_name}/utils/')
-
-        self.write_project_file(self.json_file_path, json.dumps(self.game_data))
-        print(f' - {self.json_file_path} successfuly written')
+        for file in files_to_generate:
+            if file.ask_to_write and not self.can_write_project_file(file.file_path):
+                continue
+            self.write_project_file(file.file_path, file.generate_content())
+            print(f' - {file.file_path} successfuly written')
 
         print('\nGame created/updated successfully\n')
 
@@ -69,25 +64,45 @@ class Generator():
             return response.strip() in ('Y', 'y')
         return True
 
-    def create_game_variablespy_content(self):
-        content = ''
-        import_classes = []
+    def write_project_file(self, file_path, content):
+        file_base_path = f"{self.game_name}/{file_path[:file_path.rfind('/')]}"
+        if '/' in file_path and not os.path.exists(f'{file_base_path}/'):
+            os.makedirs(f'{file_base_path}/')
+        with open(f'{self.game_name}/{file_path}', 'w') as game_file:
+            game_file.write(content)
 
+
+class GenerationFile:
+    def __init__(self, file_path, ask_to_write):
+        self.file_path = file_path
+        self.ask_to_write = ask_to_write
+
+    def generate_content(self):
+        pass
+
+
+class GameVariablesPy(GenerationFile):
+    def __init__(self, game_data):
+        super().__init__('game_variables.py', False)
+        self.game_data = game_data
         # to seperate different variables from regular variables
-        seperated_datatype_variables = {
+        self.seperated_datatype_variables = {
             'regions': [],
             'itemTypeGroups': [],
             'unitTypeGroups': [],
         }
 
-        for category in GENERATION_CATEGORIES + list(seperated_datatype_variables.keys()):
-            variables = self.variables_from_category(
-                category, seperated_datatype_variables)
-            # use the variables stored in seperated_datatype_variables
-            if (seperated_variables := seperated_datatype_variables.get(category)):
+    def generate_content(self):
+        content = ''
+        import_classes = []
+
+        for category in GENERATION_CATEGORIES + list(self.seperated_datatype_variables.keys()):
+            variables = self.extract_variables_from_category(category)
+            # use the variables stored in seperated_datatype_variables if avaiable
+            if (seperated_variables := self.seperated_datatype_variables.get(category)):
                 variables = seperated_variables
 
-            content += f'\n\nclass {(category_class_name := Generator.class_from_category_name(category))}():\n'
+            content += f'\n\nclass {(category_class_name := class_name_from_category_name(category))}():\n'
             if len(variables) == 0:
                 content += '\tpass\n'
                 continue
@@ -99,8 +114,9 @@ class Generator():
             # add variables
             for variable in variables:
                 content += f"""\t{variable['enum_name']} = {type_name}('{variable['id']}'{'' if not (data_type := variable['data_type']) else f", variable_type='{data_type}'"})\n"""
-
-                VariableNameToEnum.add_variable_to_category(category, variable['id'], variable['name'], variable['enum_name'])
+                # store variable information for generating scripts
+                VariableCategories.add_variable_to_category(
+                    category, variable['id'], variable['name'], variable['enum_name'])
         # add only used imports
         content = (
             f"from pymodd.functions import {', '.join([class_name for class_name in import_classes])}\n"
@@ -108,14 +124,13 @@ class Generator():
         )
         return content
 
-    def variables_from_category(self, category, seperated_datatype_variables):
-        category_dict = self.game_dict.get(category)
-        variable_ids = self.game_dict.get(category, {}).keys()
+    def extract_variables_from_category(self, category):
+        category_variables = self.game_data.get(category, {})
         variables = []
 
-        for variable_id in variable_ids:
-            variable_name, data_type = category_dict[variable_id].get(
-                'name'), category_dict[variable_id].get('dataType')
+        for variable_id, variable in category_variables.items():
+            variable_name, data_type = variable.get(
+                'name'), variable.get('dataType')
             # only include data type if its a global variable
             if 'variable' not in category.lower():
                 data_type = None
@@ -125,32 +140,37 @@ class Generator():
             variable = {'id': variable_id, 'name': variable_name,
                         'data_type': data_type, 'enum_name': enum_name}
             # seperate variables
-            if (datatype_variables := seperated_datatype_variables.get(f'{data_type}s')) is not None:
+            if (datatype_variables := self.seperated_datatype_variables.get(f'{data_type}s')) is not None:
                 datatype_variables.append(variable)
                 continue
             variables.append(variable)
         return variables
 
-    def create_scriptspy_content(self):
+
+class ScriptsPy(GenerationFile):
+    def __init__(self, scripts_data):
+        super().__init__('scripts.py', True)
+        self.scripts_data = scripts_data
+
+    def generate_content(self):
         content = (
             'from pymodd.actions import *\n'
             'from pymodd.functions import *\n'
-            'from pymodd.script import Script, Trigger, UiTarget, Flip, write_to_output\n\n'
+            'from pymodd.script import Script, Trigger, UiTarget, Flip\n\n'
             'from game_variables import *\n'
         )
-        scripts_dict = self.game_dict.get('scripts')
-        for script in scripts_dict.values():
+        for script in self.scripts_data:
+            # skip folders
             if script.get('triggers') is None:
                 continue
-            script_name = script.get('name')
             script_triggers = [
                 f"Trigger.{TRIGGER_TO_ENUM[trigger.get('type')]}" for trigger in script.get('triggers')]
             script_key = script.get('key')
-            actions = JsonActionsConverter(script.get('actions')).convert_to_python()
+            actions = JsonActions(script.get('actions')).convert_to_python()
 
             content += (
-                f'\n\nclass {self.class_name_from_script_name(script_name)}(Script):\n'
-                f'\tdef build(self):\n'
+                f'\n\nclass {class_name_from_script_data(script)}(Script):\n'
+                f'\tdef _build(self):\n'
                 f"\t\tself.key = '{script_key}'\n"
                 f"\t\tself.triggers = [{', '.join(script_triggers)}]\n"
                 f'\t\tself.actions = [\n'
@@ -159,46 +179,68 @@ class Generator():
             )
         return content
 
-    def create_mappingpy_content(self):
+
+class EntityScriptsPy(GenerationFile):
+    def __init__(self, unit_types):
+        super().__init__('entity_scripts.py', False)
+        self.unit_types = unit_types
+
+    def generate_content(self):
+        content = ''
+
+
+class MappingPy(GenerationFile):
+    def __init__(self, game_name, game_items, game_json_file_path):
+        super().__init__('mapping.py', False)
+        self.game_name = game_name
+        self.game_items = game_items
+        self.game_json_file_path = game_json_file_path
+
+    def generate_content(self):
         game_class_name = pascalcase(self.game_name)
         content = (
             'from pymodd.script import Game, Folder, write_game_to_output, write_to_output\n\n'
             'from scripts import *\n\n'
             f'class {game_class_name}(Game):\n'
-            '\tdef build(self):\n'
+            '\tdef _build(self):\n'
             '\t\tself.scripts = [\n'
         )
-        game_directory = self.sorted_game_directory_from_game_items(self.game_dict.get('scripts').values())
+
+        game_directory = self.sort_game_items()
         for level in game_directory.values():
             for game_item in level:
                 content += self.game_item_to_string(game_item, depth=3)
+
         content += (
             '\n\t\t]\n\n'
             f'# run this file to generate the all json files for this game `python {self.game_name}/mapping.py`\n'
-            f"write_game_to_output({game_class_name}(json_file='{self.game_name}/{self.json_file_path}'))\n\n"
+            f"write_game_to_output({game_class_name}(json_file='{self.game_name}{self.game_json_file_path}'))\n\n"
             f'# uncomment the following to quickly generate the json file for a script\n'
             f"# write_to_output('output/', SCRIPT_OBJECT())\n"
         )
         return content
 
     def game_item_to_string(self, game_item, depth):
+        game_item_name = game_item.get('name')
         if game_item.get('type') == 'script':
-            return f"{TAB * depth}{game_item.get('name')}(),\n"
+            return f"{TAB * depth}{game_item_name}(),\n"
         stringified_children = []
         for level in game_item.get('children').values():
             for child in level:
-                stringified_children.append(self.game_item_to_string(child, depth + 1))
+                stringified_children.append(
+                    self.game_item_to_string(child, depth + 1))
+        surrounding_quote = surrounding_quote_for_string(game_item_name)
         return (
-            f'''{TAB * depth}Folder("{game_item.get('name')}", [\n'''
+            f'''{TAB * depth}Folder({surrounding_quote}{game_item_name}{surrounding_quote}, [\n'''
             f"{''.join(stringified_children)}"
             f"{TAB * depth}]),\n"
         )
 
-    def sorted_game_directory_from_game_items(self, items):
+    def sort_game_items(self):
         # retrieve root game items and items in folders and store them
         root_game_items = {}
         folder_key_to_nested_items = {}
-        for item in items:
+        for item in self.game_items:
             order = item.get('order')
             # store in the root directory of the game
             scope = root_game_items
@@ -230,30 +272,23 @@ class Generator():
         # if its a folder
         if game_item.get('triggers') is None:
             return {'type': 'folder', 'name': game_item.get('folderName'), 'key': game_item.get('key'), 'children': []}
-        return {'type': 'script', 'name': self.class_name_from_script_name(game_item.get('name'))}
-
-    def write_project_file(self, file_name, content):
-        with open(f'{self.game_name}/{file_name}', 'w') as game_file:
-            game_file.write(content)
-
-    def class_name_from_script_name(self, script_name):
-        return pascalcase(script_name)
-
-    @staticmethod
-    def class_from_category_name(category_name):
-        category_name_to_class = {
-            'entityTypeVariables': 'entityVariables',
-            'playerTypeVariables': 'playerVariables',
-        }
-        category_name = pascalcase(
-            category_name_to_class.get(category_name, category_name))
-        return f"{category_name}{'s' if category_name[-1] != 's' else ''}"
+        return {'type': 'script', 'name': class_name_from_script_data(game_item)}
 
 
-class JsonActionsConverter():
-    def __init__(self, actions, level=0):
-        self.actions = actions
-        self.level = level
+class GameJson(GenerationFile):
+    def __init__(self, game_json_path, entire_game_json):
+        super().__init__(game_json_path, False)
+        self.entire_game_json = entire_game_json
+
+    def generate_content(self):
+        return json.dumps(self.entire_game_json)
+
+
+class JsonActions:
+    def __init__(self, json_actions, depth=3):
+        self.actions = json_actions
+        # how many tabs away the actions are from the left (3 is the minimum)
+        self.depth = max(depth, 3)
 
     def convert_to_python(self):
         py_actions = []
@@ -266,7 +301,7 @@ class JsonActionsConverter():
     def arguments_from_action(self, action, action_class):
         args = []
         for arg, value in action.items():
-            if arg in ('type', 'vars', 'function'):
+            if arg in ('type', 'vars', 'function', 'comment', 'disabled'):
                 continue
             if (weird_args := self.handle_weird_arguments(arg, value)) is not None:
                 args.extend(weird_args)
@@ -279,13 +314,13 @@ class JsonActionsConverter():
     def handle_weird_arguments(self, argument, value):
         if type(value) is not dict:
             return None
-        # xy force is returned as one argument by modd, but in actions.py there are two arguemnts for force_x and force_y
-        if argument == 'force' and (x := value.get('x')) is not None:
+        # xy force is returned as one argument by modd, but in actions.py there are two arguemnts for x and y
+        if argument in ('force', 'velocity', 'impulse') and (x := value.get('x')) is not None:
             return [
-                {'name': 'force_x',
-                    'value': self.python_from_function('force_x', x)},
-                {'name': 'force_y', 'value': self.python_from_function(
-                    'force_y', value.get('y'))}
+                {'name': 'x',
+                 'value': self.python_from_function(f'{argument}_x', x)},
+                {'name': 'y',
+                 'value': self.python_from_function(f'{argument}_y', value.get('y'))}
             ]
 
     def python_from_function(self, argument, value):
@@ -336,8 +371,8 @@ class JsonActionsConverter():
         # for actions
         return (
             f'[\n'
-            f"{''.join([f'{TAB * (4 + self.level)}{action},{NEW_LINE}' for action in JsonActionsConverter(function, self.level + 1).convert_to_python()])}"
-            f'{TAB * (3 + self.level)}]'
+            f"{''.join([f'{TAB * (self.depth + 1)}{action},{NEW_LINE}' for action in JsonActions(function, self.depth + 1).convert_to_python()])}"
+            f'{TAB * self.depth}]'
         )
 
     def variable_from_function(self, argument, value):
@@ -352,8 +387,8 @@ class JsonActionsConverter():
         categories = category_to_categories.get(category, [category])
 
         for category in categories:
-            if (category_dict := VariableNameToEnum.get_category(category)) and (variable_name := category_dict.get(value)):
-                return f'{Generator.class_from_category_name(category)}.{variable_name}'
+            if (category_dict := VariableCategories.get_category(category)) and (variable_name := category_dict.get(value)):
+                return f'{class_name_from_category_name(category)}.{variable_name}'
         return None
 
     def primitive_from_function(self, value):
@@ -362,8 +397,8 @@ class JsonActionsConverter():
             return None
         # surround strings with quotes
         if type(value) == str:
-            quote = self.surrounding_quote_for_string(value)
-            value = f"{quote}{value}{quote}"
+            quote = surrounding_quote_for_string(value)
+            value = f"{quote}{self.insert_tabs_into_multiline_string(value)}{quote}"
         return f"{value}"
 
     def constant_from_function(self, argument, value):
@@ -376,12 +411,11 @@ class JsonActionsConverter():
             return None
         return f"{constant_data['class_name']}.{constant_data['dictionary'].get(value)}"
 
-    def surrounding_quote_for_string(self, string):
-        if "'" in string:
-            return '''"'''
-        if '''"''' in string:
-            return """'''"""
-        return "'"
+    def insert_tabs_into_multiline_string(self, string):
+        if '\n' in string:
+            tabs = f"\n{TAB * (self.depth + 1)}"
+            return tabs + tabs.join(string.splitlines())
+        return string
 
     def align_arguments_with_class(self, args_dict, class_dict):
         """Aligns arguments from modd.io functions with classes in pymodd.
@@ -395,43 +429,80 @@ class JsonActionsConverter():
             list: aligned arguments
         """
         class_arguments = class_dict.get('arguments', []).copy()
-        args, unused_args = [''] * len(class_arguments), []
+        args, unused_args = [None] * len(class_arguments), []
 
         for arg in args_dict:
-            if (name := camelcase(arg.get('name'))) in class_arguments:
-                class_arguments[(index := class_arguments.index(
-                    camelcase(name)))] = None
+            arg_name = arg.get('name')
+            if (index := self.index_of_arg_in_class_args(arg_name, class_arguments)) != -1:
+                class_arguments[index] = None
                 args[index] = arg.get('value')
                 continue
             unused_args.append(arg)
         for i, arg in enumerate(args):
-            if len(unused_args) == 0:
-                break
-            if arg == '':
-                args[i] = unused_args.pop(0).get('value')
+            if arg is not None:
+                continue
+            value = 'Null()'
+            if len(unused_args) > 0:
+                value = unused_args.pop(0).get('value')
+            args[i] = value
         return args
 
+    def index_of_arg_in_class_args(self, arg_name, class_args):
+        possible_args = (arg_name, camelcase(arg_name), snakecase(arg_name))
+        for i, class_arg in enumerate(class_args):
+            if class_arg is None:
+                continue
+            if class_arg in possible_args or any(arg in class_arg for arg in possible_args):
+                return i
+        return -1
 
-class VariableNameToEnum():
-    # used for finding the enum names of variables created in game_variabless.py while generating scripts.py
+
+class VariableCategories():
+    # used for finding the enum names of variables while generating scripts
     categories = {}
 
     @staticmethod
     def get_category(category, default=None):
-        return VariableNameToEnum.categories.get(category, default)
+        return VariableCategories.categories.get(category, default)
 
     @staticmethod
     def create_category(category_name):
-        VariableNameToEnum.categories[category_name] = {}
+        VariableCategories.categories[category_name] = {}
 
     @staticmethod
     def add_variable_to_category(category_name, variable_id, variable_name, enum_name):
-        if category_name not in VariableNameToEnum.categories.keys():
-            VariableNameToEnum.create_category(category_name)
+        if category_name not in VariableCategories.categories.keys():
+            VariableCategories.create_category(category_name)
 
         if variable_name is not None:
-            VariableNameToEnum.categories[category_name][variable_name] = enum_name
-        VariableNameToEnum.categories[category_name][variable_id] = enum_name
+            VariableCategories.categories[category_name][variable_name] = enum_name
+        VariableCategories.categories[category_name][variable_id] = enum_name
+
+
+def class_name_from_script_data(script_data):
+    script_name = script_data.get('name') or script_data.get('key')
+    class_name = pascalcase(script_name).strip()
+    if len(script_name) == 0 or not class_name[0].isalpha() or camelcase(script_name) in GENERATION_CATEGORIES:
+        class_name = f"q{class_name}"
+    return class_name
+
+
+def class_name_from_category_name(category_name):
+    category_name_to_class = {
+        'entityTypeVariables': 'entityVariables',
+        'playerTypeVariables': 'playerVariables',
+    }
+    category_name = pascalcase(
+        category_name_to_class.get(category_name, category_name))
+    return f"{category_name}{'s' if category_name[-1] != 's' else ''}"
+
+
+def surrounding_quote_for_string(string):
+    if "'" in string:
+        return '''"'''
+    if any(char in string for char in ['''"''', '`', '\n']):
+        return """'''"""
+    return "'"
 
 
 def sort_dictionary(dictionary):
@@ -440,7 +511,7 @@ def sort_dictionary(dictionary):
 
 def main():
     args = parser.parse_args()
-    Generator(args.json_file).generate_project()
+    GameGenerator(args.json_file).generate_project()
 
 
 if __name__ == '__main__':

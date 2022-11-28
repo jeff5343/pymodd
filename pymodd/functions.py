@@ -16,7 +16,8 @@ class Function(Base):
         data = {
             'function': self.function
         }
-        data.update(self.options) if self.options is not None else None
+        if self.options is not None:
+            data.update(self.options)
         return data
 
 
@@ -1453,7 +1454,7 @@ class ValueOfPlayerVariable(Variable):
 # ---------------------------------------------------------------------------- #
 
 
-class Region(Variable):
+class Region(Function):
     pass
 
 
