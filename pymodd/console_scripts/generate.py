@@ -1,15 +1,11 @@
-import os
 import json
+import os
+from copy import deepcopy
 from argparse import ArgumentParser
-from caseconverter import pascalcase, snakecase, camelcase
 
-from ..utils.class_dicts import TRIGGER_TO_ENUM, CONSTANTS_TO_ENUM, FUNCTION_TO_CLASS, ACTION_TO_CLASS
+from caseconverter import camelcase, pascalcase, snakecase
 
-# what variable types to generate
-GENERATION_CATEGORIES = [
-    'entityTypeVariables', 'shops', 'animationTypes', 'states', 'projectileTypes', 'itemTypes', 'music',
-    'sound', 'unitTypes', 'variables', 'attributeTypes', 'playerTypes', 'playerTypeVariables', 'dialogues',
-]
+from ..utils.class_dicts import ACTION_TO_CLASS, CONSTANTS_TO_ENUM, FUNCTION_TO_CLASS, TRIGGER_TO_ENUM
 
 # to put inside f-strings
 NEW_LINE = '\n'
@@ -25,23 +21,22 @@ class GameGenerator():
         if not json_file or not json_file.endswith('.json'):
             parser.error(f'{json_file} is not a json file')
 
-        game_dict = None
         with open(json_file, 'rt') as game_file:
-            game_dict = json.loads(game_file.read())
-            if game_dict is None or game_dict.get('data') is None:
+            game_json = json.loads(game_file.read())
+            if game_json is None or game_json.get('data') is None:
                 parser.error(f'{json_file} contains invalid content')
-        self.game_name = snakecase(game_dict.get('title'))
-        self.entire_game_json = game_dict
-        self.game_data = game_dict.get('data')
-        self.scripts_data = self.game_data.get('scripts').values()
+
+        self.game_data = GameData(game_json)
+        self.game_name = snakecase(self.game_data.game_name)
         self.json_file_path = '/utils/game.json'
 
     def generate_project(self):
         files_to_generate = [
-            GameVariablesPy(self.game_data),
-            MappingPy(self.game_name, self.scripts_data, self.json_file_path),
-            ScriptsPy(self.scripts_data),
-            GameJson(self.json_file_path, self.entire_game_json),
+            GameVariablesPy(self.game_data.category_to_variables),
+            MappingPy(self.game_name, self.game_data.game_items,
+                      self.json_file_path),
+            ScriptsPy(self.game_data.game_items),
+            GameJson(self.json_file_path, self.game_data.game_json),
         ]
 
         print(f'\nGenerating project, {self.game_name}...')
@@ -72,6 +67,92 @@ class GameGenerator():
             game_file.write(content)
 
 
+class GameData:
+    # what variable types to generate
+    GENERATION_CATEGORIES = [
+        'entityTypeVariables', 'shops', 'animationTypes', 'states', 'projectileTypes', 'itemTypes', 'music',
+        'sound', 'unitTypes', 'variables', 'attributeTypes', 'playerTypes', 'playerTypeVariables', 'dialogues',
+    ]
+
+    # variable types to seperate from the regular variables category
+    SEPERATED_CATEGORIES = [
+        'regions', 'itemTypeGroups', 'unitTypeGroups'
+    ]
+
+    def __init__(self, game_json):
+        self.game_json = game_json
+        self.game_name = game_json.get('title')
+        self.game_data = game_json.get('data')
+        self.game_items = self.retrieve_ordered_game_items()
+        self.category_to_variables = self.retrieve_category_to_variables()
+
+    def retrieve_ordered_game_items(self):
+        game_items = self.game_data.get('scripts')
+        folder_to_items = self.order_game_items_to_folder_key(game_items)
+        root_game_items = self.merge_ordered_items(
+            self.insert_items_into_folders(folder_to_items).get(None))
+        return root_game_items
+
+    def order_game_items_to_folder_key(self, game_items):
+        # game root folder key is None
+        folder_key_to_ordered_items = {}
+        for item in game_items.values():
+            order, parent_key = item.get('order'), item.get('parent')
+            folder_dict = folder_key_to_ordered_items.setdefault(
+                parent_key, {})
+            # there can be scripts with the same order number, so store them in a list
+            folder_dict.setdefault(order, []).append(item)
+        # sort items based on their order numbers in each folder
+        folder_key_to_ordered_items = self.sort_based_on_order_key(
+            folder_key_to_ordered_items)
+        return folder_key_to_ordered_items
+
+    def sort_based_on_order_key(self, folder_to_items):
+        sorted_folder_to_items = {}
+        for folder_key in folder_to_items.keys():
+            folder_dict = folder_to_items[folder_key]
+            sorted_folder_to_items[folder_key] = sort_dictionary_based_on_keys(
+                folder_dict)
+        return sorted_folder_to_items
+
+    def insert_items_into_folders(self, folder_to_items):
+        """fill folders in the root game directory, and then folders inside those, up with their corresponding items"""
+        inserted_folder_to_items = deepcopy(folder_to_items)
+        item_queue = self.merge_ordered_items(
+            inserted_folder_to_items.get(None, {}))
+        while len(item_queue) > 0:
+            item = item_queue.pop(0)
+            if not is_game_item_folder(item):
+                continue
+            if (nested_items := inserted_folder_to_items.get(item.get('key'))) is None:
+                continue
+            item['children'] = self.merge_ordered_items(nested_items)
+            item_queue += item['children']
+        return inserted_folder_to_items
+
+    def merge_ordered_items(self, ordered_items):
+        merged_items = []
+        for level in ordered_items.values():
+            for item in level:
+                merged_items.append(item)
+        return merged_items
+
+    def retrieve_category_to_variables(self):
+        category_to_variables = {}
+        for category in GameData.GENERATION_CATEGORIES:
+            for variable_id, variable in self.game_data.get(category).items():
+                variable_category = self.seperated_category_of_variable(variable) or category
+                updated_variable = deepcopy(variable)
+                updated_variable['id'] = variable_id
+                category_to_variables.setdefault(variable_category, []).append(updated_variable)
+        return category_to_variables
+
+    def seperated_category_of_variable(self, variable):
+        if (seperated_category := f"{variable.get('dataType')}s") in GameData.SEPERATED_CATEGORIES:
+            return seperated_category
+        return None
+
+
 class GenerationFile:
     def __init__(self, file_path, ask_to_write):
         self.file_path = file_path
@@ -82,38 +163,30 @@ class GenerationFile:
 
 
 class GameVariablesPy(GenerationFile):
-    def __init__(self, game_data):
+    def __init__(self, category_to_variables):
         super().__init__('game_variables.py', False)
-        self.game_data = game_data
-        # to seperate different variables from regular variables
-        self.seperated_datatype_variables = {
-            'regions': [],
-            'itemTypeGroups': [],
-            'unitTypeGroups': [],
-        }
+        self.category_to_variables = category_to_variables
 
     def generate_content(self):
         content = ''
         import_classes = []
 
-        for category in GENERATION_CATEGORIES + list(self.seperated_datatype_variables.keys()):
-            variables = self.extract_variables_from_category(category)
-            # use the variables stored in seperated_datatype_variables if avaiable
-            if (seperated_variables := self.seperated_datatype_variables.get(category)):
-                variables = seperated_variables
+        for category, variables in self.category_to_variables.items():
+            variables = self.information_from_variables(variables)
 
-            content += f'\n\nclass {(category_class_name := class_name_from_category_name(category))}():\n'
+            content += f'\n\nclass {class_name_from_category_name(category)}():\n'
             if len(variables) == 0:
                 content += '\tpass\n'
                 continue
-            # to match with the classes defined in functions.py
-            type_name = category_class_name.removesuffix('s')
-            if seperated_variables:
-                type_name = 'Variable'
+
+            type_name = self.type_name_from_category(category)
             import_classes.append(type_name)
             # add variables
             for variable in variables:
-                content += f"""\t{variable['enum_name']} = {type_name}('{variable['id']}'{'' if not (data_type := variable['data_type']) else f", variable_type='{data_type}'"})\n"""
+                variable_type = None
+                if self.is_category_variable_type(category):
+                    variable_type = variable['data_type']
+                content += f"""\t{variable['enum_name']} = {type_name}('{variable['id']}'{'' if not variable_type else f", variable_type='{variable_type}'"})\n"""
                 # store variable information for generating scripts
                 VariableCategories.add_variable_to_category(
                     category, variable['id'], variable['name'], variable['enum_name'])
@@ -124,33 +197,35 @@ class GameVariablesPy(GenerationFile):
         )
         return content
 
-    def extract_variables_from_category(self, category):
-        category_variables = self.game_data.get(category, {})
-        variables = []
+    def information_from_variables(self, variables):
+        information = []
 
-        for variable_id, variable in category_variables.items():
-            variable_name, data_type = variable.get(
-                'name'), variable.get('dataType')
-            # only include data type if its a global variable
-            if 'variable' not in category.lower():
-                data_type = None
+        for variable in variables:
+            variable_id = variable.get('id')
+            variable_name = variable.get('name')
+            data_type = variable.get('dataType')
             enum_name = snakecase(
                 variable_name if variable_name is not None else variable_id).upper()
 
             variable = {'id': variable_id, 'name': variable_name,
                         'data_type': data_type, 'enum_name': enum_name}
-            # seperate variables
-            if (datatype_variables := self.seperated_datatype_variables.get(f'{data_type}s')) is not None:
-                datatype_variables.append(variable)
-                continue
-            variables.append(variable)
-        return variables
+            information.append(variable)
+        return information
+
+    def type_name_from_category(self, category):
+        # to match with the classes defined in functions.py
+        if category in GameData.SEPERATED_CATEGORIES:
+            return 'Variable'
+        return class_name_from_category_name(category).removesuffix('s')
+
+    def is_category_variable_type(self, category):
+        return 'variable' in category.lower() or category in GameData.SEPERATED_CATEGORIES
 
 
 class ScriptsPy(GenerationFile):
-    def __init__(self, scripts_data):
+    def __init__(self, game_items):
         super().__init__('scripts.py', True)
-        self.scripts_data = scripts_data
+        self.game_items = game_items
 
     def generate_content(self):
         content = (
@@ -159,27 +234,34 @@ class ScriptsPy(GenerationFile):
             'from pymodd.script import Script, Trigger, UiTarget, Flip\n\n'
             'from game_variables import *\n'
         )
-        for script in self.scripts_data:
-            # skip folders
-            if script.get('triggers') is None:
+        game_items_queue = self.game_items.copy()
+        while len(game_items_queue) > 0:
+            game_item = game_items_queue.pop(0)
+            if is_game_item_folder(game_item):
+                content += f"\n\n#\n# {game_item.get('folderName').upper()}\n#"
+                game_items_queue[:0] = game_item.get('children')
                 continue
-            script_triggers = [
-                f"Trigger.{TRIGGER_TO_ENUM[trigger.get('type')]}" for trigger in script.get('triggers')]
-            script_key = script.get('key')
-            actions = JsonActions(script.get('actions')).convert_to_python()
-
-            content += (
-                f'\n\nclass {class_name_from_script_data(script)}(Script):\n'
-                f'\tdef _build(self):\n'
-                f"\t\tself.key = '{script_key}'\n"
-                f"\t\tself.triggers = [{', '.join(script_triggers)}]\n"
-                f'\t\tself.actions = [\n'
-                f"{''.join([f'{TAB * 3}{action},{NEW_LINE}' for action in actions])}\n"
-                f'\t\t]\n'
-            )
+            content += self.generate_script_class_content(game_item)
         return content
 
+    def generate_script_class_content(self, script):
+        script_triggers = [
+            f"Trigger.{TRIGGER_TO_ENUM[trigger.get('type')]}" for trigger in script.get('triggers')]
+        script_key = script.get('key')
+        actions = JsonActions(script.get('actions')).convert_to_python()
 
+        return (
+            f'\n\nclass {class_name_from_script_data(script)}(Script):\n'
+            f'\tdef _build(self):\n'
+            f"\t\tself.key = '{script_key}'\n"
+            f"\t\tself.triggers = [{', '.join(script_triggers)}]\n"
+            f'\t\tself.actions = [\n'
+            f"{''.join([f'{TAB * 3}{action},{NEW_LINE}' for action in actions])}\n"
+            f'\t\t]\n'
+        )
+
+
+# work in progress:
 class EntityScriptsPy(GenerationFile):
     def __init__(self, unit_types):
         super().__init__('entity_scripts.py', False)
@@ -206,10 +288,8 @@ class MappingPy(GenerationFile):
             '\t\tself.scripts = [\n'
         )
 
-        game_directory = self.sort_game_items()
-        for level in game_directory.values():
-            for game_item in level:
-                content += self.game_item_to_string(game_item, depth=3)
+        for item in self.game_items:
+            content += self.game_item_to_string(item, depth=3)
 
         content += (
             '\n\t\t]\n\n'
@@ -221,58 +301,20 @@ class MappingPy(GenerationFile):
         return content
 
     def game_item_to_string(self, game_item, depth):
-        game_item_name = game_item.get('name')
-        if game_item.get('type') == 'script':
-            return f"{TAB * depth}{game_item_name}(),\n"
+        if not is_game_item_folder(game_item):
+            script_name = class_name_from_script_data(game_item)
+            return f"{TAB * depth}{script_name}(),\n"
+        folder_name = game_item.get('folderName')
         stringified_children = []
-        for level in game_item.get('children').values():
-            for child in level:
-                stringified_children.append(
-                    self.game_item_to_string(child, depth + 1))
-        surrounding_quote = surrounding_quote_for_string(game_item_name)
+        for child in game_item.get('children'):
+            stringified_children.append(
+                self.game_item_to_string(child, depth + 1))
+        surrounding_quote = surrounding_quote_for_string(folder_name)
         return (
-            f'''{TAB * depth}Folder({surrounding_quote}{game_item_name}{surrounding_quote}, [\n'''
+            f'''{TAB * depth}Folder({surrounding_quote}{folder_name}{surrounding_quote}, [\n'''
             f"{''.join(stringified_children)}"
             f"{TAB * depth}]),\n"
         )
-
-    def sort_game_items(self):
-        # retrieve root game items and items in folders and store them
-        root_game_items = {}
-        folder_key_to_nested_items = {}
-        for item in self.game_items:
-            order = item.get('order')
-            # store in the root directory of the game
-            scope = root_game_items
-            # if parent is present, store in parent directory
-            if (parent := item.get('parent')) is not None:
-                if folder_key_to_nested_items.get(parent) is None:
-                    folder_key_to_nested_items[parent] = {}
-                scope = folder_key_to_nested_items[parent]
-            # since there can be scripts with the same order
-            if scope.get(order) is None:
-                scope[order] = []
-            scope[order].append(self.dictionary_from_game_item(item))
-
-        # sort game items by their order number and insert nested items into each folder
-        sorted_root_game_items = sort_dictionary(root_game_items)
-        items_queue = list(sorted_root_game_items.values())
-        while len(items_queue) > 0:
-            items = items_queue.pop(0)
-            for item in items:
-                if not item.get('type') == 'folder':
-                    continue
-                if (nested_items := folder_key_to_nested_items.get(item.get('key'))) is None:
-                    continue
-                item['children'] = sort_dictionary(nested_items)
-                items_queue += list(item['children'].values())
-        return sorted_root_game_items
-
-    def dictionary_from_game_item(self, game_item):
-        # if its a folder
-        if game_item.get('triggers') is None:
-            return {'type': 'folder', 'name': game_item.get('folderName'), 'key': game_item.get('key'), 'children': []}
-        return {'type': 'script', 'name': class_name_from_script_data(game_item)}
 
 
 class GameJson(GenerationFile):
@@ -482,7 +524,7 @@ class VariableCategories():
 def class_name_from_script_data(script_data):
     script_name = script_data.get('name') or script_data.get('key')
     class_name = pascalcase(script_name).strip()
-    if len(script_name) == 0 or not class_name[0].isalpha() or camelcase(script_name) in GENERATION_CATEGORIES:
+    if len(script_name) == 0 or not class_name[0].isalpha() or camelcase(script_name) in GameData.GENERATION_CATEGORIES + GameData.SEPERATED_CATEGORIES:
         class_name = f"q{class_name}"
     return class_name
 
@@ -505,7 +547,11 @@ def surrounding_quote_for_string(string):
     return "'"
 
 
-def sort_dictionary(dictionary):
+def is_game_item_folder(game_item):
+    return game_item.get('actions') is None
+
+
+def sort_dictionary_based_on_keys(dictionary):
     return dict(sorted(dictionary.items()))
 
 

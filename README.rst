@@ -46,9 +46,9 @@ view examples/sample_scripts.py in the github repo for the full example
         def __init__(self):
             self.triggers = [Trigger.EVERY_SECOND]
             self.actions = [
-                IncreaseVariableByNumber(Variables.BOSS_TIMER, Number(1)),
-                While(Condition(NumberOfUnitsOfUnitType(UnitTypes.FROG), '<', Number('5')), [
-                    CreateUnitForPlayerAtPosition(UnitTypes.FROG, Variables.AI, RandomPositionInRegion(EntireMapRegion()), Number(0)),
+                IncreaseVariableByNumber(Variables.BOSS_TIMER, 1),
+                While(Condition(NumberOfUnitsOfUnitType(UnitTypes.FROG), '<', 5), [
+                    CreateUnitForPlayerAtPosition(UnitTypes.FROG, Variables.AI, RandomPositionInRegion(EntireMapRegion()), 0),
                 ])
             ]
             self.order = 1
