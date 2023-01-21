@@ -656,7 +656,7 @@ FUNCTION_TO_CLASS = {
         ]
     },
     'getEntityType': {
-        'className': 'EntityType',
+        'className': 'EntityTypeOfEntity',
         'arguments': [
             'entity'
         ]
@@ -995,12 +995,6 @@ FUNCTION_TO_CLASS = {
         'className': 'SelectedUnitType',
         'arguments': []
     },
-    'playerTypeOfPlayer': {
-        'className': 'PlayerTypeOfPlayer',
-        'arguments': [
-            'player'
-        ]
-    },
     'selectedItemType': {
         'className': 'SelectedItemType',
         'arguments': []
@@ -1021,6 +1015,12 @@ FUNCTION_TO_CLASS = {
         'className': 'ProjectileTypeOfProjectile',
         'arguments': [
             'entity'
+        ]
+    },
+    'playerTypeOfPlayer': {
+        'className': 'PlayerTypeOfPlayer',
+        'arguments': [
+            'player'
         ]
     },
     'getAttributeTypeOfAttribute': {

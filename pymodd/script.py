@@ -1,8 +1,10 @@
-import os
+import inspect
 import json
+import os
 from enum import Enum
 
-from caseconverter import snakecase
+from caseconverter import camelcase, snakecase
+from .console_scripts.generate import ENTITY_TYPE_CATEGORIES
 
 
 class Base():
@@ -16,6 +18,7 @@ class Game(Base):
             data = json.load(file)
         self.name = data.get('title')
         self.data = data
+        self.entity_scripts = []
         self.scripts = []
         self._build()
         # set position of scripts inside game
@@ -28,6 +31,10 @@ class Game(Base):
     def to_dict(self):
         # replace game scripts with scripts defined in self.scripts
         self.data['data']['scripts'] = self.flatten_scripts_data(self.scripts)
+        for script in self.entity_scripts:
+            entity_type_category, entity_type_id = f'{camelcase(script.entity_type.__class__.__name__)}s', script.entity_type_id
+            self.data['data'][entity_type_category][entity_type_id]['scripts'] = self.flatten_scripts_data(
+                script.scripts)
         return self.data
 
     def flatten_scripts_data(self, scripts):
@@ -46,6 +53,34 @@ class Game(Base):
             script_data = script.to_dict()
             flattened_scripts[script_data['key']] = script_data
         return flattened_scripts
+
+
+    def variables_from_class(self, variable_class):
+        variables = []
+        for enum_name, variable in vars(variable_class).items():
+            if enum_name.startswith('__'):
+                continue
+            variables.append(variable)
+        return variables
+
+
+class EntityScripts(Game):
+    def __init__(self):
+        self.entity_type = None
+        self.scripts = []
+        self._build()
+        # set position of scripts inside entity_scripts
+        for i, script in enumerate(self.scripts):
+            script.set_position(i, None)
+        self.entity_type_id = self.get_entity_type_id()
+
+    def get_entity_type_id(self):
+        print(self.entity_type)
+        return self.entity_type.function.get('value')
+
+    def to_dict(self):
+        self.flatten_scripts_data(self.scripts)
+        return self.data
 
 
 class File(Base):
@@ -112,7 +147,9 @@ def write_game_to_output(game):
     print(f'\nWriting json files for {game.name}...')
 
     base_output_path = f'{snakecase(game.name)}/output/'
-    write_scripts_to_output(f'{base_output_path}/all_files', game.scripts)
+    write_scripts_to_output(f'{base_output_path}/game_scripts', game.scripts)
+    write_entity_scripts_to_output(
+        f'{base_output_path}/entity_scripts', game.entity_scripts)
     write_game_json(base_output_path, game)
 
     print('\nFinished writing.\n')
@@ -123,6 +160,14 @@ def write_game_json(path, game):
     with open(f'{path}/{file_name}', 'w') as output:
         output.write(json.dumps(game.to_dict(), indent=4))
     print(f'\n{file_name} successfuly created')
+
+
+def write_entity_scripts_to_output(path, entity_scripts):
+    print('\nWriting entity scripts...')
+    for entity in entity_scripts:
+        entity_name = snakecase(entity.__class__.__name__)
+        print(f'\n  entity type: {entity_name}')
+        write_scripts_to_output(f'{path}/{entity_name}', entity.scripts)
 
 
 def write_scripts_to_output(path, scripts):

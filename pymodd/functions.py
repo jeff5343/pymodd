@@ -1016,7 +1016,7 @@ class String(Function):
         }
 
 
-class EntityType(String):
+class EntityTypeOfEntity(String):
     def __init__(self, entity):
         self.function = 'getEntityType'
         self.options = {
@@ -1537,27 +1537,6 @@ class SelectedUnitType(UnitType):
 
 
 # ---------------------------------------------------------------------------- #
-#                                 Player Types                                 #
-# ---------------------------------------------------------------------------- #
-
-
-class PlayerType(Function):
-    def __init__(self, player_type_id):
-        self.function = {
-            'direct': True,
-            'value': player_type_id,
-        }
-
-
-class PlayerTypeOfPlayer(PlayerType):
-    def __init__(self, player):
-        self.function = 'playerTypeOfPlayer'
-        self.options = {
-            'player': to_dict(player),
-        }
-
-
-# ---------------------------------------------------------------------------- #
 #                                  Item Types                                  #
 # ---------------------------------------------------------------------------- #
 
@@ -1610,6 +1589,27 @@ class ProjectileTypeOfProjectile(ProjectileType):
         self.function = 'getProjectileTypeOfProjectile'
         self.options = {
             'entity': to_dict(entity),
+        }
+        
+
+# ---------------------------------------------------------------------------- #
+#                                 Player Types                                 #
+# ---------------------------------------------------------------------------- #
+
+
+class PlayerType(Function):
+    def __init__(self, player_type_id):
+        self.function = {
+            'direct': True,
+            'value': player_type_id,
+        }
+
+
+class PlayerTypeOfPlayer(PlayerType):
+    def __init__(self, player):
+        self.function = 'playerTypeOfPlayer'
+        self.options = {
+            'player': to_dict(player),
         }
 
 
