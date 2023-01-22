@@ -1,10 +1,8 @@
-import inspect
 import json
 import os
 from enum import Enum
 
 from caseconverter import camelcase, snakecase
-from .console_scripts.generate import ENTITY_TYPE_CATEGORIES
 
 
 class Base():
@@ -53,7 +51,6 @@ class Game(Base):
             script_data = script.to_dict()
             flattened_scripts[script_data['key']] = script_data
         return flattened_scripts
-
 
     def variables_from_class(self, variable_class):
         variables = []
