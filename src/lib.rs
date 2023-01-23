@@ -1,4 +1,6 @@
 mod game_data;
+#[cfg(test)]
+mod tests;
 
 use pyo3::prelude::*;
 use game_data::GameData;

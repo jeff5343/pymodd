@@ -7,11 +7,11 @@ use serde_json::Value;
 use self::{entity_types::EntityTypes, game_items::Directory, variables::Variables};
 
 pub struct GameData {
-    name: String,
-    json: Value,
-    variables: Variables,
-    directory: Directory,
-    entity_types: EntityTypes,
+    pub name: String,
+    pub json: Value,
+    pub variables: Variables,
+    pub directory: Directory,
+    pub entity_types: EntityTypes,
 }
 
 impl GameData {
