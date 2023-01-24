@@ -4,10 +4,21 @@ use heck::AsShoutySnakeCase;
 use serde_json::{Map, Value};
 
 static VARIABLE_CATEGORIES: [&str; 14] = [
-    "animationTypes", "attributeTypes", "dialogues", "entityTypeVariables",
-    "itemTypes", "music", "projectileTypes", "playerTypes", "playerTypeVariables",
-    "shops", "sound", "states", "unitTypes", "variables",
-];// modd.io treats these categories the same as the "variables" category
+    "animationTypes",
+    "attributeTypes",
+    "dialogues",
+    "entityTypeVariables",
+    "itemTypes",
+    "music",
+    "projectileTypes",
+    "playerTypes",
+    "playerTypeVariables",
+    "shops",
+    "sound",
+    "states",
+    "unitTypes",
+    "variables",
+]; // modd.io treats these categories the same as the "variables" category
 static GENERAL_VARIABLE_CATEGORIES: [&str; 3] = ["regions", "itemTypeGroups", "unitTypeGroups"];
 
 pub struct Variables {
@@ -63,16 +74,15 @@ fn variables_from_category_data(category_data: &Value) -> Vec<Variable> {
                     .unwrap(),
             )
             .to_string(),
-            data_type: data_type_from_variable_data(&var),
+            data_type: parse_data_type(var.get("dataType")),
         })
         .collect()
 }
 
-fn data_type_from_variable_data(variable_data: &Value) -> Option<String> {
-    match variable_data.get("dataType") {
+fn parse_data_type(data_type: Option<&Value>) -> Option<String> {
+    match data_type {
         Some(data_type) => {
-            let data_type = data_type.as_str().unwrap().to_string();
-            println!("{:?}", data_type.is_empty());
+            let data_type = data_type.as_str().unwrap_or("").to_string();
             if data_type.is_empty() {
                 None
             } else {
@@ -112,7 +122,7 @@ pub struct Variable {
 }
 
 impl Variable {
-    pub(crate) fn new(id: &str, enum_name: &str, data_type: Option<&str>) -> Variable {
+    fn new(id: &str, enum_name: &str, data_type: Option<&str>) -> Variable {
         let data_type = match data_type {
             Some(string) => Some(string.to_string()),
             _ => None,
@@ -135,15 +145,15 @@ mod variables_tests {
     fn parse_variables_from_category_data() {
         assert_eq!(
             variables_from_category_data(&json!({
-                "FW3513W": { "name": "apple", "dataType": "" },
-                "O23FJW2": { "name": "apple", "dataType": "number" },
-                "WDWI313": { "name": "apple", "dataType": "region" },
+                "FW3513W": { "name": "apple", "dataType": None::<&str> },
+                "O23FJW2": { "name": "banana", "dataType": "" },
+                "WDWI313": { "name": "water", "dataType": "region" },
             }))
             .as_slice(),
             [
                 Variable::new("FW3513W", "APPLE", None),
-                Variable::new("O23FJW2", "APPLE", Some("number")),
-                Variable::new("WDWI313", "APPLE", Some("region")),
+                Variable::new("O23FJW2", "BANANA", None),
+                Variable::new("WDWI313", "WATER", Some("region")),
             ]
         );
     }
@@ -151,11 +161,11 @@ mod variables_tests {
     #[test]
     fn ensure_no_duplicated_enum_names() {
         assert_eq!(
-            resolve_duplicate_enum_names(variables_from_category_data(&json!({
-                "FW3513W": { "name": "apple", },
-                "O23FJW2": { "name": "apple", },
-                "WDWI313": { "name": "apple", },
-            })))
+            resolve_duplicate_enum_names(vec![
+                Variable::new("FW3513W", "APPLE", None),
+                Variable::new("O23FJW2", "APPLE", None),
+                Variable::new("WDWI313", "APPLE", None),
+            ])
             .as_slice(),
             [
                 Variable::new("FW3513W", "APPLE", None),

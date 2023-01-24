@@ -1,10 +1,10 @@
+mod directory;
 mod entity_types;
-mod game_items;
 mod variables;
 
 use serde_json::Value;
 
-use self::{entity_types::EntityTypes, game_items::Directory, variables::Variables};
+use self::{directory::Directory, entity_types::EntityTypes, variables::Variables};
 
 pub struct GameData {
     pub name: String,
@@ -21,7 +21,7 @@ impl GameData {
         GameData {
             name: game_json["title"].to_string(),
             variables: Variables::parse(&game_data),
-            directory: Directory::parse(&game_data["scripts"]),
+            directory: Directory::parse(&game_data.get("scripts").expect("could not find scripts")),
             entity_types: EntityTypes::parse(&game_data),
             json: game_json,
         }
