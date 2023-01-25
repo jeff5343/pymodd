@@ -1,5 +1,7 @@
 use serde_json::{map::Values, Map, Value};
 
+static UNDEFINED_STRING: &str = "UNDEFINED";
+
 #[derive(Debug, PartialEq, Eq)]
 pub struct Directory {
     children: Vec<GameItem>,
@@ -26,20 +28,19 @@ impl Directory {
 }
 
 fn root_children_from_scripts_data(scripts: &Value) -> Vec<GameItem> {
-    let mut children: Vec<GameItem> = Vec::new();
-
     let empty_map = Map::new();
     let mut items: Vec<&Value> =
         sort_based_on_order(scripts.as_object().unwrap_or(&empty_map).values());
 
-    children.extend(filter_out_children(&mut items, None));
+    let mut children = filter_out_children_of_parent(&mut items, None);
 
     let mut stack: Vec<&mut GameItem> = children.iter_mut().collect();
     while stack.len() > 0 {
         if let GameItem::Dir(directory) = stack.pop().unwrap() {
-            directory
-                .children
-                .extend(filter_out_children(&mut items, Some(&directory.key)));
+            directory.children.extend(filter_out_children_of_parent(
+                &mut items,
+                Some(&directory.key),
+            ));
 
             stack.extend(
                 directory
@@ -56,19 +57,29 @@ fn sort_based_on_order(items: Values) -> Vec<&Value> {
     let mut items: Vec<&Value> = items.collect();
     items.sort_by(|item_a, item_b| {
         item_a
-            .get_or_null("order")
+            .get("order")
+            .unwrap_or(&Value::Null)
             .as_i64()
             .unwrap_or(-1)
-            .cmp(&item_b.get_or_null("order").as_i64().unwrap_or(-1))
+            .cmp(
+                &item_b
+                    .get("order")
+                    .unwrap_or(&Value::Null)
+                    .as_i64()
+                    .unwrap_or(-1),
+            )
     });
     items
 }
 
 // `parent_name: None` represents the root
-fn filter_out_children(items: &mut Vec<&Value>, parent_key: Option<&str>) -> Vec<GameItem> {
+fn filter_out_children_of_parent(
+    items: &mut Vec<&Value>,
+    parent_key: Option<&str>,
+) -> Vec<GameItem> {
     let mut children = Vec::new();
     items.retain(|item| {
-        let item_parent = item.get_or_null("parent").as_str();
+        let item_parent = item.get("parent").unwrap_or(&Value::Null).as_str();
         if item_parent == parent_key {
             children.push(GameItem::parse(&item));
             return false;
@@ -120,20 +131,11 @@ impl GameItem {
 
 fn parse_item_key_to_string(item_data: &Value, key: &str) -> String {
     item_data
-        .get_or_null(key)
+        .get(key)
+        .unwrap_or(&Value::Null)
         .as_str()
-        .unwrap_or("UNDEFINED")
+        .unwrap_or(UNDEFINED_STRING)
         .to_string()
-}
-
-trait GetOrNull {
-    fn get_or_null(&self, key: &str) -> &Value;
-}
-
-impl GetOrNull for Value {
-    fn get_or_null(&self, key: &str) -> &Value {
-        self.get(key).unwrap_or(&Value::Null)
-    }
 }
 
 #[cfg(test)]
@@ -141,25 +143,46 @@ mod directory_tests {
     use serde_json::json;
 
     use crate::game_data::directory::{
-        root_children_from_scripts_data, Directory, GameItem, Script,
+        root_children_from_scripts_data, Directory, GameItem, Script, UNDEFINED_STRING,
     };
+
+    use super::filter_out_children_of_parent;
 
     #[test]
     fn parse_directory() {
         assert_eq!(
             root_children_from_scripts_data(&json!({
-                "31IAD2B": { "folderName": "utils", "key": "31IAD2B", "parent": None::<&str> },
-                "Q31E2RS": { "name": "check_players", "key": "Q31E2RS", "actions": [], "parent": "31IAD2B" },
-                "SDUW31W": { "name": "change_state", "key": "SDUW31W", "actions": [], "parent": "31IAD2B" },
-                "WI31HDK": { "name": "initialize", "key": "WI31HDK", "actions": [], "parent": None::<&str>},
+                "31IAD2B": { "folderName": "utils", "key": "31IAD2B", "parent": None::<&str>, "order": 2 },
+                "Q31E2RS": { "name": "check_players", "key": None::<&str>, "actions": [], "parent": "31IAD2B", "order": 2 },
+                "SDUW31W": { "name": "change_state", "key": "SDUW31W", "actions": [], "parent": "31IAD2B", "order": 1 },
+                "WI31HDK": { "name": "initialize", "key": "WI31HDK", "actions": [], "parent": None::<&str>, "order": 1},
             })).as_slice(),
             [
-                GameItem::Dir(Directory::new("utils", "31IAD2B", vec![
-                               GameItem::Script(Script::new("check_players", "Q31E2RS", Vec::new())),
-                               GameItem::Script(Script::new("change_state", "SDUW31W", Vec::new()))
-                ])),
                 GameItem::Script(Script::new("initialize", "WI31HDK", Vec::new())),
+                GameItem::Dir(Directory::new("utils", "31IAD2B", vec![
+                               GameItem::Script(Script::new("change_state", "SDUW31W", Vec::new())),
+                               GameItem::Script(Script::new("check_players", UNDEFINED_STRING, Vec::new())),
+                ])),
             ]
         );
+    }
+
+    #[test]
+    fn filter_out_children_of_parent_from_items() {
+        assert_eq!(
+            filter_out_children_of_parent(
+                &mut json!([
+                    { "name": "initialize", "key": "WI31HDK", "actions": [], "parent": None::<&str>, "order": 1}, 
+                    { "name": "change_state", "key": "SDUW31W", "actions": [], "parent": "31IAD2B", "order": 1 },
+                    { "name": "check_players", "key": "FWJ31WD", "actions": [], "parent": "31IAD2B", "order": 2 },
+                 ]).as_array().unwrap().iter().collect(),
+                     Some("31IAD2B")
+                 )
+                 .as_slice(),
+            [
+                 GameItem::Script(Script::new("change_state", "SDUW31W", Vec::new())),
+                 GameItem::Script(Script::new("check_players", "FWJ31WD", Vec::new())),
+            ]
+        )
     }
 }

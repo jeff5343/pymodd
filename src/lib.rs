@@ -5,7 +5,7 @@ use game_data::GameData;
 
 #[pyfunction]
 fn generate_project(game_data: String) {
-    let game_data = GameData::parse(game_data);
+    let _game_data = GameData::parse(game_data);
 }
 
 #[pymodule]
