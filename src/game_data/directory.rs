@@ -140,7 +140,7 @@ fn parse_item_key_to_string(item_data: &Value, key: &str) -> String {
 
 #[cfg(test)]
 mod directory_tests {
-    use serde_json::json;
+    use serde_json::{json, Value};
 
     use crate::game_data::directory::{
         root_children_from_scripts_data, Directory, GameItem, Script, UNDEFINED_STRING,
@@ -155,13 +155,18 @@ mod directory_tests {
                 "31IAD2B": { "folderName": "utils", "key": "31IAD2B", "parent": None::<&str>, "order": 2 },
                 "Q31E2RS": { "name": "check_players", "key": None::<&str>, "actions": [], "parent": "31IAD2B", "order": 2 },
                 "SDUW31W": { "name": "change_state", "key": "SDUW31W", "actions": [], "parent": "31IAD2B", "order": 1 },
+                "HWI31WQ": { "folderName": "other", "key": "HWI31WQ", "parent": "31IAD2B", "order": 3 },
+                "JK32Q03": { "name": "destroy_server", "key": "JK32Q03", "actions": [], "parent": "HWI31WQ", "order": 1},
                 "WI31HDK": { "name": "initialize", "key": "WI31HDK", "actions": [], "parent": None::<&str>, "order": 1},
             })).as_slice(),
             [
                 GameItem::Script(Script::new("initialize", "WI31HDK", Vec::new())),
                 GameItem::Dir(Directory::new("utils", "31IAD2B", vec![
-                               GameItem::Script(Script::new("change_state", "SDUW31W", Vec::new())),
-                               GameItem::Script(Script::new("check_players", UNDEFINED_STRING, Vec::new())),
+                    GameItem::Script(Script::new("change_state", "SDUW31W", Vec::new())),
+                    GameItem::Script(Script::new("check_players", UNDEFINED_STRING, Vec::new())),
+                    GameItem::Dir(Directory::new("other", "HWI31WQ", vec![
+                        GameItem::Script(Script::new("destroy_server", "JK32Q03", Vec::new())),
+                    ])),
                 ])),
             ]
         );
@@ -169,20 +174,25 @@ mod directory_tests {
 
     #[test]
     fn filter_out_children_of_parent_from_items() {
+        let data = &mut json!([
+           { "name": "initialize", "key": "WI31HDK", "actions": [], "parent": None::<&str>, "order": 1},
+           { "name": "change_state", "key": "SDUW31W", "actions": [], "parent": "31IAD2B", "order": 1 },
+           { "name": "check_players", "key": "FWJ31WD", "actions": [], "parent": "31IAD2B", "order": 2 },
+        ]);
+        let mut items: Vec<&Value> = data.as_array().unwrap().iter().collect();
+
         assert_eq!(
-            filter_out_children_of_parent(
-                &mut json!([
-                    { "name": "initialize", "key": "WI31HDK", "actions": [], "parent": None::<&str>, "order": 1}, 
-                    { "name": "change_state", "key": "SDUW31W", "actions": [], "parent": "31IAD2B", "order": 1 },
-                    { "name": "check_players", "key": "FWJ31WD", "actions": [], "parent": "31IAD2B", "order": 2 },
-                 ]).as_array().unwrap().iter().collect(),
-                     Some("31IAD2B")
-                 )
-                 .as_slice(),
+            filter_out_children_of_parent(&mut items, Some("31IAD2B")).as_slice(),
             [
-                 GameItem::Script(Script::new("change_state", "SDUW31W", Vec::new())),
-                 GameItem::Script(Script::new("check_players", "FWJ31WD", Vec::new())),
+                GameItem::Script(Script::new("change_state", "SDUW31W", Vec::new())),
+                GameItem::Script(Script::new("check_players", "FWJ31WD", Vec::new())),
             ]
-        )
+        );
+        assert_eq!(
+            items.as_slice(),
+            json!([
+               { "name": "initialize", "key": "WI31HDK", "actions": [], "parent": None::<&str>, "order": 1},
+            ]).as_array().unwrap().iter().collect::<Vec<&Value>>().as_slice(),
+        );
     }
 }
