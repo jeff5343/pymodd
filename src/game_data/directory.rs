@@ -1,5 +1,7 @@
 use serde_json::{map::Values, Map, Value};
 
+use super::actions::{Action, self};
+
 static UNDEFINED_STRING: &str = "UNDEFINED";
 
 #[derive(Debug, PartialEq, Eq)]
@@ -91,13 +93,13 @@ fn filter_out_children_of_parent(
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct Script {
-    actions: Vec<Value>,
+    actions: Vec<Action>,
     name: String,
     key: String,
 }
 
 impl Script {
-    fn new(name: &str, key: &str, actions: Vec<Value>) -> Script {
+    fn new(name: &str, key: &str, actions: Vec<Action>) -> Script {
         Script {
             name: name.to_string(),
             key: key.to_string(),
@@ -116,7 +118,7 @@ impl GameItem {
     fn parse(item_data: &Value) -> GameItem {
         match item_data.get("actions") {
             Some(actions) => GameItem::Script(Script {
-                actions: actions.as_array().unwrap_or(&Vec::new()).clone(),
+                actions: actions::parse_actions(actions.as_array().unwrap_or(&Vec::new())),
                 name: parse_item_key_to_string(&item_data, "name"),
                 key: parse_item_key_to_string(&item_data, "key"),
             }),

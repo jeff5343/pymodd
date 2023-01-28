@@ -1,3 +1,4 @@
+mod actions;
 mod directory;
 mod entity_types;
 mod variables;
@@ -19,7 +20,7 @@ impl GameData {
         let game_json: Value = serde_json::from_str(&game_data).expect("could not parse game json file");
         let game_data = &game_json["data"];
         GameData {
-            name: game_json["title"].to_string(),
+            name: game_json.get("title").expect("could not find game title").to_string(),
             variables: Variables::parse(&game_data),
             directory: Directory::parse(&game_data.get("scripts").expect("could not find scripts")),
             entity_types: EntityTypes::parse(&game_data),

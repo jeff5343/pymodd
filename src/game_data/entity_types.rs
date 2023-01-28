@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, hash_map};
 
 use heck::AsUpperCamelCase;
 use serde_json::{Map, Value};
@@ -8,16 +8,16 @@ use super::Directory;
 static ENTITY_TYPE_CATEGORIES: [&str; 3] = ["unitTypes", "projectileTypes", "itemTypes"];
 
 pub struct EntityTypes {
-    category_to_entity_types: HashMap<String, Vec<EntityType>>,
+    category_to_entity_types: HashMap<&'static str, Vec<EntityType>>,
 }
 
 impl EntityTypes {
     pub fn parse(game_data: &Value) -> EntityTypes {
         let mut category_to_entity_types = HashMap::new();
 
-        ENTITY_TYPE_CATEGORIES.iter().for_each(|category| {
+        ENTITY_TYPE_CATEGORIES.iter().for_each(|&category| {
             category_to_entity_types.insert(
-                category.to_string(),
+                category,
                 match game_data.get(category) {
                     Some(category_data) => entity_types_from_category_data(&category_data),
                     None => Vec::new(),
@@ -29,6 +29,11 @@ impl EntityTypes {
             category_to_entity_types: category_to_entity_types,
         }
     }
+
+    pub fn iter(&self) -> hash_map::Iter<&'static str, Vec<EntityType>> {
+        self.category_to_entity_types.iter()
+    }
+
 }
 
 fn entity_types_from_category_data(category_data: &Value) -> Vec<EntityType> {
