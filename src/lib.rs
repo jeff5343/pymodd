@@ -1,11 +1,13 @@
 mod game_data;
+mod generator;
 
-use pyo3::prelude::*;
 use game_data::GameData;
+use generator::Generator;
+use pyo3::prelude::*;
 
 #[pyfunction]
 fn generate_project(game_data: String) {
-    let _game_data = GameData::parse(game_data);
+    Generator::generate(GameData::parse(game_data));
 }
 
 #[pymodule]
