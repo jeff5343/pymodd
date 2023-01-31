@@ -3,7 +3,7 @@ use std::collections::{hash_map, HashMap};
 use heck::AsShoutySnakeCase;
 use serde_json::{Map, Value};
 
-static VARIABLE_CATEGORIES: [&str; 14] = [
+static VARIABLE_CATEGORIES: [&str; 13] = [
     "animationTypes",
     "attributeTypes",
     "dialogues",
@@ -17,9 +17,12 @@ static VARIABLE_CATEGORIES: [&str; 14] = [
     "sound",
     "states",
     "unitTypes",
-    "variables",
-]; // modd.io treats these categories the same as the "variables" category
-static GENERAL_VARIABLE_CATEGORIES: [&str; 3] = ["regions", "itemTypeGroups", "unitTypeGroups"];
+];
+
+pub static VARIABLES_CATEGORY: &str = "variables";
+// modd.io holds these categories in the "variables" category
+pub static SEPERATED_VARIABLE_CATEGORIES: [&str; 3] =
+    ["regions", "itemTypeGroups", "unitTypeGroups"];
 
 pub struct Variables {
     pub category_to_variables: HashMap<&'static str, Vec<Variable>>,
@@ -41,15 +44,10 @@ impl Variables {
             );
         });
 
-        let variables = category_to_variables.get_mut("variables").unwrap();
-        GENERAL_VARIABLE_CATEGORIES.iter().for_each(|&category| {
-            variables.extend(match game_data.get(category) {
-                Some(category_data) => {
-                    resolve_duplicate_enum_names(variables_from_category_data(category_data))
-                }
-                None => Vec::new(),
-            })
-        });
+        // seperate new categories from "variables" category
+        category_to_variables.extend(seperated_variables_categories(
+            game_data.get(VARIABLES_CATEGORY).unwrap_or(&Value::Null),
+        ));
         Variables {
             category_to_variables: category_to_variables,
         }
@@ -58,6 +56,39 @@ impl Variables {
     pub fn iter(&self) -> hash_map::Iter<&'static str, Vec<Variable>> {
         self.category_to_variables.iter()
     }
+}
+
+fn seperated_variables_categories(
+    variables_category_data: &Value,
+) -> HashMap<&'static str, Vec<Variable>> {
+    let mut seperated_category_to_variables: HashMap<&'static str, Vec<Variable>> = HashMap::new();
+    SEPERATED_VARIABLE_CATEGORIES
+        .iter()
+        .chain(&[VARIABLES_CATEGORY])
+        .for_each(|category| {
+            seperated_category_to_variables.insert(category, Vec::new());
+        });
+
+    variables_from_category_data(&variables_category_data)
+        .into_iter()
+        .for_each(|variable| {
+            let category_index = SEPERATED_VARIABLE_CATEGORIES.iter().position(|category| {
+                category.eq(&format!(
+                    "{}s",
+                    &variable.data_type.as_ref().unwrap_or(&String::new())
+                )
+                .as_str())
+            });
+
+            seperated_category_to_variables
+                .get_mut(&match category_index {
+                    Some(i) => SEPERATED_VARIABLE_CATEGORIES.get(i).unwrap(),
+                    None => VARIABLES_CATEGORY,
+                })
+                .unwrap()
+                .push(variable);
+        });
+    seperated_category_to_variables
 }
 
 fn variables_from_category_data(category_data: &Value) -> Vec<Variable> {
@@ -83,13 +114,13 @@ fn parse_data_type(data_type: Option<&Value>) -> Option<String> {
     match data_type {
         Some(data_type) => {
             let data_type = data_type.as_str().unwrap_or("").to_string();
-            if data_type.is_empty() {
-                None
-            } else {
+            if !data_type.is_empty() {
                 Some(data_type)
+            } else {
+                None
             }
         }
-        None => None,
+        _ => None,
     }
 }
 
@@ -137,7 +168,11 @@ impl Variable {
 
 #[cfg(test)]
 mod variables_tests {
+    use std::collections::HashMap;
+
     use serde_json::json;
+
+    use crate::game_data::variables::seperated_variables_categories;
 
     use super::{resolve_duplicate_enum_names, variables_from_category_data, Variable};
 
@@ -172,6 +207,32 @@ mod variables_tests {
                 Variable::new("O23FJW2", "APPLE_1", None),
                 Variable::new("WDWI313", "APPLE_2", None),
             ]
+        );
+    }
+
+    #[test]
+    fn seperate_variables_category_into_multiple() {
+        assert_eq!(
+            seperated_variables_categories(&json!({
+                "FW3513W": { "name": "apple", "dataType": "itemTypeGroup" },
+                "O23FJW2": { "name": "banana", "dataType": "unitTypeGroup" },
+                "WDWI313": { "name": "water", "dataType": "region" },
+            })),
+            HashMap::from([
+                (
+                    "itemTypeGroups",
+                    vec![Variable::new("FW3513W", "APPLE", Some("itemTypeGroup"))]
+                ),
+                (
+                    "unitTypeGroups",
+                    vec![Variable::new("O23FJW2", "BANANA", Some("unitTypeGroup"))]
+                ),
+                (
+                    "regions",
+                    vec![Variable::new("WDWI313", "WATER", Some("region"))]
+                ),
+                ("variables", vec![]),
+            ])
         );
     }
 }

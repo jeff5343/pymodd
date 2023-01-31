@@ -1,7 +1,7 @@
-mod actions;
-mod directory;
-mod entity_types;
-mod variables;
+pub mod actions;
+pub mod directory;
+pub mod entity_types;
+pub mod variables;
 
 use serde_json::Value;
 
