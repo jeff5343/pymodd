@@ -44,7 +44,7 @@ impl Variables {
             );
         });
 
-        // seperate new categories from "variables" category
+        // seperate categories from "variables" category
         category_to_variables.extend(seperated_variables_categories(
             game_data.get(VARIABLES_CATEGORY).unwrap_or(&Value::Null),
         ));
@@ -56,39 +56,6 @@ impl Variables {
     pub fn iter(&self) -> hash_map::Iter<&'static str, Vec<Variable>> {
         self.category_to_variables.iter()
     }
-}
-
-fn seperated_variables_categories(
-    variables_category_data: &Value,
-) -> HashMap<&'static str, Vec<Variable>> {
-    let mut seperated_category_to_variables: HashMap<&'static str, Vec<Variable>> = HashMap::new();
-    SEPERATED_VARIABLE_CATEGORIES
-        .iter()
-        .chain(&[VARIABLES_CATEGORY])
-        .for_each(|category| {
-            seperated_category_to_variables.insert(category, Vec::new());
-        });
-
-    variables_from_category_data(&variables_category_data)
-        .into_iter()
-        .for_each(|variable| {
-            let category_index = SEPERATED_VARIABLE_CATEGORIES.iter().position(|category| {
-                category.eq(&format!(
-                    "{}s",
-                    &variable.data_type.as_ref().unwrap_or(&String::new())
-                )
-                .as_str())
-            });
-
-            seperated_category_to_variables
-                .get_mut(&match category_index {
-                    Some(i) => SEPERATED_VARIABLE_CATEGORIES.get(i).unwrap(),
-                    None => VARIABLES_CATEGORY,
-                })
-                .unwrap()
-                .push(variable);
-        });
-    seperated_category_to_variables
 }
 
 fn variables_from_category_data(category_data: &Value) -> Vec<Variable> {
@@ -145,6 +112,40 @@ fn resolve_duplicate_enum_names(variables: Vec<Variable>) -> Vec<Variable> {
         .collect()
 }
 
+fn seperated_variables_categories(
+    variables_category_data: &Value,
+) -> HashMap<&'static str, Vec<Variable>> {
+    let mut seperated_category_to_variables: HashMap<&'static str, Vec<Variable>> = HashMap::new();
+    // initalize vectors for each variable category
+    SEPERATED_VARIABLE_CATEGORIES
+        .iter()
+        .chain(&[VARIABLES_CATEGORY])
+        .for_each(|category| {
+            seperated_category_to_variables.insert(category, Vec::new());
+        });
+
+    variables_from_category_data(&variables_category_data)
+        .into_iter()
+        .for_each(|variable| {
+            let category_index = SEPERATED_VARIABLE_CATEGORIES.iter().position(|category| {
+                category.eq(&format!(
+                    "{}s",
+                    &variable.data_type.as_ref().unwrap_or(&String::new())
+                )
+                .as_str())
+            });
+
+            seperated_category_to_variables
+                .get_mut(&match category_index {
+                    Some(i) => SEPERATED_VARIABLE_CATEGORIES.get(i).unwrap(),
+                    None => VARIABLES_CATEGORY,
+                })
+                .unwrap()
+                .push(variable);
+        });
+    seperated_category_to_variables
+}
+
 #[derive(Debug, PartialEq, Eq)]
 pub struct Variable {
     pub id: String,
@@ -153,7 +154,7 @@ pub struct Variable {
 }
 
 impl Variable {
-    fn new(id: &str, enum_name: &str, data_type: Option<&str>) -> Variable {
+    pub fn new(id: &str, enum_name: &str, data_type: Option<&str>) -> Variable {
         let data_type = match data_type {
             Some(string) => Some(string.to_string()),
             _ => None,
@@ -167,7 +168,7 @@ impl Variable {
 }
 
 #[cfg(test)]
-mod variables_tests {
+mod tests {
     use std::collections::HashMap;
 
     use serde_json::json;

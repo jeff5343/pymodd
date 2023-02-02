@@ -111,7 +111,7 @@ impl Function {
 }
 
 #[cfg(test)]
-mod actions_test {
+mod tests {
     use crate::game_data::actions::Argument;
 
     use super::{

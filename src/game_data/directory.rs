@@ -141,7 +141,7 @@ fn parse_item_key_to_string(item_data: &Value, key: &str) -> String {
 }
 
 #[cfg(test)]
-mod directory_tests {
+mod tests {
     use serde_json::{json, Value};
 
     use crate::game_data::directory::{
