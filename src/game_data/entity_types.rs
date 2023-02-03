@@ -1,18 +1,23 @@
-use std::collections::{HashMap, hash_map};
+use std::collections::{hash_map, HashMap};
 
-use heck::AsUpperCamelCase;
+use heck::ToPascalCase;
 use serde_json::{Map, Value};
 
-use super::Directory;
+use crate::generator::utils::is_valid_class_name;
+
+use super::{
+    variables::{SEPERATED_VARIABLE_CATEGORIES, VARIABLES_CATEGORY, VARIABLE_CATEGORIES},
+    Directory,
+};
 
 static ENTITY_TYPE_CATEGORIES: [&str; 3] = ["unitTypes", "projectileTypes", "itemTypes"];
 
-pub struct EntityTypes {
+pub struct CategoryToEntityTypes {
     category_to_entity_types: HashMap<&'static str, Vec<EntityType>>,
 }
 
-impl EntityTypes {
-    pub fn parse(game_data: &Value) -> EntityTypes {
+impl CategoryToEntityTypes {
+    pub fn parse(game_data: &Value) -> CategoryToEntityTypes {
         let mut category_to_entity_types = HashMap::new();
 
         ENTITY_TYPE_CATEGORIES.iter().for_each(|&category| {
@@ -25,7 +30,7 @@ impl EntityTypes {
             );
         });
 
-        EntityTypes {
+        CategoryToEntityTypes {
             category_to_entity_types: category_to_entity_types,
         }
     }
@@ -33,7 +38,6 @@ impl EntityTypes {
     pub fn iter(&self) -> hash_map::Iter<&'static str, Vec<EntityType>> {
         self.category_to_entity_types.iter()
     }
-
 }
 
 fn entity_types_from_category_data(category_data: &Value) -> Vec<EntityType> {
@@ -48,7 +52,7 @@ fn entity_types_from_category_data(category_data: &Value) -> Vec<EntityType> {
                 .as_str()
                 .unwrap()
                 .to_string(),
-            scripts: Directory::parse(
+            directory: Directory::parse(
                 entity_type
                     .get("scripts")
                     .unwrap_or(&Value::Array(Vec::new())),
@@ -58,12 +62,17 @@ fn entity_types_from_category_data(category_data: &Value) -> Vec<EntityType> {
 }
 
 pub struct EntityType {
-    name: String,
-    scripts: Directory,
+    pub name: String,
+    pub directory: Directory,
 }
 
 impl EntityType {
-    fn class_name(&self) -> String {
-        AsUpperCamelCase(self.name.clone()).to_string()
+    pub fn class_name(&self) -> String {
+        let class_name = self.name.to_pascal_case().to_string();
+        if !is_valid_class_name(&class_name)
+        {
+            return format!("q{class_name}");
+        }
+        class_name
     }
 }

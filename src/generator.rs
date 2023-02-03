@@ -3,6 +3,7 @@ mod game_json_file;
 mod game_variables_file;
 mod mapping_file;
 mod scripts_file;
+pub mod utils;
 
 use std::{fs, io::Write};
 
@@ -18,17 +19,26 @@ pub struct Generator {}
 impl Generator {
     pub fn generate(game_data: GameData) {
         let files: [File; 5] = [
-            File::new(
-                "game_variables.py",
-                GameVariablesFile::build_content(&game_data),
-            ),
-            File::new("mapping.py", MappingFile::build_content(&game_data)),
-            File::new("scripts.py", ScriptsFile::build_content(&game_data)),
-            File::new(
-                "entity_scripts.py",
-                EntityScriptsFile::build_content(&game_data),
-            ),
-            File::new("/utils/game.json", GameJsonFile::build_content(&game_data)),
+            File {
+                path: "game_variables.py",
+                content: GameVariablesFile::build_content(&game_data),
+            },
+            File {
+                path: "mapping.py",
+                content: MappingFile::build_content(&game_data),
+            },
+            File {
+                path: "scripts.py",
+                content: ScriptsFile::build_content(&game_data),
+            },
+            File {
+                path: "entity_scripts.py",
+                content: EntityScriptsFile::build_content(&game_data),
+            },
+            File {
+                path: "/utils/game.json",
+                content: GameJsonFile::build_content(&game_data),
+            },
         ];
 
         files.iter().for_each(|file| {
@@ -39,12 +49,6 @@ impl Generator {
 }
 
 struct File {
-    content: String,
     path: &'static str,
-}
-
-impl File {
-    fn new(path: &'static str, content: String) -> File {
-        File { content, path }
-    }
+    content: String,
 }

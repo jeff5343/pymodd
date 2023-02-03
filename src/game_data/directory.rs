@@ -1,13 +1,49 @@
+use heck::ToPascalCase;
 use serde_json::{map::Values, Map, Value};
 
-use super::actions::{Action, self};
+use crate::generator::utils::is_valid_class_name;
+
+use super::actions::{self, Action};
 
 static UNDEFINED_STRING: &str = "UNDEFINED";
 
 #[derive(Debug, PartialEq, Eq)]
+pub enum GameItem {
+    Dir(Directory),
+    Script(Script),
+    DirectoryEnd,
+}
+
+impl GameItem {
+    fn parse(item_data: &Value) -> GameItem {
+        match item_data.get("actions") {
+            Some(actions) => GameItem::Script(Script {
+                actions: actions::parse_actions(actions.as_array().unwrap_or(&Vec::new())),
+                name: parse_key_of_item_to_string("name", &item_data),
+                key: parse_key_of_item_to_string("key", &item_data),
+            }),
+            None => GameItem::Dir(Directory {
+                children: Vec::new(),
+                name: parse_key_of_item_to_string("folderName", &item_data),
+                key: parse_key_of_item_to_string("key", &item_data),
+            }),
+        }
+    }
+}
+
+fn parse_key_of_item_to_string(key: &str, item_data: &Value) -> String {
+    item_data
+        .get(key)
+        .unwrap_or(&Value::Null)
+        .as_str()
+        .unwrap_or(UNDEFINED_STRING)
+        .to_string()
+}
+
+#[derive(Debug, PartialEq, Eq)]
 pub struct Directory {
-    children: Vec<GameItem>,
-    name: String,
+    pub children: Vec<GameItem>,
+    pub name: String,
     key: String,
 }
 
@@ -18,6 +54,10 @@ impl Directory {
             name: String::from("/"),
             key: String::from("root"),
         }
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.children.is_empty()
     }
 
     fn new(name: &str, key: &str, children: Vec<GameItem>) -> Directory {
@@ -34,6 +74,7 @@ fn root_children_from_scripts_data(scripts: &Value) -> Vec<GameItem> {
     let mut items: Vec<&Value> =
         sort_based_on_order(scripts.as_object().unwrap_or(&empty_map).values());
 
+    // filter out root level scripts and directories
     let mut children = filter_out_children_of_parent(&mut items, None);
 
     let mut stack: Vec<&mut GameItem> = children.iter_mut().collect();
@@ -74,7 +115,7 @@ fn sort_based_on_order(items: Values) -> Vec<&Value> {
     items
 }
 
-// `parent_name: None` represents the root
+/// `parent_name: None` represents the root
 fn filter_out_children_of_parent(
     items: &mut Vec<&Value>,
     parent_key: Option<&str>,
@@ -91,6 +132,53 @@ fn filter_out_children_of_parent(
     children
 }
 
+impl<'a> IntoIterator for &'a Directory {
+    type Item = &'a GameItem;
+    type IntoIter = DirectoryIterator<'a>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        DirectoryIterator::new(&self)
+    }
+}
+
+pub struct DirectoryIterator<'a> {
+    stack: Vec<&'a GameItem>,
+}
+
+impl<'a> DirectoryIterator<'a> {
+    fn new(directory: &'a Directory) -> DirectoryIterator<'a> {
+        DirectoryIterator {
+            stack: directory.children.iter().collect(),
+        }
+    }
+}
+
+impl<'a> Iterator for DirectoryIterator<'a> {
+    type Item = &'a GameItem;
+
+    /// `GameItem::Directory` signifies the start of a directory
+    /// `GameItem::DirectoryEnd` signifies the end of a directory
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.stack.len() == 0 {
+            return None;
+        }
+        let item = self.stack.remove(0);
+        match item {
+            GameItem::Dir(directory) => {
+                self.stack.splice(
+                    ..0,
+                    directory
+                        .children
+                        .iter()
+                        .chain([GameItem::DirectoryEnd].iter()),
+                );
+            }
+            _ => {}
+        }
+        Some(&item)
+    }
+}
+
 #[derive(Debug, PartialEq, Eq)]
 pub struct Script {
     actions: Vec<Action>,
@@ -99,6 +187,14 @@ pub struct Script {
 }
 
 impl Script {
+    pub fn class_name(&self) -> String {
+        let class_name = self.name.to_pascal_case().to_string();
+        if !is_valid_class_name(&class_name) {
+            return format!("q{class_name}");
+        }
+        class_name
+    }
+
     fn new(name: &str, key: &str, actions: Vec<Action>) -> Script {
         Script {
             name: name.to_string(),
@@ -106,38 +202,6 @@ impl Script {
             actions,
         }
     }
-}
-
-#[derive(Debug, PartialEq, Eq)]
-enum GameItem {
-    Dir(Directory),
-    Script(Script),
-}
-
-impl GameItem {
-    fn parse(item_data: &Value) -> GameItem {
-        match item_data.get("actions") {
-            Some(actions) => GameItem::Script(Script {
-                actions: actions::parse_actions(actions.as_array().unwrap_or(&Vec::new())),
-                name: parse_item_key_to_string(&item_data, "name"),
-                key: parse_item_key_to_string(&item_data, "key"),
-            }),
-            None => GameItem::Dir(Directory {
-                children: Vec::new(),
-                name: parse_item_key_to_string(&item_data, "folderName"),
-                key: parse_item_key_to_string(&item_data, "key"),
-            }),
-        }
-    }
-}
-
-fn parse_item_key_to_string(item_data: &Value, key: &str) -> String {
-    item_data
-        .get(key)
-        .unwrap_or(&Value::Null)
-        .as_str()
-        .unwrap_or(UNDEFINED_STRING)
-        .to_string()
 }
 
 #[cfg(test)]

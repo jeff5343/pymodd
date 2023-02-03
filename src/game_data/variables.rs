@@ -3,7 +3,7 @@ use std::collections::{hash_map, HashMap};
 use heck::AsShoutySnakeCase;
 use serde_json::{Map, Value};
 
-static VARIABLE_CATEGORIES: [&str; 13] = [
+pub static VARIABLE_CATEGORIES: [&str; 13] = [
     "animationTypes",
     "attributeTypes",
     "dialogues",
