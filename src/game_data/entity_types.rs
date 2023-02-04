@@ -6,7 +6,6 @@ use serde_json::{Map, Value};
 use crate::generator::utils::is_valid_class_name;
 
 use super::{
-    variables::{SEPERATED_VARIABLE_CATEGORIES, VARIABLES_CATEGORY, VARIABLE_CATEGORIES},
     Directory,
 };
 

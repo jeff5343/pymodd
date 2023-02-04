@@ -15,17 +15,34 @@ pub struct MappingFile {}
 impl MappingFile {
     pub fn build_content(game_data: &GameData) -> String {
         let game_class_name = game_data.name.to_pascal_case().to_string();
-        let content = format!(
+        let mut content = format!(
             "from pymodd.script import Game, Folder, write_game_to_output, write_to_output\n\n\
             from scripts import *\n\
             from entity_scripts import * \n\n\
             class {game_class_name}(Game):\n\
                 \tdef _build(self):\n\
                     \t\tself.entity_scripts = [{}]\n\
-                    \t\tself.scripts = [",
+                    \t\tself.scripts = [\n",
             retrieve_clases_of_entity_scripts(&game_data.entity_type_categories).join(", ")
         );
-        content.add("work on adding rest of the file")
+        content.push_str(
+            &build_directory_content(&game_data.directory)
+                .lines()
+                .map(|line| format!("{}{line}\n", "\t".repeat(3)))
+                .collect::<String>()
+                .as_str(),
+        );
+        let project_directory = game_data.project_directory_name();
+        content.add(
+            &format!(
+                "\t\t]\n\n\
+                # run `python {project_directory}/mapping.py` to generate this game's files\n\
+                write_game_to_output({game_class_name}())\n\
+                # uncomment the following to quickly generate the json file for a script\n\
+                # write_to_output('output/', SCRIPT_OBJECT())"
+            )
+            .as_str(),
+        )
     }
 }
 
@@ -43,9 +60,6 @@ fn retrieve_clases_of_entity_scripts(
 fn build_directory_content(directory: &Directory) -> String {
     let mut content = String::new();
     let mut curr_depth = 0;
-    directory
-        .into_iter()
-        .for_each(|item| println!("{:?}\n", item));
     directory.into_iter().for_each(|game_item| {
         content.push_str(
             match game_item {
@@ -77,8 +91,11 @@ mod tests {
     use serde_json::json;
 
     use crate::{
-        game_data::directory::Directory, generator::mapping_file::build_directory_content,
+        game_data::{directory::Directory, GameData},
+        generator::mapping_file::build_directory_content,
     };
+
+    use super::MappingFile;
 
     #[test]
     fn directory_content() {
@@ -102,5 +119,41 @@ mod tests {
                 ]),\n"
             )
         );
+    }
+
+    #[test]
+    fn simple_mapping_file_content() {
+        assert_eq!(MappingFile::build_content(&GameData::parse(r#"{
+            "title": "test_game",
+            "data": {
+                "scripts": {
+                    "WI31HDK": { "name": "initialize", "key": "WI31HDK", "actions": [], "parent": null, "order": 1},
+                    "31IAD2B": { "folderName": "utils", "key": "31IAD2B", "parent": null, "order": 2 },
+                    "SDUW31W": { "name": "change_state", "key": "SDUW31W", "actions": [], "parent": "31IAD2B", "order": 1 }
+                },
+                "unitTypes": {
+                    "RW31QW2": { "name": "bob", "scripts": {
+                        "DF31W32": { "name": "initialize", "key": "DF31W32", "actions": [], "parent": null, "order": 1 }
+                    }},
+                    "IO53IWD": { "name": "empty" }
+                }
+            }
+        }"#.to_string())), 
+                   "from pymodd.script import Game, Folder, write_game_to_output, write_to_output\n\n\
+                    from scripts import *\n\
+                    from entity_scripts import * \n\n\
+                    class TestGame(Game):\n\
+                        \tdef _build(self):\n\
+                            \t\tself.entity_scripts = [Bob()]\n\
+                            \t\tself.scripts = [\n\
+                                \t\t\tInitialize(),\n\
+                                \t\t\tFolder('utils', [\n\
+                                    \t\t\t\tChangeState(),\n\
+                                \t\t\t]),\n\
+                            \t\t]\n\n\
+                    # run `python test_game/mapping.py` to generate this game's files\n\
+                    write_game_to_output(TestGame())\n\
+                    # uncomment the following to quickly generate the json file for a script\n\
+                    # write_to_output('output/', SCRIPT_OBJECT())");
     }
 }

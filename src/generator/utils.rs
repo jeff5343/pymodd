@@ -42,40 +42,26 @@ mod tests {
     use crate::generator::utils::{is_valid_class_name, surrounding_quote_for_string};
 
     #[test]
-    fn valid_class_name_for_seperated_variables_category_name() {
+    fn valid_class_name() {
+        assert!(is_valid_class_name(&"AppleGun"));
+        // seperated variables category name
         assert!(!is_valid_class_name(&"Regions"));
-    }
-
-    #[test]
-    fn valid_class_name_for_variables_category_name() {
+        // variables category name
         assert!(!is_valid_class_name(&"Dialogues"));
-    }
-
-    #[test]
-    fn valid_class_name_for_string_starting_with_number() {
+        // string starting with number
         assert!(!is_valid_class_name(&"2BananaSword"));
     }
 
     #[test]
-    fn valid_class_name_for_regular_string() {
-        assert!(is_valid_class_name(&"AppleGun"));
-    }
-
-    #[test]
-    fn surrounding_quote_for_multiline_string() {
+    fn string_surrounding_quotes() {
+        // string with no special characters
+        assert_eq!(surrounding_quote_for_string("my name is bob"), "'");
+        // multiline string
         assert_eq!(surrounding_quote_for_string("Hi\nthere"), "'''");
-    }
-
-    #[test]
-    fn surrounding_quote_for_single_quote_string() {
+        // string with single quote
         assert_eq!(
             surrounding_quote_for_string("bob's apples taste delicious"),
             "\""
         );
-    }
-
-    #[test]
-    fn surrounding_quote_for_regular_string() {
-        assert_eq!(surrounding_quote_for_string("my name is bob"), "'");
     }
 }
