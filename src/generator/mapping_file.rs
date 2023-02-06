@@ -26,9 +26,9 @@ impl MappingFile {
             retrieve_clases_of_entity_scripts(&game_data.entity_type_categories).join(", ")
         );
         content.push_str(
-            &build_directory_content(&game_data.directory)
-                .lines()
-                .map(|line| format!("{}{line}\n", "\t".repeat(3)))
+            &build_directory_elements(&game_data.directory)
+                .into_iter()
+                .map(|element| format!("{}{element}\n", "\t".repeat(3)))
                 .collect::<String>()
                 .as_str(),
         );
@@ -57,33 +57,29 @@ fn retrieve_clases_of_entity_scripts(
         .collect()
 }
 
-fn build_directory_content(directory: &Directory) -> String {
-    let mut content = String::new();
+fn build_directory_elements(directory: &Directory) -> Vec<String> {
+    let mut elements = Vec::new();
     let mut curr_depth = 0;
     directory.into_iter().for_each(|game_item| {
-        content.push_str(
-            match game_item {
-                GameItem::Dir(directory) => {
-                    curr_depth += 1;
-                    format!(
-                        "{}Folder({}, [",
-                        "\t".repeat(curr_depth - 1),
-                        surround_string_with_quotes(&directory.name)
-                    )
-                }
-                GameItem::Script(script) => {
-                    format!("{}{}(),", "\t".repeat(curr_depth), script.class_name())
-                }
-                GameItem::DirectoryEnd => {
-                    curr_depth -= 1;
-                    format!("{}]),", "\t".repeat(curr_depth))
-                }
+        elements.push(match game_item {
+            GameItem::Dir(directory) => {
+                curr_depth += 1;
+                format!(
+                    "{}Folder({}, [",
+                    "\t".repeat(curr_depth - 1),
+                    surround_string_with_quotes(&directory.name)
+                )
             }
-            .add("\n")
-            .as_str(),
-        )
+            GameItem::Script(script) => {
+                format!("{}{}(),", "\t".repeat(curr_depth), script.class_name())
+            }
+            GameItem::DirectoryEnd => {
+                curr_depth -= 1;
+                format!("{}]),", "\t".repeat(curr_depth))
+            }
+        })
     });
-    content
+    elements
 }
 
 #[cfg(test)]
@@ -92,7 +88,7 @@ mod tests {
 
     use crate::{
         game_data::{directory::Directory, GameData},
-        generator::mapping_file::build_directory_content,
+        generator::mapping_file::build_directory_elements,
     };
 
     use super::MappingFile;
@@ -100,23 +96,23 @@ mod tests {
     #[test]
     fn directory_content() {
         assert_eq!(
-            build_directory_content(&Directory::parse(&json!({
+            build_directory_elements(&Directory::parse(&json!({
                 "WI31HDK": { "name": "initialize", "key": "WI31HDK", "actions": [], "parent": None::<&str>, "order": 1},
                 "31IAD2B": { "folderName": "utils", "key": "31IAD2B", "parent": None::<&str>, "order": 2 },
                 "SDUW31W": { "name": "change_state", "key": "SDUW31W", "actions": [], "parent": "31IAD2B", "order": 1 },
                 "Q31E2RS": { "name": "check_players", "key": None::<&str>, "actions": [], "parent": "31IAD2B", "order": 2 },
                 "HWI31WQ": { "folderName": "other", "key": "HWI31WQ", "parent": "31IAD2B", "order": 3 },
                 "JK32Q03": { "name": "destroy_server", "key": "JK32Q03", "actions": [], "parent": "HWI31WQ", "order": 1},
-            }))),
+            }))).into_iter().collect::<String>(),
             String::from(
-                "Initialize(),\n\
-                Folder('utils', [\n\
-                    \tChangeState(),\n\
-                    \tCheckPlayers(),\n\
-                    \tFolder('other', [\n\
-                        \t\tDestroyServer(),\n\
-                    \t]),\n\
-                ]),\n"
+                "Initialize(),\
+                Folder('utils', [\
+                    \tChangeState(),\
+                    \tCheckPlayers(),\
+                    \tFolder('other', [\
+                        \t\tDestroyServer(),\
+                    \t]),\
+                ]),"
             )
         );
     }

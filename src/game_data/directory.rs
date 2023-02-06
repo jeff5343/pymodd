@@ -14,13 +14,30 @@ pub enum GameItem {
     DirectoryEnd,
 }
 
+fn parse_key_of_item_to_string(key: &str, item_data: &Value) -> String {
+    item_data
+        .get(key)
+        .unwrap_or(&Value::Null)
+        .as_str()
+        .unwrap_or(UNDEFINED_STRING)
+        .to_string()
+}
+
 impl GameItem {
     fn parse(item_data: &Value) -> GameItem {
         match item_data.get("actions") {
             Some(actions) => GameItem::Script(Script {
-                actions: actions::parse_actions(actions.as_array().unwrap_or(&Vec::new())),
                 name: parse_key_of_item_to_string("name", &item_data),
                 key: parse_key_of_item_to_string("key", &item_data),
+                triggers: item_data
+                    .get("triggers")
+                    .unwrap_or(&Value::Null)
+                    .as_array()
+                    .unwrap_or(&Vec::new())
+                    .into_iter()
+                    .map(|trigger| parse_key_of_item_to_string("type", &trigger))
+                    .collect(),
+                actions: actions::parse_actions(actions.as_array().unwrap_or(&Vec::new())),
             }),
             None => GameItem::Dir(Directory {
                 children: Vec::new(),
@@ -29,15 +46,6 @@ impl GameItem {
             }),
         }
     }
-}
-
-fn parse_key_of_item_to_string(key: &str, item_data: &Value) -> String {
-    item_data
-        .get(key)
-        .unwrap_or(&Value::Null)
-        .as_str()
-        .unwrap_or(UNDEFINED_STRING)
-        .to_string()
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -181,9 +189,10 @@ impl<'a> Iterator for DirectoryIterator<'a> {
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct Script {
-    actions: Vec<Action>,
-    name: String,
-    key: String,
+    pub name: String,
+    pub key: String,
+    pub triggers: Vec<String>,
+    pub actions: Vec<Action>,
 }
 
 impl Script {
@@ -195,13 +204,28 @@ impl Script {
         class_name
     }
 
-    fn new(name: &str, key: &str, actions: Vec<Action>) -> Script {
+    pub fn triggers_to_objects(&self) -> Vec<String> {
+        self.triggers
+            .iter()
+            .map(|trigger| format!("Trigger.{}", enum_name_of_trigger(trigger)))
+            .collect()
+    }
+
+    pub fn new(name: &str, key: &str, triggers: Vec<&str>, actions: Vec<Action>) -> Script {
         Script {
             name: name.to_string(),
             key: key.to_string(),
+            triggers: triggers
+                .into_iter()
+                .map(|string| string.to_string())
+                .collect(),
             actions,
         }
     }
+}
+
+fn enum_name_of_trigger(trigger: &str) -> &str {
+    trigger
 }
 
 #[cfg(test)]
@@ -218,22 +242,50 @@ mod tests {
     fn parse_directory() {
         assert_eq!(
             root_children_from_scripts_data(&json!({
-                "31IAD2B": { "folderName": "utils", "key": "31IAD2B", "parent": None::<&str>, "order": 2 },
-                "Q31E2RS": { "name": "check_players", "key": None::<&str>, "actions": [], "parent": "31IAD2B", "order": 2 },
-                "SDUW31W": { "name": "change_state", "key": "SDUW31W", "actions": [], "parent": "31IAD2B", "order": 1 },
-                "HWI31WQ": { "folderName": "other", "key": "HWI31WQ", "parent": "31IAD2B", "order": 3 },
-                "JK32Q03": { "name": "destroy_server", "key": "JK32Q03", "actions": [], "parent": "HWI31WQ", "order": 1},
-                "WI31HDK": { "name": "initialize", "key": "WI31HDK", "actions": [], "parent": None::<&str>, "order": 1},
-            })).as_slice(),
+                "31IAD2B": { "triggers": [], "folderName": "utils",
+                                "key": "31IAD2B", "parent": None::<&str>, "order": 2 },
+                "Q31E2RS": { "triggers": [ { "type": "secondTick" } ], "name": "check_players",
+                                "key": None::<&str>, "actions": [], "parent": "31IAD2B", "order": 2 },
+                "SDUW31W": { "triggers": [], "name": "change_state",
+                                "key": "SDUW31W", "actions": [], "parent": "31IAD2B", "order": 1 },
+                "HWI31WQ": { "triggers": [], "folderName": "other",
+                                "key": "HWI31WQ", "parent": "31IAD2B", "order": 3 },
+                "JK32Q03": { "triggers": [], "name": "destroy_server",
+                                "key": "JK32Q03", "actions": [], "parent": "HWI31WQ", "order": 1},
+                "WI31HDK": { "triggers": [ { "type": "gameStart"} ], "name": "initialize",
+                                "key": "WI31HDK", "actions": [], "parent": None::<&str>, "order": 1},
+            }))
+            .as_slice(),
             [
-                GameItem::Script(Script::new("initialize", "WI31HDK", Vec::new())),
-                GameItem::Dir(Directory::new("utils", "31IAD2B", vec![
-                    GameItem::Script(Script::new("change_state", "SDUW31W", Vec::new())),
-                    GameItem::Script(Script::new("check_players", UNDEFINED_STRING, Vec::new())),
-                    GameItem::Dir(Directory::new("other", "HWI31WQ", vec![
-                        GameItem::Script(Script::new("destroy_server", "JK32Q03", Vec::new())),
-                    ])),
-                ])),
+                GameItem::Script(Script::new("initialize", "WI31HDK", vec!["gameStart"], Vec::new())),
+                GameItem::Dir(Directory::new(
+                    "utils",
+                    "31IAD2B",
+                    vec![
+                        GameItem::Script(Script::new(
+                            "change_state",
+                            "SDUW31W",
+                            vec![],
+                            Vec::new()
+                        )),
+                        GameItem::Script(Script::new(
+                            "check_players",
+                            UNDEFINED_STRING,
+                            vec!["secondTick"],
+                            Vec::new()
+                        )),
+                        GameItem::Dir(Directory::new(
+                            "other",
+                            "HWI31WQ",
+                            vec![GameItem::Script(Script::new(
+                                "destroy_server",
+                                "JK32Q03",
+                                vec![],
+                                Vec::new()
+                            )),]
+                        )),
+                    ]
+                )),
             ]
         );
     }
@@ -250,8 +302,18 @@ mod tests {
         assert_eq!(
             filter_out_children_of_parent(&mut items, Some("31IAD2B")).as_slice(),
             [
-                GameItem::Script(Script::new("change_state", "SDUW31W", Vec::new())),
-                GameItem::Script(Script::new("check_players", "FWJ31WD", Vec::new())),
+                GameItem::Script(Script::new(
+                    "change_state",
+                    "SDUW31W",
+                    vec![],
+                    Vec::new()
+                )),
+                GameItem::Script(Script::new(
+                    "check_players",
+                    "FWJ31WD",
+                    vec![],
+                    Vec::new()
+                )),
             ]
         );
         assert_eq!(
