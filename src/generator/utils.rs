@@ -1,3 +1,5 @@
+pub mod to_pymodd;
+
 use heck::ToLowerCamelCase;
 
 use crate::game_data::variables::{
@@ -35,6 +37,15 @@ fn surrounding_quote_for_string(string: &str) -> &str {
         return "\"";
     }
     "'"
+}
+
+pub(crate) fn strip_quotes(string: &str) -> String {
+    let string = string.trim();
+    let left_quote_removed = string.strip_prefix(['\'', '"']).unwrap_or(string);
+    left_quote_removed
+        .strip_suffix(['\'', '"'])
+        .unwrap_or(left_quote_removed)
+        .to_string()
 }
 
 #[cfg(test)]
