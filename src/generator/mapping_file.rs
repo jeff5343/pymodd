@@ -2,13 +2,9 @@ use std::ops::Add;
 
 use heck::ToPascalCase;
 
-use crate::game_data::{
-    directory::{Directory, GameItem},
-    entity_types::CategoryToEntityTypes,
-    GameData,
-};
+use crate::game_data::{directory::Directory, entity_types::CategoryToEntityTypes, GameData};
 
-use super::utils::surround_string_with_quotes;
+use super::utils::{iterators::directory_iterator::DirectoryIterItem, surround_string_with_quotes};
 
 pub struct MappingFile {}
 
@@ -26,7 +22,7 @@ impl MappingFile {
             retrieve_clases_of_entity_scripts(&game_data.entity_type_categories).join(", ")
         );
         content.push_str(
-            &build_directory_elements(&game_data.directory)
+            &build_directory_elements(&game_data.root_directory)
                 .into_iter()
                 .map(|element| format!("{}{element}\n", "\t".repeat(3)))
                 .collect::<String>()
@@ -60,9 +56,9 @@ fn retrieve_clases_of_entity_scripts(
 fn build_directory_elements(directory: &Directory) -> Vec<String> {
     let mut elements = Vec::new();
     let mut curr_depth = 0;
-    directory.into_iter().for_each(|game_item| {
+    directory.iter_flattened().for_each(|game_item| {
         elements.push(match game_item {
-            GameItem::Dir(directory) => {
+            DirectoryIterItem::StartOfDirectory(directory) => {
                 curr_depth += 1;
                 format!(
                     "{}Folder({}, [",
@@ -70,10 +66,10 @@ fn build_directory_elements(directory: &Directory) -> Vec<String> {
                     surround_string_with_quotes(&directory.name)
                 )
             }
-            GameItem::Script(script) => {
+            DirectoryIterItem::Script(script) => {
                 format!("{}{}(),", "\t".repeat(curr_depth), script.class_name())
             }
-            GameItem::DirectoryEnd => {
+            DirectoryIterItem::DirectoryEnd => {
                 curr_depth -= 1;
                 format!("{}]),", "\t".repeat(curr_depth))
             }

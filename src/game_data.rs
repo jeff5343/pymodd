@@ -12,7 +12,7 @@ pub struct GameData {
     pub name: String,
     pub json: Value,
     pub variables: Variables,
-    pub directory: Directory,
+    pub root_directory: Directory,
     pub entity_type_categories: CategoryToEntityTypes,
 }
 
@@ -27,7 +27,7 @@ impl GameData {
                 .expect("could not find key: title")
                 .to_string(),
             variables: Variables::parse(&game_data),
-            directory: Directory::parse(
+            root_directory: Directory::parse(
                 &game_data
                     .get("scripts")
                     .expect("could not find key: scripts"),

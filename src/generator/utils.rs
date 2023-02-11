@@ -1,3 +1,4 @@
+pub mod iterators;
 pub mod to_pymodd;
 
 use heck::ToLowerCamelCase;
@@ -8,15 +9,15 @@ use crate::game_data::variables::{
 
 pub(crate) fn is_valid_class_name(class_name: &str) -> bool {
     !(class_name.is_empty()
-        || string_starts_with_number(&class_name)
-        || type_conflicts_with_category_class_name(&class_name))
+        || string_starts_with_a_number(&class_name)
+        || type_conflicts_with_a_category_class_name(&class_name))
 }
 
-fn string_starts_with_number(string: &str) -> bool {
+fn string_starts_with_a_number(string: &str) -> bool {
     string.chars().next().unwrap().is_numeric()
 }
 
-fn type_conflicts_with_category_class_name(class_name: &str) -> bool {
+fn type_conflicts_with_a_category_class_name(class_name: &str) -> bool {
     SEPERATED_VARIABLE_CATEGORIES
         .into_iter()
         .chain([VARIABLES_CATEGORY])

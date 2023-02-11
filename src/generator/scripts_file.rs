@@ -1,10 +1,8 @@
 use std::ops::Add;
 
-use crate::game_data::{
-    actions::Action,
-    directory::{GameItem, Script},
-    GameData,
-};
+use crate::game_data::{actions::Action, directory::Script, GameData};
+
+use super::utils::iterators::directory_iterator::DirectoryIterItem;
 
 pub struct ScriptsFile {}
 
@@ -18,17 +16,20 @@ impl ScriptsFile {
         );
         content.add(
             game_data
-                .directory
-                .into_iter()
+                .root_directory
+                .iter_flattened()
                 .map(|game_item| match game_item {
-                    GameItem::Dir(directory) => format!(
+                    DirectoryIterItem::StartOfDirectory(directory) => format!(
                         "# ╭\n\
-                        # {}\n\
-                        # |\n\n",
+                         # {}\n\
+                         # |\n\n",
                         directory.name.to_uppercase()
                     ),
-                    GameItem::Script(script) => build_script_content(&script).add("\n\n"),
-                    GameItem::DirectoryEnd => String::from("\n# |\n# ╰\n\n"),
+                    DirectoryIterItem::Script(script) => build_script_content(&script).add("\n\n"),
+                    DirectoryIterItem::DirectoryEnd => String::from(
+                        "# |\n\
+                         # ╰\n\n",
+                    ),
                 })
                 .collect::<String>()
                 .as_str(),
@@ -46,7 +47,7 @@ fn build_script_content(script: &Script) -> String {
                 \t\tself.actions = [\n\
                 {}\n\
                 \t\t]\n",
-        script.triggers_to_objects().join(", "),
+        script.triggers_into_pymodd_enums().join(", "),
         build_actions(&script.actions)
             .into_iter()
             .map(|action| format!("{}{action}\n", "\t".repeat(3)))
@@ -83,7 +84,7 @@ mod tests {
                 "class Initialize(Script):\n\
                     \tdef _build(self):\n\
                         \t\tself.key = 'WI31HDK'\n\
-                        \t\tself.triggers = [Trigger.gameStart]\n\
+                        \t\tself.triggers = [Trigger.GAME_START]\n\
                         \t\tself.actions = [\n\
                         \n\
                         \t\t]\n",

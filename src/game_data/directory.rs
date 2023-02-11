@@ -1,17 +1,16 @@
 use heck::ToPascalCase;
 use serde_json::{map::Values, Map, Value};
 
-use crate::generator::utils::is_valid_class_name;
+use crate::generator::utils::{is_valid_class_name, to_pymodd::TRIGGERS_TO_PYMODD_ENUMS, iterators::directory_iterator::DirectoryIterator};
 
 use super::actions::{self, Action};
 
 static UNDEFINED_STRING: &str = "UNDEFINED";
 
 #[derive(Debug, PartialEq, Eq)]
-pub enum GameItem {
-    Dir(Directory),
+pub enum DirectoryItem {
+    Directory(Directory),
     Script(Script),
-    DirectoryEnd,
 }
 
 fn parse_key_of_item_to_string(key: &str, item_data: &Value) -> String {
@@ -23,10 +22,10 @@ fn parse_key_of_item_to_string(key: &str, item_data: &Value) -> String {
         .to_string()
 }
 
-impl GameItem {
-    fn parse(item_data: &Value) -> GameItem {
+impl DirectoryItem {
+    fn parse(item_data: &Value) -> DirectoryItem {
         match item_data.get("actions") {
-            Some(actions) => GameItem::Script(Script {
+            Some(actions) => DirectoryItem::Script(Script {
                 name: parse_key_of_item_to_string("name", &item_data),
                 key: parse_key_of_item_to_string("key", &item_data),
                 triggers: item_data
@@ -39,7 +38,7 @@ impl GameItem {
                     .collect(),
                 actions: actions::parse_actions(actions.as_array().unwrap_or(&Vec::new())),
             }),
-            None => GameItem::Dir(Directory {
+            None => DirectoryItem::Directory(Directory {
                 children: Vec::new(),
                 name: parse_key_of_item_to_string("folderName", &item_data),
                 key: parse_key_of_item_to_string("key", &item_data),
@@ -50,7 +49,7 @@ impl GameItem {
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct Directory {
-    pub children: Vec<GameItem>,
+    pub children: Vec<DirectoryItem>,
     pub name: String,
     key: String,
 }
@@ -66,9 +65,13 @@ impl Directory {
 
     pub fn is_empty(&self) -> bool {
         self.children.is_empty()
+    }   
+
+    pub fn iter_flattened(&self) -> DirectoryIterator {
+        self.into_iter()
     }
 
-    fn new(name: &str, key: &str, children: Vec<GameItem>) -> Directory {
+    fn new(name: &str, key: &str, children: Vec<DirectoryItem>) -> Directory {
         Directory {
             name: name.to_string(),
             key: key.to_string(),
@@ -77,7 +80,7 @@ impl Directory {
     }
 }
 
-fn root_children_from_scripts_data(scripts: &Value) -> Vec<GameItem> {
+fn root_children_from_scripts_data(scripts: &Value) -> Vec<DirectoryItem> {
     let empty_map = Map::new();
     let mut items: Vec<&Value> =
         sort_based_on_order(scripts.as_object().unwrap_or(&empty_map).values());
@@ -85,9 +88,9 @@ fn root_children_from_scripts_data(scripts: &Value) -> Vec<GameItem> {
     // filter out root level scripts and directories
     let mut children = filter_out_children_of_parent(&mut items, None);
 
-    let mut stack: Vec<&mut GameItem> = children.iter_mut().collect();
+    let mut stack: Vec<&mut DirectoryItem> = children.iter_mut().collect();
     while stack.len() > 0 {
-        if let GameItem::Dir(directory) = stack.pop().unwrap() {
+        if let DirectoryItem::Directory(directory) = stack.pop().unwrap() {
             directory.children.extend(filter_out_children_of_parent(
                 &mut items,
                 Some(&directory.key),
@@ -97,7 +100,7 @@ fn root_children_from_scripts_data(scripts: &Value) -> Vec<GameItem> {
                 directory
                     .children
                     .iter_mut()
-                    .collect::<Vec<&mut GameItem>>(),
+                    .collect::<Vec<&mut DirectoryItem>>(),
             );
         }
     }
@@ -127,64 +130,17 @@ fn sort_based_on_order(items: Values) -> Vec<&Value> {
 fn filter_out_children_of_parent(
     items: &mut Vec<&Value>,
     parent_key: Option<&str>,
-) -> Vec<GameItem> {
+) -> Vec<DirectoryItem> {
     let mut children = Vec::new();
     items.retain(|item| {
         let item_parent = item.get("parent").unwrap_or(&Value::Null).as_str();
         if item_parent == parent_key {
-            children.push(GameItem::parse(&item));
+            children.push(DirectoryItem::parse(&item));
             return false;
         }
         true
     });
     children
-}
-
-impl<'a> IntoIterator for &'a Directory {
-    type Item = &'a GameItem;
-    type IntoIter = DirectoryIterator<'a>;
-
-    fn into_iter(self) -> Self::IntoIter {
-        DirectoryIterator::new(&self)
-    }
-}
-
-pub struct DirectoryIterator<'a> {
-    stack: Vec<&'a GameItem>,
-}
-
-impl<'a> DirectoryIterator<'a> {
-    fn new(directory: &'a Directory) -> DirectoryIterator<'a> {
-        DirectoryIterator {
-            stack: directory.children.iter().collect(),
-        }
-    }
-}
-
-impl<'a> Iterator for DirectoryIterator<'a> {
-    type Item = &'a GameItem;
-
-    /// `GameItem::Directory` signifies the start of a directory
-    /// `GameItem::DirectoryEnd` signifies the end of a directory
-    fn next(&mut self) -> Option<Self::Item> {
-        if self.stack.len() == 0 {
-            return None;
-        }
-        let item = self.stack.remove(0);
-        match item {
-            GameItem::Dir(directory) => {
-                self.stack.splice(
-                    ..0,
-                    directory
-                        .children
-                        .iter()
-                        .chain([GameItem::DirectoryEnd].iter()),
-                );
-            }
-            _ => {}
-        }
-        Some(&item)
-    }
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -204,10 +160,15 @@ impl Script {
         class_name
     }
 
-    pub fn triggers_to_objects(&self) -> Vec<String> {
+    pub fn triggers_into_pymodd_enums(&self) -> Vec<String> {
         self.triggers
             .iter()
-            .map(|trigger| format!("Trigger.{}", enum_name_of_trigger(trigger)))
+            .map(|trigger| {
+                TRIGGERS_TO_PYMODD_ENUMS
+                    .get(trigger)
+                    .unwrap_or(&String::from("None"))
+                    .clone()
+            })
             .collect()
     }
 
@@ -224,16 +185,12 @@ impl Script {
     }
 }
 
-fn enum_name_of_trigger(trigger: &str) -> &str {
-    trigger
-}
-
 #[cfg(test)]
 mod tests {
     use serde_json::{json, Value};
 
     use crate::game_data::directory::{
-        root_children_from_scripts_data, Directory, GameItem, Script, UNDEFINED_STRING,
+        root_children_from_scripts_data, Directory, DirectoryItem, Script, UNDEFINED_STRING,
     };
 
     use super::filter_out_children_of_parent;
@@ -257,27 +214,27 @@ mod tests {
             }))
             .as_slice(),
             [
-                GameItem::Script(Script::new("initialize", "WI31HDK", vec!["gameStart"], Vec::new())),
-                GameItem::Dir(Directory::new(
+                DirectoryItem::Script(Script::new("initialize", "WI31HDK", vec!["gameStart"], Vec::new())),
+                DirectoryItem::Directory(Directory::new(
                     "utils",
                     "31IAD2B",
                     vec![
-                        GameItem::Script(Script::new(
+                        DirectoryItem::Script(Script::new(
                             "change_state",
                             "SDUW31W",
                             vec![],
                             Vec::new()
                         )),
-                        GameItem::Script(Script::new(
+                        DirectoryItem::Script(Script::new(
                             "check_players",
                             UNDEFINED_STRING,
                             vec!["secondTick"],
                             Vec::new()
                         )),
-                        GameItem::Dir(Directory::new(
+                        DirectoryItem::Directory(Directory::new(
                             "other",
                             "HWI31WQ",
-                            vec![GameItem::Script(Script::new(
+                            vec![DirectoryItem::Script(Script::new(
                                 "destroy_server",
                                 "JK32Q03",
                                 vec![],
@@ -302,18 +259,8 @@ mod tests {
         assert_eq!(
             filter_out_children_of_parent(&mut items, Some("31IAD2B")).as_slice(),
             [
-                GameItem::Script(Script::new(
-                    "change_state",
-                    "SDUW31W",
-                    vec![],
-                    Vec::new()
-                )),
-                GameItem::Script(Script::new(
-                    "check_players",
-                    "FWJ31WD",
-                    vec![],
-                    Vec::new()
-                )),
+                DirectoryItem::Script(Script::new("change_state", "SDUW31W", vec![], Vec::new())),
+                DirectoryItem::Script(Script::new("check_players", "FWJ31WD", vec![], Vec::new())),
             ]
         );
         assert_eq!(
