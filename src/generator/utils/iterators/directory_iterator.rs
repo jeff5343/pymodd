@@ -1,26 +1,8 @@
 use crate::game_data::directory::{Directory, DirectoryItem, Script};
 
-pub enum DirectoryIterItem<'a> {
-    StartOfDirectory(&'a Directory),
-    Script(&'a Script),
-    DirectoryEnd,
-}
-
-impl<'a> DirectoryIterItem<'a> {
-    fn from(directory_item: &DirectoryItem) -> DirectoryIterItem {
-        match directory_item {
-            DirectoryItem::Directory(directory) => DirectoryIterItem::StartOfDirectory(&directory),
-            DirectoryItem::Script(script) => DirectoryIterItem::Script(&script),
-        }
-    }
-}
-
-impl<'a> IntoIterator for &'a Directory {
-    type Item = DirectoryIterItem<'a>;
-    type IntoIter = DirectoryIterator<'a>;
-
-    fn into_iter(self) -> Self::IntoIter {
-        DirectoryIterator::new(&self)
+impl Directory {
+    pub fn iter_flattened(&self) -> DirectoryIterator {
+        DirectoryIterator::new(self)
     }
 }
 
@@ -62,5 +44,20 @@ impl<'a> Iterator for DirectoryIterator<'a> {
             );
         }
         Some(item)
+    }
+}
+
+pub enum DirectoryIterItem<'a> {
+    StartOfDirectory(&'a Directory),
+    Script(&'a Script),
+    DirectoryEnd,
+}
+
+impl<'a> DirectoryIterItem<'a> {
+    fn from(directory_item: &DirectoryItem) -> DirectoryIterItem {
+        match directory_item {
+            DirectoryItem::Directory(directory) => DirectoryIterItem::StartOfDirectory(&directory),
+            DirectoryItem::Script(script) => DirectoryIterItem::Script(&script),
+        }
     }
 }

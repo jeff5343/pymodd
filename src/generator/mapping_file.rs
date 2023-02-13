@@ -2,7 +2,7 @@ use std::ops::Add;
 
 use heck::ToPascalCase;
 
-use crate::game_data::{directory::Directory, entity_types::CategoryToEntityTypes, GameData};
+use crate::game_data::{directory::Directory, entity_types::CategoriesToEntityTypes, GameData};
 
 use super::utils::{iterators::directory_iterator::DirectoryIterItem, surround_string_with_quotes};
 
@@ -19,7 +19,7 @@ impl MappingFile {
                 \tdef _build(self):\n\
                     \t\tself.entity_scripts = [{}]\n\
                     \t\tself.scripts = [\n",
-            retrieve_clases_of_entity_scripts(&game_data.entity_type_categories).join(", ")
+            retrieve_clases_of_entity_scripts(&game_data.categories_to_entity_types).join(", ")
         );
         content.push_str(
             &build_directory_elements(&game_data.root_directory)
@@ -43,7 +43,7 @@ impl MappingFile {
 }
 
 fn retrieve_clases_of_entity_scripts(
-    entity_type_categories: &CategoryToEntityTypes,
+    entity_type_categories: &CategoriesToEntityTypes,
 ) -> Vec<String> {
     entity_type_categories
         .iter()

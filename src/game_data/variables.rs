@@ -24,12 +24,12 @@ pub static VARIABLES_CATEGORY: &str = "variables";
 pub static SEPERATED_VARIABLE_CATEGORIES: [&str; 3] =
     ["regions", "itemTypeGroups", "unitTypeGroups"];
 
-pub struct Variables {
-    pub category_to_variables: HashMap<&'static str, Vec<Variable>>,
+pub struct CategoriesToVariables {
+    pub categories_to_variables: HashMap<&'static str, Vec<Variable>>,
 }
 
-impl Variables {
-    pub fn parse(game_data: &Value) -> Variables {
+impl CategoriesToVariables {
+    pub fn parse(game_data: &Value) -> CategoriesToVariables {
         let mut category_to_variables = HashMap::new();
 
         VARIABLE_CATEGORIES.iter().for_each(|&category| {
@@ -48,13 +48,13 @@ impl Variables {
         category_to_variables.extend(seperated_variables_categories(
             game_data.get(VARIABLES_CATEGORY).unwrap_or(&Value::Null),
         ));
-        Variables {
-            category_to_variables: category_to_variables,
+        CategoriesToVariables {
+            categories_to_variables: category_to_variables,
         }
     }
 
     pub fn iter(&self) -> hash_map::Iter<&'static str, Vec<Variable>> {
-        self.category_to_variables.iter()
+        self.categories_to_variables.iter()
     }
 }
 

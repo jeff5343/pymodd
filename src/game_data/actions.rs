@@ -1,6 +1,10 @@
 use serde_json::{Map, Value};
 
-const ARGS_TO_IGNORE: [&str; 4] = ["type", "function", "vars", "comment"];
+use crate::generator::utils::to_pymodd::{PymoddStructure, ACTIONS_TO_PYMODD_STRUCTURE};
+
+use super::argument::{
+    align_arguments_with_pymodd_structure_parameters, parse_arguments_of_object_data, Argument,
+};
 
 pub fn parse_actions(actions_data: &Vec<Value>) -> Vec<Action> {
     actions_data
@@ -13,215 +17,60 @@ pub fn parse_actions(actions_data: &Vec<Value>) -> Vec<Action> {
 pub struct Action {
     name: String,
     comment: Option<String>,
-    args: Vec<Argument>,
+    pub args: Vec<Argument>,
 }
 
 impl Action {
     pub fn parse(action_data: &Map<String, Value>) -> Action {
+        let action_name = string_value_of_key("type", action_data).unwrap_or(String::from("null"));
         Action {
-            name: action_data
-                .get("type")
-                .unwrap_or(&Value::Null)
-                .as_str()
-                .unwrap_or("null")
-                .to_string(),
-            comment: {
-                if let Some(comment) = action_data.get("comment").unwrap_or(&Value::Null).as_str() {
-                    Some(comment.to_string())
-                } else {
-                    None
-                }
-            },
-            args: parse_arguments_of_object_data(action_data),
-        }
-    }
-
-    fn new(comment: Option<&str>, name: &str, args: Vec<Argument>) -> Action {
-        Action {
-            name: name.to_string(),
-            comment: {
-                if let Some(comment) = comment {
-                    Some(comment.to_string())
-                } else {
-                    None
-                }
-            },
-            args,
-        }
-    }
-}
-
-/// Accepts both pymodd action and pymodd function data
-fn parse_arguments_of_object_data(object_data: &Map<String, Value>) -> Vec<Argument> {
-    let mut args = Vec::new();
-    object_data
-        .iter()
-        .filter(|(arg_name, _)| !ARGS_TO_IGNORE.contains(&arg_name.as_str()))
-        .for_each(|(arg_name, arg_data)| {
-            if arg_name == "conditions"
-                || (arg_name == "items" && Function::name_from_data(object_data) == "calculate")
-            {
-                args.extend(parse_arguments_of_special_argument(arg_data))
-            } else {
-                args.push(Argument::parse(arg_name, arg_data));
-            }
-        });
-    args
-}
-
-/// Calculate function's argument and Condition's arguments are formatted differently by modd.io
-fn parse_arguments_of_special_argument(argument_data: &Value) -> Vec<Argument> {
-    let mut arguments = Vec::new();
-    let empty_array = Vec::new();
-    let mut condition_data = argument_data.as_array().unwrap_or(&empty_array).iter();
-    arguments.extend([
-        Argument::new(
-            "operator",
-            ArgumentValue::Val(
-                condition_data
-                    .next()
-                    .unwrap_or(&Value::Null)
-                    .as_object()
-                    .unwrap_or(&Map::new())
-                    .get("operator")
-                    .unwrap_or(&Value::String("None".to_string()))
-                    .clone(),
+            comment: string_value_of_key("comment", action_data),
+            args: align_arguments_with_pymodd_structure_parameters(
+                parse_arguments_of_object_data(action_data),
+                &ACTIONS_TO_PYMODD_STRUCTURE
+                    .get(&action_name)
+                    .unwrap_or(&PymoddStructure::default())
+                    .parameters,
             ),
-        ),
-        Argument::new(
-            "item_a",
-            ArgumentValue::Val(condition_data.next().unwrap_or(&Value::Null).clone()),
-        ),
-        Argument::new(
-            "item_b",
-            ArgumentValue::Val(condition_data.next().unwrap_or(&Value::Null).clone()),
-        ),
-    ]);
-    arguments
-}
-
-#[derive(Debug, PartialEq, Eq)]
-pub struct Argument {
-    name: String,
-    value: ArgumentValue,
-}
-
-impl Argument {
-    fn parse(argument_name: &str, argument_data: &Value) -> Argument {
-        Argument {
-            name: argument_name.to_string(),
-            value: match argument_data {
-                Value::Object(function_data) => ArgumentValue::Func(Function::parse(function_data)),
-                Value::Array(actions_data) => ArgumentValue::Actions(parse_actions(&actions_data)),
-                _ => ArgumentValue::Val(argument_data.clone()),
-            },
+            name: action_name,
         }
     }
 
-    fn new(name: &str, value: ArgumentValue) -> Argument {
-        Argument {
+    pub fn new(comment: Option<&str>, name: &str, args: Vec<Argument>) -> Action {
+        Action {
             name: name.to_string(),
-            value,
-        }
-    }
-}
-
-#[derive(Debug, PartialEq, Eq)]
-pub enum ArgumentValue {
-    Val(Value),
-    Actions(Vec<Action>),
-    Func(Function),
-}
-
-#[derive(Debug, PartialEq, Eq)]
-pub struct Function {
-    name: String,
-    args: Vec<Argument>,
-}
-
-impl Function {
-    fn parse(function_data: &Map<String, Value>) -> Function {
-        Function {
-            name: Function::name_from_data(function_data),
-            args: parse_arguments_of_object_data(function_data),
-        }
-    }
-
-    fn new(name: &str, args: Vec<Argument>) -> Function {
-        Function {
-            name: name.to_string(),
+            comment: { comment.map(|comment| comment.to_string()) },
             args,
         }
     }
 
-    fn name_from_data(function_data: &Map<String, Value>) -> String {
-        function_data
-            .get("function")
-            .unwrap_or(&Value::Null)
-            .as_str()
-            .unwrap_or("null")
-            .to_string()
+    pub fn pymodd_class_name(&self) -> String {
+        ACTIONS_TO_PYMODD_STRUCTURE
+            .get(&self.name)
+            .unwrap_or(&PymoddStructure::default())
+            .name
+            .clone()
     }
+}
+
+fn string_value_of_key(key: &str, data: &Map<String, Value>) -> Option<String> {
+    data.get(key)
+        .unwrap_or(&Value::Null)
+        .as_str()
+        .map(|value| value.to_string())
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::game_data::actions::Argument;
-
-    use super::{
-        parse_actions, parse_arguments_of_special_argument, Action,
-        ArgumentValue::{Actions, Func, Val},
-        Function,
+    use crate::game_data::{
+        actions::{parse_actions, Action, Argument},
+        argument::{
+            ArgumentValue::{Actions, Function as Func, Value as Val},
+            Function,
+        },
     };
+
     use serde_json::{json, Value};
-
-    #[test]
-    fn parse_condition_argument() {
-        assert_eq!(
-            parse_arguments_of_special_argument(&json!([
-                 {
-                      "operandType": "boolean",
-                      "operator": "=="
-                 },
-                 true,
-                 true
-            ]))
-            .as_slice(),
-            [
-                Argument::new("operator", Val(Value::String("==".to_string()))),
-                Argument::new("item_a", Val(Value::Bool(true))),
-                Argument::new("item_b", Val(Value::Bool(true))),
-            ]
-        );
-    }
-
-    #[test]
-    fn parse_calculate_function() {
-        assert_eq!(
-            Function::parse(
-                &json!({
-                    "function": "calculate",
-                        "items": [
-                             {
-                                  "operator": "+"
-                             },
-                             1,
-                             5
-                        ]
-                })
-                .as_object()
-                .unwrap()
-            ),
-            Function::new(
-                "calculate",
-                vec![
-                    Argument::new("operator", Val(Value::String("+".to_string()))),
-                    Argument::new("item_a", Val(json!(1))),
-                    Argument::new("item_b", Val(json!(5))),
-                ]
-            )
-        );
-    }
 
     #[test]
     fn parse_action() {
@@ -251,6 +100,7 @@ mod tests {
                 Some("opens a shop!"),
                 "openShopForPlayer",
                 vec![
+                    Argument::new("shop", Val(Value::String("OJbEQyc7is".to_string()))),
                     Argument::new(
                         "player",
                         Func(Function::new(
@@ -261,7 +111,6 @@ mod tests {
                             )]
                         )),
                     ),
-                    Argument::new("shop", Val(Value::String("OJbEQyc7is".to_string()))),
                 ]
             ),]
         );
@@ -308,24 +157,43 @@ mod tests {
                 None,
                 "condition",
                 vec![
-                    Argument::new("operator", Val(Value::String("==".to_string()))),
-                    Argument::new("item_a", Val(Value::Bool(true))),
-                    Argument::new("item_b", Val(Value::Bool(true))),
-                    Argument::new("else", Actions(vec![])),
+                    Argument::new(
+                        "condition",
+                        Func(Function::new(
+                            "condition",
+                            vec![
+                                Argument::new("item_a", Val(Value::Bool(true))),
+                                Argument::new("operator", Val(Value::String("==".to_string()))),
+                                Argument::new("item_b", Val(Value::Bool(true))),
+                            ],
+                        ))
+                    ),
                     Argument::new(
                         "then",
                         Actions(vec![Action::new(
                             None,
                             "condition",
                             vec![
-                                Argument::new("operator", Val(Value::String("==".to_string()))),
-                                Argument::new("item_a", Val(Value::Bool(true))),
-                                Argument::new("item_b", Val(Value::Bool(true))),
-                                Argument::new("else", Actions(vec![])),
+                                Argument::new(
+                                    "condition",
+                                    Func(Function::new(
+                                        "condition",
+                                        vec![
+                                            Argument::new("item_a", Val(Value::Bool(true))),
+                                            Argument::new(
+                                                "operator",
+                                                Val(Value::String("==".to_string()))
+                                            ),
+                                            Argument::new("item_b", Val(Value::Bool(true))),
+                                        ],
+                                    ))
+                                ),
                                 Argument::new("then", Actions(vec![])),
+                                Argument::new("else", Actions(vec![])),
                             ]
                         ),])
                     ),
+                    Argument::new("else", Actions(vec![])),
                 ]
             ),]
         );

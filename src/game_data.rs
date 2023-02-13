@@ -1,4 +1,5 @@
 pub mod actions;
+pub mod argument;
 pub mod directory;
 pub mod entity_types;
 pub mod variables;
@@ -6,14 +7,14 @@ pub mod variables;
 use heck::ToSnakeCase;
 use serde_json::Value;
 
-use self::{directory::Directory, entity_types::CategoryToEntityTypes, variables::Variables};
+use self::{directory::Directory, entity_types::CategoriesToEntityTypes, variables::CategoriesToVariables};
 
 pub struct GameData {
     pub name: String,
     pub json: Value,
-    pub variables: Variables,
+    pub categories_to_variables: CategoriesToVariables,
     pub root_directory: Directory,
-    pub entity_type_categories: CategoryToEntityTypes,
+    pub categories_to_entity_types: CategoriesToEntityTypes,
 }
 
 impl GameData {
@@ -26,13 +27,13 @@ impl GameData {
                 .get("title")
                 .expect("could not find key: title")
                 .to_string(),
-            variables: Variables::parse(&game_data),
+            categories_to_variables: CategoriesToVariables::parse(&game_data),
             root_directory: Directory::parse(
                 &game_data
                     .get("scripts")
                     .expect("could not find key: scripts"),
             ),
-            entity_type_categories: CategoryToEntityTypes::parse(&game_data),
+            categories_to_entity_types: CategoriesToEntityTypes::parse(&game_data),
             json: game_json,
         }
     }

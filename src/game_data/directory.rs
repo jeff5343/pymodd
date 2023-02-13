@@ -1,7 +1,10 @@
 use heck::ToPascalCase;
 use serde_json::{map::Values, Map, Value};
 
-use crate::generator::utils::{is_valid_class_name, to_pymodd::TRIGGERS_TO_PYMODD_ENUMS, iterators::directory_iterator::DirectoryIterator};
+use crate::generator::utils::{
+    is_valid_class_name, iterators::directory_iterator::DirectoryIterator,
+    to_pymodd::TRIGGERS_TO_PYMODD_ENUM,
+};
 
 use super::actions::{self, Action};
 
@@ -65,10 +68,6 @@ impl Directory {
 
     pub fn is_empty(&self) -> bool {
         self.children.is_empty()
-    }   
-
-    pub fn iter_flattened(&self) -> DirectoryIterator {
-        self.into_iter()
     }
 
     fn new(name: &str, key: &str, children: Vec<DirectoryItem>) -> Directory {
@@ -164,7 +163,7 @@ impl Script {
         self.triggers
             .iter()
             .map(|trigger| {
-                TRIGGERS_TO_PYMODD_ENUMS
+                TRIGGERS_TO_PYMODD_ENUM
                     .get(trigger)
                     .unwrap_or(&String::from("None"))
                     .clone()

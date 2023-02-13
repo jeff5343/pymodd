@@ -9,29 +9,35 @@ use super::strip_quotes;
 lazy_static! {
     // enum maps
     static ref SCRIPTS_FILE_CONTENT: String = read_pymodd_file("script.py");
-    pub static ref TRIGGERS_TO_PYMODD_ENUMS: HashMap<String, String> = generate_to_pymodd_enums_map_for_type("Trigger", &SCRIPTS_FILE_CONTENT);
-    pub static ref CONSTANTS_TO_PYMODD_ENUMS: HashMap<String, String> = generate_to_pymodd_enums_map_for_type("UiTarget", &SCRIPTS_FILE_CONTENT)
+    pub static ref TRIGGERS_TO_PYMODD_ENUM: HashMap<String, String> = generate_to_pymodd_enums_map_for_type("Trigger", &SCRIPTS_FILE_CONTENT);
+    pub static ref CONSTANTS_TO_PYMODD_ENUM: HashMap<String, String> = generate_to_pymodd_enums_map_for_type("UiTarget", &SCRIPTS_FILE_CONTENT)
         .into_iter()
         .chain(generate_to_pymodd_enums_map_for_type("Flip", &SCRIPTS_FILE_CONTENT))
         .collect();
 
     // action/function maps
-    pub static ref ACTIONS_TO_PYMODD_STRUCTURES: HashMap<String, PymoddStructure> = generate_actions_to_pymodd_structures_map();
-    pub static ref FUNCTIONS_TO_PYMODD_STRUCTURES: HashMap<String, PymoddStructure> = generate_functions_to_pymodd_structures_map();
+    pub static ref ACTIONS_TO_PYMODD_STRUCTURE: HashMap<String, PymoddStructure> = generate_actions_to_pymodd_structures_map();
+    pub static ref FUNCTIONS_TO_PYMODD_STRUCTURE: HashMap<String, PymoddStructure> = generate_functions_to_pymodd_structures_map();
 }
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct PymoddStructure {
     pub name: String,
-    pub args: Vec<String>,
+    pub parameters: Vec<String>,
 }
 
 impl PymoddStructure {
-    fn new(name: &str, args: Vec<&str>) -> PymoddStructure {
+    pub fn new(name: &str, args: Vec<&str>) -> PymoddStructure {
         PymoddStructure {
             name: name.to_string(),
-            args: args.into_iter().map(|arg| arg.to_string()).collect(),
+            parameters: args.into_iter().map(|arg| arg.to_string()).collect(),
         }
+    }
+}
+
+impl Default for PymoddStructure {
+    fn default() -> Self {
+        PymoddStructure::new("None", Vec::new())
     }
 }
 
@@ -68,7 +74,7 @@ fn generate_actions_to_pymodd_structures_map() -> HashMap<String, PymoddStructur
     let action_classes: Vec<&str> = actions_file.split("\n\n\n").skip(3).collect();
     action_classes.into_iter().for_each(|class_content| {
         actions_to_structures.insert(
-            parse_action_type_of_pymodd_action_class(&class_content),
+            parse_action_name_of_pymodd_action_class(&class_content),
             parse_pymodd_structure_of_pymodd_action_class(&class_content),
         );
     });
@@ -76,12 +82,12 @@ fn generate_actions_to_pymodd_structures_map() -> HashMap<String, PymoddStructur
     actions_to_structures
 }
 
-fn parse_action_type_of_pymodd_action_class(action_class_content: &str) -> String {
+fn parse_action_name_of_pymodd_action_class(action_class_content: &str) -> String {
     strip_quotes(
         &action_class_content
             .lines()
             .find(|line| line.contains("self.action = "))
-            .expect("action's type could not be found")
+            .expect("action's name could not be found")
             .split(" = ")
             .last()
             .unwrap(),
@@ -89,20 +95,31 @@ fn parse_action_type_of_pymodd_action_class(action_class_content: &str) -> Strin
 }
 
 fn parse_pymodd_structure_of_pymodd_action_class(action_class_content: &str) -> PymoddStructure {
-    let args = action_class_content
+    let parameters = action_class_content
         .lines()
-        .filter(|line| line.contains("': ")) // find dictionary entries
-        .map(|line| strip_quotes(&line.split(":").next().unwrap()))
+        .find(|line| line.contains("def __init__("))
+        .unwrap_or("")
+        .trim()
+        .replace("):", "")
+        .split(['(', ','])
+        .skip(2)
+        .map(|parameter| parameter.trim().to_string())
         .collect();
     PymoddStructure {
         name: parse_class_name(action_class_content),
-        args,
+        parameters,
     }
 }
 
 // FUNCTIONS
 fn generate_functions_to_pymodd_structures_map() -> HashMap<String, PymoddStructure> {
     let mut functions_to_structures: HashMap<String, PymoddStructure> = HashMap::new();
+
+    // Condition class is formatted differently from the other classes
+    functions_to_structures.insert(
+        String::from("condition"),
+        PymoddStructure::new("Condition", vec!["item_a", "operator", "item_b"]),
+    );
 
     let functions_file = read_pymodd_file("functions.py");
     let function_classes: Vec<&str> = functions_file.split("\n\n\n").skip(3).collect();
@@ -130,16 +147,22 @@ fn parse_function_type_of_pymodd_function_class(function_class_content: &str) ->
     )
 }
 
-fn parse_pymodd_structure_of_pymodd_function_class(function_class_content: &str) -> PymoddStructure {
-    let args = function_class_content
+fn parse_pymodd_structure_of_pymodd_function_class(
+    function_class_content: &str,
+) -> PymoddStructure {
+    let parameters = function_class_content
         .lines()
-        .skip_while(|line| !line.contains("self.options"))
-        .filter(|line| line.contains("': ")) // find dictionary entries
-        .map(|line| strip_quotes(&line.split(":").next().unwrap()))
+        .find(|line| line.contains("def __init__("))
+        .unwrap_or("")
+        .trim()
+        .replace("):", "")
+        .split(['(', ','])
+        .skip(2)
+        .map(|parameter| parameter.trim().to_string())
         .collect();
     PymoddStructure {
         name: parse_class_name(function_class_content),
-        args,
+        parameters,
     }
 }
 
@@ -173,8 +196,8 @@ fn read_pymodd_file(path: &str) -> String {
 #[cfg(test)]
 mod tests {
     use crate::generator::utils::to_pymodd::{
-        parse_pymodd_structure_of_pymodd_function_class, parse_pymodd_structure_of_pymodd_action_class,
-        PymoddStructure,
+        parse_pymodd_structure_of_pymodd_action_class,
+        parse_pymodd_structure_of_pymodd_function_class, PymoddStructure,
     };
 
     #[test]
@@ -190,7 +213,10 @@ mod tests {
                             \t\t\t'value': to_dict(value),\n\
                         }"
             ),
-            PymoddStructure::new("SetPlayerVariable", vec!["player", "variable", "value"])
+            PymoddStructure::new(
+                "SetPlayerVariable",
+                vec!["player", "variable_type", "value"]
+            )
         );
         assert_eq!(
             parse_pymodd_structure_of_pymodd_action_class(
@@ -208,10 +234,11 @@ mod tests {
         assert_eq!(
             parse_pymodd_structure_of_pymodd_function_class(
                 "class PlayerFromId(Player):\n\
-                    \tself.function = 'getPlayerFromId'\n\
-                    \tself.options = {\n\
-                        \t\t'string': to_dict(string),\n\
-                    \t}"
+                    \tdef __init__(self, string):\n\
+                    \t\tself.function = 'getPlayerFromId'\n\
+                    \t\tself.options = {\n\
+                        \t\t\t'string': to_dict(string),\n\
+                    \t\t}"
             ),
             PymoddStructure::new("PlayerFromId", vec!["string"])
         );

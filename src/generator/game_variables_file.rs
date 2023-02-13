@@ -14,13 +14,13 @@ impl GameVariablesFile {
         let mut importing_clases: Vec<String> = Vec::new();
         let mut category_classes = String::new();
         game_data
-            .variables
+            .categories_to_variables
             .iter()
             .for_each(|(category, variables)| {
                 category_classes
                     .push_str(&build_category_class_content(&category, &variables).add("\n\n\n"));
                 if variables.len() > 0 {
-                    importing_clases.push(class_type_from_category(&category));
+                    importing_clases.push(pymodd_class_type_of_category(&category));
                 }
             });
 
@@ -33,7 +33,7 @@ impl GameVariablesFile {
 }
 
 fn build_category_class_content(category: &'static str, variables: &Vec<Variable>) -> String {
-    let class_content = format!("class {}:", class_name_of_category(&category));
+    let class_content = format!("class {}:", pymodd_class_name_of_category(&category));
     if variables.len() == 0 {
         return class_content.add("\n\tpass");
     }
@@ -56,7 +56,7 @@ fn build_class_variables_of_category(
             format!(
                 "{} = {}(\"{}\"{})",
                 variable.enum_name,
-                class_type_from_category(&category),
+                pymodd_class_type_of_category(&category),
                 variable.id,
                 if is_category_variable_type(&category) {
                     format!(
@@ -72,7 +72,7 @@ fn build_class_variables_of_category(
         .collect()
 }
 
-fn class_name_of_category(category: &'static str) -> String {
+fn pymodd_class_name_of_category(category: &'static str) -> String {
     let mut class_name = match category {
         "entityTypeVariables" => "entityVariables",
         "playerTypeVariables" => "playerVariables",
@@ -86,12 +86,12 @@ fn class_name_of_category(category: &'static str) -> String {
     class_name
 }
 
-fn class_type_from_category(category: &'static str) -> String {
+fn pymodd_class_type_of_category(category: &'static str) -> String {
     // in order to match with classes defined in pymodd/functions.py
     if SEPERATED_VARIABLE_CATEGORIES.contains(&category) {
         return String::from("Variables");
     }
-    class_name_of_category(&category)
+    pymodd_class_name_of_category(&category)
         .strip_suffix('s')
         .unwrap()
         .to_string()

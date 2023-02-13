@@ -11,12 +11,12 @@ use super::{
 
 static ENTITY_TYPE_CATEGORIES: [&str; 3] = ["unitTypes", "projectileTypes", "itemTypes"];
 
-pub struct CategoryToEntityTypes {
-    category_to_entity_types: HashMap<&'static str, Vec<EntityType>>,
+pub struct CategoriesToEntityTypes {
+    categories_to_entity_types: HashMap<&'static str, Vec<EntityType>>,
 }
 
-impl CategoryToEntityTypes {
-    pub fn parse(game_data: &Value) -> CategoryToEntityTypes {
+impl CategoriesToEntityTypes {
+    pub fn parse(game_data: &Value) -> CategoriesToEntityTypes {
         let mut category_to_entity_types = HashMap::new();
 
         ENTITY_TYPE_CATEGORIES.iter().for_each(|&category| {
@@ -29,13 +29,13 @@ impl CategoryToEntityTypes {
             );
         });
 
-        CategoryToEntityTypes {
-            category_to_entity_types: category_to_entity_types,
+        CategoriesToEntityTypes {
+            categories_to_entity_types: category_to_entity_types,
         }
     }
 
     pub fn iter(&self) -> hash_map::Iter<&'static str, Vec<EntityType>> {
-        self.category_to_entity_types.iter()
+        self.categories_to_entity_types.iter()
     }
 }
 
