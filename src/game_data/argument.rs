@@ -14,7 +14,7 @@ pub fn parse_arguments_of_object_data(object_data: &Map<String, Value>) -> Vec<A
         .iter()
         .filter(|(arg_name, _)| !ARGS_TO_IGNORE.contains(&arg_name.as_str()))
         .for_each(|(arg_name, arg_data)| {
-            if arg_name == "items" && Function::name_from_data(object_data) == "calculate" {
+            if Function::name_from_data(object_data) == "calculate" && arg_name == "items" {
                 args.extend(parse_arguments_of_special_argument(arg_data))
             } else if arg_name == "conditions" {
                 args.push(parse_condition_argument(arg_data));

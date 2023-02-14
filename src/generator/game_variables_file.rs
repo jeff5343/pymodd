@@ -1,9 +1,10 @@
 use std::ops::Add;
 
-use heck::ToPascalCase;
-
 use crate::game_data::{
-    variables::{Variable, SEPERATED_VARIABLE_CATEGORIES},
+    variable_categories::{
+        is_category_of_variable_type, pymodd_class_name_of_category, pymodd_class_type_of_category,
+        Variable,
+    },
     GameData,
 };
 
@@ -58,7 +59,7 @@ fn build_class_variables_of_category(
                 variable.enum_name,
                 pymodd_class_type_of_category(&category),
                 variable.id,
-                if is_category_variable_type(&category) {
+                if is_category_of_variable_type(&category) {
                     format!(
                         ", variable_type='{}'",
                         variable.data_type.as_ref().unwrap_or(&String::from("None"))
@@ -72,40 +73,10 @@ fn build_class_variables_of_category(
         .collect()
 }
 
-fn pymodd_class_name_of_category(category: &'static str) -> String {
-    let mut class_name = match category {
-        "entityTypeVariables" => "entityVariables",
-        "playerTypeVariables" => "playerVariables",
-        _ => category,
-    }
-    .to_pascal_case()
-    .to_string();
-    if !class_name.ends_with("s") {
-        class_name.push('s')
-    }
-    class_name
-}
-
-fn pymodd_class_type_of_category(category: &'static str) -> String {
-    // in order to match with classes defined in pymodd/functions.py
-    if SEPERATED_VARIABLE_CATEGORIES.contains(&category) {
-        return String::from("Variables");
-    }
-    pymodd_class_name_of_category(&category)
-        .strip_suffix('s')
-        .unwrap()
-        .to_string()
-}
-
-fn is_category_variable_type(category: &'static str) -> bool {
-    category.to_lowercase().contains("variables")
-        || SEPERATED_VARIABLE_CATEGORIES.contains(&category)
-}
-
 #[cfg(test)]
 mod tests {
     use crate::{
-        game_data::variables::Variable,
+        game_data::variable_categories::Variable,
         generator::game_variables_file::build_category_class_content,
     };
 

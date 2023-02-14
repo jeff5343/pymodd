@@ -3,7 +3,7 @@ pub mod to_pymodd;
 
 use heck::ToLowerCamelCase;
 
-use crate::game_data::variables::{
+use crate::game_data::variable_categories::{
     SEPERATED_VARIABLE_CATEGORIES, VARIABLES_CATEGORY, VARIABLE_CATEGORIES,
 };
 

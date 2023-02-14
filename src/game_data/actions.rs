@@ -36,14 +36,6 @@ impl Action {
         }
     }
 
-    pub fn new(comment: Option<&str>, name: &str, args: Vec<Argument>) -> Action {
-        Action {
-            name: name.to_string(),
-            comment: { comment.map(|comment| comment.to_string()) },
-            args,
-        }
-    }
-
     pub fn pymodd_class_name(&self) -> String {
         ACTIONS_TO_PYMODD_STRUCTURE
             .get(&self.name)
@@ -71,6 +63,16 @@ mod tests {
     };
 
     use serde_json::{json, Value};
+
+    impl Action {
+        pub fn new(comment: Option<&str>, name: &str, args: Vec<Argument>) -> Action {
+            Action {
+                name: name.to_string(),
+                comment: { comment.map(|comment| comment.to_string()) },
+                args,
+            }
+        }
+    }
 
     #[test]
     fn parse_action() {

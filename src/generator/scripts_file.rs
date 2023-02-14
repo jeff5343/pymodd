@@ -1,8 +1,15 @@
 use std::ops::Add;
 
+use serde_json::Value;
+
 use crate::game_data::{actions::Action, directory::Script, GameData};
 
-use super::utils::iterators::directory_iterator::DirectoryIterItem;
+use super::utils::{
+    iterators::{
+        argument_values_iterator::ArgumentValueIterItem, directory_iterator::DirectoryIterItem,
+    },
+    surround_string_with_quotes,
+};
 
 pub struct ScriptsFile {}
 
@@ -49,18 +56,65 @@ fn build_script_content(script: &Script) -> String {
                 \t\t]\n",
         script.triggers_into_pymodd_enums().join(", "),
         build_actions(&script.actions)
-            .into_iter()
+            .lines()
             .map(|action| format!("{}{action}\n", "\t".repeat(3)))
             .collect::<String>(),
     )
 }
 
-fn build_actions(actions: &Vec<Action>) -> Vec<String> {
-    let elements = Vec::new();
+fn build_actions(actions: &Vec<Action>) -> String {
+    actions
+        .iter()
+        .map(|action| {
+            action
+                .iter_flattened_argument_values()
+                .fold(
+                    format!("{}(", action.pymodd_class_name()),
+                    |accumulated_args, curr_arg| {
+                        let is_first_argument = accumulated_args.ends_with("(");
+                        accumulated_args.add(
+                            // insert seperator only if the argument is after the first argument and is not the end of a function
+                            &if !is_first_argument && curr_arg != ArgumentValueIterItem::FunctionEnd {
+                                String::from(", ")
+                            } else {
+                                String::new()
+                            }
+                            .add(&build_argument(curr_arg)),
+                        )
+                    },
+                )
+                .add("),\n")
+        })
+        .collect::<String>()
+}
 
-    // work on this
-
-    elements
+fn build_argument(arg: ArgumentValueIterItem) -> String {
+    match arg {
+        ArgumentValueIterItem::StartOfFunction(function) => {
+            format!("{}(", function.pymodd_class_name())
+        }
+        ArgumentValueIterItem::Actions(actions) => {
+            format!(
+                "[\n{}\n]",
+                build_actions(actions)
+                    .lines()
+                    .map(|line| format!("\t{line}\n"))
+                    .collect::<String>()
+            )
+        }
+        ArgumentValueIterItem::Value(value) => {
+            format!(
+                "{}",
+                match value {
+                    Value::Bool(boolean) => boolean.to_string(),
+                    Value::Number(number) => number.to_string(),
+                    Value::String(string) => surround_string_with_quotes(string),
+                    _ => String::from("Null"),
+                }
+            )
+        }
+        ArgumentValueIterItem::FunctionEnd => String::from(")"),
+    }
 }
 
 #[cfg(test)]
@@ -93,7 +147,7 @@ mod tests {
     }
 
     #[test]
-    fn actions_content() {
+    fn parse_single_action_into_pymodd() {
         assert_eq!(
             build_actions(&parse_actions(
                 &json!([
@@ -113,8 +167,78 @@ mod tests {
                 ])
                 .as_array()
                 .unwrap()
-            )),
-            vec!["OpenShopForPlayer(GetOwnerOf(GetLastCastingUnit()), 'OjbEQyc7is)"]
+            ))
+            .as_str(),
+            "OpenShopForPlayer('OJbEQyc7is', OwnerOfEntity(LastCastingUnit())),\n"
+        )
+    }
+
+    #[test]
+    fn parse_nested_if_statements_into_pymodd() {
+        assert_eq!(
+            build_actions(&parse_actions(
+                json!([
+                     {
+                        "type": "condition",
+                        "conditions": [
+                            {
+                                "operandType": "boolean",
+                                "operator": "=="
+                            },
+                            true,
+                            true
+                        ],
+                        "then": [
+                            {
+                                "type": "condition",
+                                "conditions": [
+                                    {
+                                        "operandType": "boolean",
+                                        "operator": "=="
+                                    },
+                                    true,
+                                    true
+                                ],
+                                "then": [
+                                    {
+                                        "type": "condition",
+                                        "conditions": [
+                                            {
+                                                "operandType": "boolean",
+                                                "operator": "=="
+                                            },
+                                            true,
+                                            true
+                                        ],
+                                        "then": [],
+                                        "else": []
+                                    }
+                                ],
+                                "else": []
+                               }
+                          ],
+                          "else": []
+                     }
+                ])
+                .as_array()
+                .unwrap(),
+            ))
+            .as_str(),
+            "IfStatement(Condition(true, '==', true), [\n\
+                \tIfStatement(Condition(true, '==', true), [\n\
+    		        \t\tIfStatement(Condition(true, '==', true), [\n\
+		            \t\t\n\
+		            \t\t], [\n\
+		            \t\t\n\
+		            \t\t]),\n\
+                \t\n\
+                \t], [\n\
+                \t\n\
+                \t]),\n\
+            \n\
+            ], [\n\
+            \n\
+            ]),\n"
         )
     }
 }

@@ -2,12 +2,12 @@ pub mod actions;
 pub mod argument;
 pub mod directory;
 pub mod entity_types;
-pub mod variables;
+pub mod variable_categories;
 
 use heck::ToSnakeCase;
 use serde_json::Value;
 
-use self::{directory::Directory, entity_types::CategoriesToEntityTypes, variables::CategoriesToVariables};
+use self::{directory::Directory, entity_types::CategoriesToEntityTypes, variable_categories::CategoriesToVariables};
 
 pub struct GameData {
     pub name: String,

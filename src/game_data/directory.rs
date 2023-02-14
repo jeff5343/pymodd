@@ -1,10 +1,7 @@
 use heck::ToPascalCase;
 use serde_json::{map::Values, Map, Value};
 
-use crate::generator::utils::{
-    is_valid_class_name, iterators::directory_iterator::DirectoryIterator,
-    to_pymodd::TRIGGERS_TO_PYMODD_ENUM,
-};
+use crate::generator::utils::{is_valid_class_name, to_pymodd::TRIGGERS_TO_PYMODD_ENUM};
 
 use super::actions::{self, Action};
 
@@ -68,14 +65,6 @@ impl Directory {
 
     pub fn is_empty(&self) -> bool {
         self.children.is_empty()
-    }
-
-    fn new(name: &str, key: &str, children: Vec<DirectoryItem>) -> Directory {
-        Directory {
-            name: name.to_string(),
-            key: key.to_string(),
-            children,
-        }
     }
 }
 
@@ -170,29 +159,44 @@ impl Script {
             })
             .collect()
     }
-
-    pub fn new(name: &str, key: &str, triggers: Vec<&str>, actions: Vec<Action>) -> Script {
-        Script {
-            name: name.to_string(),
-            key: key.to_string(),
-            triggers: triggers
-                .into_iter()
-                .map(|string| string.to_string())
-                .collect(),
-            actions,
-        }
-    }
 }
 
 #[cfg(test)]
 mod tests {
     use serde_json::{json, Value};
 
-    use crate::game_data::directory::{
-        root_children_from_scripts_data, Directory, DirectoryItem, Script, UNDEFINED_STRING,
+    use crate::game_data::{
+        actions::Action,
+        directory::{
+            root_children_from_scripts_data, Directory, DirectoryItem, Script, UNDEFINED_STRING,
+        },
     };
 
     use super::filter_out_children_of_parent;
+
+    impl Directory {
+        fn new(name: &str, key: &str, children: Vec<DirectoryItem>) -> Directory {
+            Directory {
+                name: name.to_string(),
+                key: key.to_string(),
+                children,
+            }
+        }
+    }
+
+    impl Script {
+        pub fn new(name: &str, key: &str, triggers: Vec<&str>, actions: Vec<Action>) -> Script {
+            Script {
+                name: name.to_string(),
+                key: key.to_string(),
+                triggers: triggers
+                    .into_iter()
+                    .map(|string| string.to_string())
+                    .collect(),
+                actions,
+            }
+        }
+    }
 
     #[test]
     fn parse_directory() {
