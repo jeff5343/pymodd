@@ -53,13 +53,14 @@ impl CategoriesToVariables {
         }
     }
 
-    pub fn find_variable_in_a_category_with_id(
+    /// Returns (category, &variable)
+    pub fn find_categoried_variable_with_id(
         &self,
         variable_id: &str,
-    ) -> Option<(&Variable, &'static str)> {
+    ) -> Option<(&'static str, &Variable)> {
         for (category, variables) in self.iter() {
             if let Some(var) = variables.iter().find(|variable| variable.id == variable_id) {
-                return Some((&var, category));
+                return Some((category, &var));
             }
         }
         None
@@ -214,7 +215,7 @@ mod tests {
     };
 
     impl CategoriesToVariables {
-        fn new(map: HashMap<&'static str, Vec<Variable>>) -> CategoriesToVariables {
+        pub fn new(map: HashMap<&'static str, Vec<Variable>>) -> CategoriesToVariables {
             CategoriesToVariables {
                 categories_to_variables: map,
             }
@@ -235,11 +236,11 @@ mod tests {
                 ),
                 ("variables", vec![]),
             ]))
-            .find_variable_in_a_category_with_id("WDWI313")
+            .find_categoried_variable_with_id("WDWI313")
             .unwrap(),
             (
-                &Variable::new("WDWI313", "WATER", Some("region")),
-                "regions"
+                "regions",
+                &Variable::new("WDWI313", "WATER", Some("region"))
             )
         );
     }
