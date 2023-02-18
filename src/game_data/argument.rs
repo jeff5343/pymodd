@@ -114,7 +114,13 @@ pub fn align_arguments_with_pymodd_structure_parameters(
     });
     aligned_args
         .into_iter()
-        .map(|value| value.unwrap_or_else(|| arguments.remove(0)))
+        .map(|value| {
+            value.unwrap_or_else(|| {
+                arguments
+                    .pop()
+                    .unwrap_or(Argument::new("null", ArgumentValue::Value(Value::Null)))
+            })
+        })
         .collect()
 }
 

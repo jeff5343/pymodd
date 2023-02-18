@@ -28,7 +28,7 @@ impl MappingFile {
                 .collect::<String>()
                 .as_str(),
         );
-        let project_directory = game_data.project_directory_name();
+        let project_directory = game_data.pymodd_project_name();
         content.add(
             &format!(
                 "\t\t]\n\n\
@@ -49,11 +49,11 @@ fn retrieve_clases_of_entity_scripts(
         .iter()
         .flat_map(|(_category, entity_types)| entity_types)
         .filter(|entity_type| !entity_type.directory.is_empty())
-        .map(|entity_type| entity_type.class_name().add("()"))
+        .map(|entity_type| entity_type.pymodd_class_name().add("()"))
         .collect()
 }
 
-fn build_directory_elements(directory: &Directory) -> Vec<String> {
+pub fn build_directory_elements(directory: &Directory) -> Vec<String> {
     let mut elements = Vec::new();
     let mut curr_depth = 0;
     directory.iter_flattened().for_each(|game_item| {
@@ -67,7 +67,11 @@ fn build_directory_elements(directory: &Directory) -> Vec<String> {
                 )
             }
             DirectoryIterItem::Script(script) => {
-                format!("{}{}(),", "\t".repeat(curr_depth), script.class_name())
+                format!(
+                    "{}{}(),",
+                    "\t".repeat(curr_depth),
+                    script.pymodd_class_name()
+                )
             }
             DirectoryIterItem::DirectoryEnd => {
                 curr_depth -= 1;

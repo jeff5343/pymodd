@@ -1,7 +1,9 @@
 use std::collections::{hash_map, HashMap};
 
-use heck::{AsShoutySnakeCase, ToPascalCase};
+use heck::ToPascalCase;
 use serde_json::{Map, Value};
+
+use crate::generator::utils::enum_name_of;
 
 pub static VARIABLE_CATEGORIES: [&str; 13] = [
     "animationTypes",
@@ -78,7 +80,7 @@ fn variables_from_category_data(category_data: &Value) -> Vec<Variable> {
         .iter()
         .map(|(var_id, var)| Variable {
             id: var_id.clone(),
-            enum_name: AsShoutySnakeCase(
+            enum_name: enum_name_of(
                 var.get("name")
                     .unwrap_or(&Value::String(var_id.clone()))
                     .as_str()
@@ -100,17 +102,15 @@ fn parse_data_type(data_type: Option<&Value>) -> Option<String> {
 }
 
 fn resolve_duplicate_variable_enum_names(variables: Vec<Variable>) -> Vec<Variable> {
-    let mut enum_names_count: HashMap<String, u32> = HashMap::new();
-
+    let mut enum_names_to_count: HashMap<String, u32> = HashMap::new();
     variables
         .into_iter()
         .map(|mut var| {
-            enum_names_count.insert(
+            enum_names_to_count.insert(
                 var.enum_name.clone(),
-                enum_names_count.get(&var.enum_name).unwrap_or(&0) + 1,
+                enum_names_to_count.get(&var.enum_name).unwrap_or(&0) + 1,
             );
-
-            if let Some(&count) = enum_names_count.get(&var.enum_name) {
+            if let Some(&count) = enum_names_to_count.get(&var.enum_name) {
                 if count > 1 {
                     var.enum_name.push_str(format!("_{}", count - 1).as_str());
                 }

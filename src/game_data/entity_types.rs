@@ -5,9 +5,7 @@ use serde_json::{Map, Value};
 
 use crate::generator::utils::is_valid_class_name;
 
-use super::{
-    Directory,
-};
+use super::Directory;
 
 static ENTITY_TYPE_CATEGORIES: [&str; 3] = ["unitTypes", "projectileTypes", "itemTypes"];
 
@@ -66,10 +64,9 @@ pub struct EntityType {
 }
 
 impl EntityType {
-    pub fn class_name(&self) -> String {
+    pub fn pymodd_class_name(&self) -> String {
         let class_name = self.name.to_pascal_case().to_string();
-        if !is_valid_class_name(&class_name)
-        {
+        if !is_valid_class_name(&class_name) {
             return format!("q{class_name}");
         }
         class_name

@@ -38,8 +38,8 @@ impl GameData {
         }
     }
 
-    /// returns the name of the game's generated project directory
-    pub fn project_directory_name(&self) -> String {
+    /// returns the name of the game's generating project directory
+    pub fn pymodd_project_name(&self) -> String {
         self.name.to_snake_case()
     }
 }

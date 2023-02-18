@@ -1,7 +1,7 @@
 pub mod iterators;
 pub mod to_pymodd;
 
-use heck::ToLowerCamelCase;
+use heck::{ToLowerCamelCase, ToShoutySnakeCase};
 
 use crate::game_data::variable_categories::{
     SEPERATED_VARIABLE_CATEGORIES, VARIABLES_CATEGORY, VARIABLE_CATEGORIES,
@@ -47,6 +47,10 @@ pub(crate) fn strip_quotes(string: &str) -> String {
         .strip_suffix(['\'', '"'])
         .unwrap_or(left_quote_removed)
         .to_string()
+}
+
+pub(crate) fn enum_name_of(name: &str) -> String {
+    name.to_shouty_snake_case()
 }
 
 #[cfg(test)]

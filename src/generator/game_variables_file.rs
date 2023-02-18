@@ -13,13 +13,13 @@ pub struct GameVariablesFile {}
 impl GameVariablesFile {
     pub fn build_content(game_data: &GameData) -> String {
         let mut importing_clases: Vec<String> = Vec::new();
-        let mut category_classes = String::new();
+        let mut file_content = String::new();
         game_data
             .categories_to_variables
             .iter()
             .for_each(|(category, variables)| {
-                category_classes
-                    .push_str(&build_category_class_content(&category, &variables).add("\n\n\n"));
+                file_content
+                    .push_str(&build_class_content_of_category(&category, &variables).add("\n\n\n"));
                 if variables.len() > 0 {
                     importing_clases.push(pymodd_class_type_of_category(&category));
                 }
@@ -28,12 +28,12 @@ impl GameVariablesFile {
         format!(
             "from pymodd.functions import {}\n\n{}",
             importing_clases.join(", "),
-            category_classes,
+            file_content,
         )
     }
 }
 
-fn build_category_class_content(category: &'static str, variables: &Vec<Variable>) -> String {
+fn build_class_content_of_category(category: &'static str, variables: &Vec<Variable>) -> String {
     let class_content = format!("class {}:", pymodd_class_name_of_category(&category));
     if variables.len() == 0 {
         return class_content.add("\n\tpass");
@@ -77,13 +77,13 @@ fn build_class_variables_of_category(
 mod tests {
     use crate::{
         game_data::variable_categories::Variable,
-        generator::game_variables_file::build_category_class_content,
+        generator::game_variables_file::build_class_content_of_category,
     };
 
     #[test]
     fn category_class_content_with_variables() {
         assert_eq!(
-            build_category_class_content(
+            build_class_content_of_category(
                 "itemTypes",
                 &vec![
                     Variable::new("FW3513W", "APPLE", None),
@@ -101,7 +101,7 @@ mod tests {
     #[test]
     fn category_class_content_with_no_variables() {
         assert_eq!(
-            build_category_class_content("itemTypes", &Vec::new(),),
+            build_class_content_of_category("itemTypes", &Vec::new(),),
             String::from(
                 "class ItemTypes:\n\
                     \tpass"
