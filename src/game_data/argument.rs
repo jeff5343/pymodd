@@ -15,11 +15,12 @@ pub fn parse_arguments_of_object_data(object_data: &Map<String, Value>) -> Vec<A
         .filter(|(arg_name, _)| !ARGS_TO_IGNORE.contains(&arg_name.as_str()))
         .for_each(|(arg_name, arg_data)| {
             if Function::name_from_data(object_data) == "calculate" && arg_name == "items" {
-                args.extend(parse_arguments_of_special_argument(arg_data))
-            } else if arg_name == "conditions" {
-                args.push(parse_condition_argument(arg_data));
+                args.extend(parse_arguments_of_operator_argument(arg_data));
             } else {
-                args.push(Argument::parse(arg_name, arg_data));
+                args.push(match arg_name.as_str() {
+                    "conditions" => parse_condition_argument(arg_data),
+                    _ => Argument::parse(arg_name, arg_data),
+                });
             }
         });
     args
@@ -30,25 +31,25 @@ fn parse_condition_argument(condition_data: &Value) -> Argument {
         "condition",
         ArgumentValue::Function(Function::new(
             "condition",
-            parse_arguments_of_special_argument(condition_data),
+            parse_arguments_of_operator_argument(condition_data),
         )),
     )
 }
 
 /// Arguments of functions Calculate and Condition are formatted differently by modd.io
-fn parse_arguments_of_special_argument(argument_data: &Value) -> Vec<Argument> {
+fn parse_arguments_of_operator_argument(argument_data: &Value) -> Vec<Argument> {
     let mut arguments = Vec::new();
     let empty_array = Vec::new();
-    let condition_data = argument_data.as_array().unwrap_or(&empty_array);
+    let argument_data = argument_data.as_array().unwrap_or(&empty_array);
     arguments.extend([
         Argument::new(
             "item_a",
-            ArgumentValue::Value(condition_data.get(1).unwrap_or(&Value::Null).clone()),
+            ArgumentValue::Value(argument_data.get(1).unwrap_or(&Value::Null).clone()),
         ),
         Argument::new(
             "operator",
             ArgumentValue::Value(
-                condition_data
+                argument_data
                     .get(0)
                     .unwrap_or(&Value::Null)
                     .as_object()
@@ -60,7 +61,7 @@ fn parse_arguments_of_special_argument(argument_data: &Value) -> Vec<Argument> {
         ),
         Argument::new(
             "item_b",
-            ArgumentValue::Value(condition_data.get(2).unwrap_or(&Value::Null).clone()),
+            ArgumentValue::Value(argument_data.get(2).unwrap_or(&Value::Null).clone()),
         ),
     ]);
     arguments
@@ -71,16 +72,25 @@ pub fn align_arguments_with_pymodd_structure_parameters(
     mut arguments: Vec<Argument>,
     pymodd_structure_parameters: &Vec<String>,
 ) -> Vec<Argument> {
-    let mut aligned_args = Vec::new();
+    let mut aligned_args: Vec<Option<Argument>> = Vec::new();
     pymodd_structure_parameters.iter().for_each(|parameter| {
-        if let Some(matching_argument_position) = arguments.iter().position(|arg| {
-            let arg_pymodd_name = arg.name.to_snake_case();
-            parameter.contains(&arg_pymodd_name) || arg_pymodd_name.contains(parameter)
-        }) {
-            aligned_args.push(arguments.remove(matching_argument_position));
-        }
+        aligned_args.push(
+            if let Some(matching_arg_position) = arguments.iter().position(|arg| {
+                parameter.contains(&arg.name.to_snake_case())
+                    || arg.name.to_snake_case().contains(parameter)
+            }) {
+                Some(arguments.remove(matching_arg_position))
+            } else {
+                None
+            },
+        )
     });
-    aligned_args.into_iter().chain(arguments).collect()
+    dbg!(&aligned_args);
+    dbg!(&arguments);
+    aligned_args
+        .into_iter()
+        .map(|value| value.unwrap_or_else(|| arguments.remove(0)))
+        .collect()
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -171,7 +181,7 @@ mod tests {
     };
 
     use super::{
-        align_arguments_with_pymodd_structure_parameters, parse_arguments_of_special_argument,
+        align_arguments_with_pymodd_structure_parameters, parse_arguments_of_operator_argument,
         Argument, ArgumentValue::Value as Val, Function,
     };
     use serde_json::{json, Value};
@@ -206,7 +216,7 @@ mod tests {
                 vec![
                     Argument::new("variableType", Val(Value::Null)),
                     Argument::new("value", Val(Value::Null)),
-                    Argument::new("player", Val(Value::Null)),
+                    Argument::new("not_matching", Val(Value::Null)),
                 ],
                 &ACTIONS_TO_PYMODD_STRUCTURE
                     .get("setPlayerVariable")
@@ -215,7 +225,7 @@ mod tests {
             )
             .as_slice(),
             [
-                Argument::new("player", Val(Value::Null)),
+                Argument::new("not_matching", Val(Value::Null)),
                 Argument::new("variableType", Val(Value::Null)),
                 Argument::new("value", Val(Value::Null)),
             ]
@@ -225,7 +235,7 @@ mod tests {
     #[test]
     fn parse_condition_argument() {
         assert_eq!(
-            parse_arguments_of_special_argument(&json!([
+            parse_arguments_of_operator_argument(&json!([
                  {
                       "operandType": "boolean",
                       "operator": "=="
