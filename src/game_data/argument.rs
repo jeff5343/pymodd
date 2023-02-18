@@ -14,57 +14,85 @@ pub fn parse_arguments_of_object_data(object_data: &Map<String, Value>) -> Vec<A
         .iter()
         .filter(|(arg_name, _)| !ARGS_TO_IGNORE.contains(&arg_name.as_str()))
         .for_each(|(arg_name, arg_data)| {
-            if Function::name_from_data(object_data) == "calculate" && arg_name == "items" {
-                args.extend(parse_arguments_of_operator_argument(arg_data));
-            } else {
-                args.push(match arg_name.as_str() {
-                    "conditions" => parse_condition_argument(arg_data),
-                    _ => Argument::parse(arg_name, arg_data),
-                });
-            }
+            args.extend(match arg_name.as_str() {
+                // Calculate Function
+                "items" => parse_arguments_of_operator_argument(arg_data),
+                // Force Function
+                "force" => parse_arguments_of_force_argument(arg_data),
+                // Condition Function
+                "conditions" => vec![Argument::parse_condition(arg_data)],
+                _ => vec![Argument::parse(arg_name, arg_data)],
+            })
         });
     args
 }
 
-fn parse_condition_argument(condition_data: &Value) -> Argument {
-    Argument::new(
-        "condition",
-        ArgumentValue::Function(Function::new(
-            "condition",
-            parse_arguments_of_operator_argument(condition_data),
-        )),
-    )
-}
-
 /// Arguments of functions Calculate and Condition are formatted differently by modd.io
-fn parse_arguments_of_operator_argument(argument_data: &Value) -> Vec<Argument> {
-    let mut arguments = Vec::new();
-    let empty_array = Vec::new();
-    let argument_data = argument_data.as_array().unwrap_or(&empty_array);
-    arguments.extend([
+fn parse_arguments_of_operator_argument(operator_argument_data: &Value) -> Vec<Argument> {
+    let arguments_of_operator_argument = operator_argument_data
+        .as_array()
+        .unwrap_or(&Vec::new())
+        .clone();
+    vec![
         Argument::new(
             "item_a",
-            ArgumentValue::Value(argument_data.get(1).unwrap_or(&Value::Null).clone()),
+            ArgumentValue::Value(
+                arguments_of_operator_argument
+                    .get(1)
+                    .unwrap_or(&Value::Null)
+                    .clone(),
+            ),
         ),
         Argument::new(
             "operator",
             ArgumentValue::Value(
-                argument_data
+                arguments_of_operator_argument
                     .get(0)
                     .unwrap_or(&Value::Null)
                     .as_object()
                     .unwrap_or(&Map::new())
                     .get("operator")
-                    .unwrap_or(&Value::String("None".to_string()))
+                    .unwrap_or(&Value::Null)
                     .clone(),
             ),
         ),
         Argument::new(
             "item_b",
-            ArgumentValue::Value(argument_data.get(2).unwrap_or(&Value::Null).clone()),
+            ArgumentValue::Value(
+                arguments_of_operator_argument
+                    .get(2)
+                    .unwrap_or(&Value::Null)
+                    .clone(),
+            ),
         ),
-    ]);
-    arguments
+    ]
+}
+
+fn parse_arguments_of_force_argument(force_argument_data: &Value) -> Vec<Argument> {
+    let force_arguments_to_value = force_argument_data
+        .as_object()
+        .unwrap_or(&Map::new())
+        .clone();
+    vec![
+        Argument::new(
+            "x",
+            ArgumentValue::Value(
+                force_arguments_to_value
+                    .get("x")
+                    .unwrap_or(&Value::Null)
+                    .clone(),
+            ),
+        ),
+        Argument::new(
+            "y",
+            ArgumentValue::Value(
+                force_arguments_to_value
+                    .get("y")
+                    .unwrap_or(&Value::Null)
+                    .clone(),
+            ),
+        ),
+    ]
 }
 
 /// Aligns the arguments to make sure they line up correctly with the structures defined in pymodd
@@ -75,18 +103,15 @@ pub fn align_arguments_with_pymodd_structure_parameters(
     let mut aligned_args: Vec<Option<Argument>> = Vec::new();
     pymodd_structure_parameters.iter().for_each(|parameter| {
         aligned_args.push(
-            if let Some(matching_arg_position) = arguments.iter().position(|arg| {
-                parameter.contains(&arg.name.to_snake_case())
-                    || arg.name.to_snake_case().contains(parameter)
-            }) {
-                Some(arguments.remove(matching_arg_position))
-            } else {
-                None
-            },
+            arguments
+                .iter()
+                .position(|arg| {
+                    parameter.contains(&arg.name.to_snake_case())
+                        || arg.name.to_snake_case().contains(parameter)
+                })
+                .map(|matching_arg_position| arguments.remove(matching_arg_position)),
         )
     });
-    dbg!(&aligned_args);
-    dbg!(&arguments);
     aligned_args
         .into_iter()
         .map(|value| value.unwrap_or_else(|| arguments.remove(0)))
@@ -111,6 +136,16 @@ impl Argument {
                 _ => ArgumentValue::Value(argument_data.clone()),
             },
         }
+    }
+
+    fn parse_condition(condition_data: &Value) -> Argument {
+        Argument::new(
+            "condition",
+            ArgumentValue::Function(Function::new(
+                "condition",
+                parse_arguments_of_operator_argument(condition_data),
+            )),
+        )
     }
 
     pub fn new(name: &str, value: ArgumentValue) -> Argument {
@@ -176,8 +211,9 @@ impl Function {
 
 #[cfg(test)]
 mod tests {
-    use crate::generator::utils::to_pymodd::{
-        ACTIONS_TO_PYMODD_STRUCTURE, FUNCTIONS_TO_PYMODD_STRUCTURE,
+    use crate::{
+        game_data::argument::parse_arguments_of_object_data,
+        generator::utils::to_pymodd::{ACTIONS_TO_PYMODD_STRUCTURE, FUNCTIONS_TO_PYMODD_STRUCTURE},
     };
 
     use super::{
@@ -248,6 +284,27 @@ mod tests {
                 Argument::new("item_a", Val(Value::Bool(true))),
                 Argument::new("operator", Val(Value::String("==".to_string()))),
                 Argument::new("item_b", Val(Value::Bool(true))),
+            ]
+        );
+    }
+
+    #[test]
+    fn parse_force_argument() {
+        assert_eq!(
+            parse_arguments_of_object_data(
+                &json!({
+                    "force": {
+                        "x": 1,
+                        "y": 1
+                    }
+                })
+                .as_object()
+                .unwrap()
+            )
+            .as_slice(),
+            [
+                Argument::new("x", Val(json!(1))),
+                Argument::new("y", Val(json!(1)))
             ]
         );
     }
