@@ -18,9 +18,18 @@ pub fn parse_arguments_of_object_data(object_data: &Map<String, Value>) -> Vec<A
                 // Calculate Function
                 "items" => parse_arguments_of_operator_argument(arg_data),
                 // Force Function
-                "force" => parse_arguments_of_force_argument(arg_data),
-                // Condition Function
-                "conditions" => vec![Argument::parse_condition(arg_data)],
+                "force" => {
+                    if !arg_data
+                        .as_object()
+                        .unwrap_or(&Map::new())
+                        .contains_key("x")
+                    {
+                        // if arg_data does not contain "x" key return a single force argument
+                        vec![Argument::parse("force", arg_data)]
+                    } else {
+                        parse_arguments_of_force_object_argument(arg_data)
+                    }
+                }
                 _ => vec![Argument::parse(arg_name, arg_data)],
             })
         });
@@ -68,7 +77,7 @@ fn parse_arguments_of_operator_argument(operator_argument_data: &Value) -> Vec<A
     ]
 }
 
-fn parse_arguments_of_force_argument(force_argument_data: &Value) -> Vec<Argument> {
+fn parse_arguments_of_force_object_argument(force_argument_data: &Value) -> Vec<Argument> {
     let force_arguments_to_value = force_argument_data
         .as_object()
         .unwrap_or(&Map::new())
@@ -261,7 +270,9 @@ mod tests {
 
     use super::{
         align_arguments_with_pymodd_structure_parameters, parse_arguments_of_operator_argument,
-        Argument, ArgumentValue::Value as Val, Function,
+        Argument,
+        ArgumentValue::{Function as Func, Value as Val},
+        Function,
     };
     use serde_json::{json, Value};
 
@@ -312,27 +323,7 @@ mod tests {
     }
 
     #[test]
-    fn parse_condition_argument() {
-        assert_eq!(
-            parse_arguments_of_operator_argument(&json!([
-                 {
-                      "operandType": "boolean",
-                      "operator": "=="
-                 },
-                 true,
-                 true
-            ]))
-            .as_slice(),
-            [
-                Argument::new("item_a", Val(Value::Bool(true))),
-                Argument::new("operator", Val(Value::String("==".to_string()))),
-                Argument::new("item_b", Val(Value::Bool(true))),
-            ]
-        );
-    }
-
-    #[test]
-    fn parse_force_argument() {
+    fn parse_force_object_argument() {
         assert_eq!(
             parse_arguments_of_object_data(
                 &json!({
@@ -349,6 +340,21 @@ mod tests {
                 Argument::new("x", Val(json!(1))),
                 Argument::new("y", Val(json!(1)))
             ]
+        );
+    }
+
+    #[test]
+    fn parse_regular_force_argument() {
+        assert_eq!(
+            parse_arguments_of_object_data(
+                &json!({
+                    "force": 5,
+                })
+                .as_object()
+                .unwrap()
+            )
+            .as_slice(),
+            [Argument::new("force", Val(json!(5))),]
         );
     }
 
