@@ -18,9 +18,9 @@ impl EntityScriptsFile {
             from pymodd.script import EntityScripts, Folder, Script, Trigger, UiTarget, Flip\n\n\
             from game_variables import *\n\n"
         );
-
         let scripts_class_content_builder =
             ScriptsClassContentBuilder::new(&game_data.categories_to_variables);
+
         game_data
             .categories_to_entity_types
             .iter()
@@ -62,61 +62,64 @@ fn build_class_content_of_entity_type_in_category(
                 {}\n\
                 \t\t]\n",
         enum_name_of(&entity_type.name),
-        build_directory_elements(&entity_type.directory)
+        build_directory_elements_for_entity_type(&entity_type)
             .into_iter()
             .map(|element| format!("{}{element}\n", "\t".repeat(3)))
             .collect::<String>()
     )
 }
 
+fn build_directory_elements_for_entity_type(entity_type: &EntityType) -> Vec<String> {
+    build_directory_elements(&entity_type.directory)
+        .into_iter()
+        .map(|mut element| {
+            if !element.trim_start().starts_with("Folder") && !element.trim_start().starts_with("]")
+            {
+                element.insert_str(element.find(char::is_alphabetic).unwrap_or(0), "self.")
+            }
+            element
+        })
+        .collect()
+}
+
 #[cfg(test)]
 mod tests {
-    use crate::{game_data::GameData, generator::entity_scripts_file::EntityScriptsFile};
+    use serde_json::json;
+
+    use crate::{
+        game_data::{directory::Directory, entity_types::EntityType},
+        generator::entity_scripts_file::build_class_content_of_entity_type_in_category,
+    };
 
     #[test]
-    fn simple_entity_scripts_file_content() {
+    fn simple_entity_scripts_class_content() {
         assert_eq!(
-            EntityScriptsFile::build_content(&GameData::parse(
-                r#"{
-                "title": "test_game",
-                "data": {
-                    "scripts": {
-                    },
-                    "unitTypes": {
-                        "RW31QW2": { "name": "bob", "scripts": {
-                            "DF31W32": { "name": "initialize", "key": "DF31W32", "actions": [
-                            {
-                                "type": null
-                            }
-                            ], "parent": null, "order": 1 }
-                        }}
-                    }
-                }
-            }"#
-                .to_string()
-            ))
+            build_class_content_of_entity_type_in_category(
+                &EntityType {
+                    name: "bob".to_string(),
+                    directory: Directory::parse(&json!({
+                        "DF31W32": { "name": "initialize", "key": "DF31W32", "actions": [{
+                            "type": null
+                        }], "parent": null, "order": 1 },
+                        "31IAD2B": { "triggers": [], "folderName": "utils",
+                            "key": "31IAD2B", "parent": null, "order": 2 },
+                        "SDUW31W": { "triggers": [], "name": "change_state",
+                            "key": "SDUW31W", "actions": [], "parent": "31IAD2B", "order": 1 }
+                    }))
+                },
+                "unitTypes"
+            )
             .as_str(),
-            "from pymodd.actions import *\n\
-            from pymodd.functions import *\n\
-            from pymodd.script import EntityScripts, Folder, Script, Trigger, UiTarget, Flip\n\
-            \n\
-            from game_variables import *\n\
-            \n\
-            class Bob(EntityScripts):\n\
-            	\tdef _build(self):\n\
-            		\t\tself.entity_type = UnitTypes.BOB\n\
-            		\t\tself.scripts = [\n\
-            			\t\t\tInitialize(),\n\n\
-                    \t\t]\n\
-            \n\
-            	\tclass Initialize(Script):\n\
-            		\t\tdef _build(self):\n\
-            			\t\t\tself.key = 'DF31W32'\n\
-            			\t\t\tself.triggers = []\n\
-            			\t\t\tself.actions = [\n\
-            				\t\t\t\tNone(),\n\
-            	            \t\n\
-            			\t\t\t]\n"
+            "class Bob(EntityScripts):\n\
+                \tdef _build(self):\n\
+                    \t\tself.entity_type = UnitTypes.BOB\n\
+                    \t\tself.scripts = [\n\
+                        \t\t\tself.Initialize(),\n\
+                        \t\t\tFolder('utils', [\n\
+                            \t\t\t\tself.ChangeState(),\n\
+                        \t\t\t]),\n\
+                        \n\
+                    \t\t]\n"
         );
     }
 }
