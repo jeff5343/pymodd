@@ -97,24 +97,38 @@ impl<'a> ScriptsClassContentBuilder<'a> {
         actions
             .iter()
             .map(|action| {
-                action
-                    .iter_flattened_argument_values()
-                    .fold(
-                        format!("{}(", action.pymodd_class_name()),
-                        |stringified_action, curr_arg| {
-                            let is_first_argument_of_action_or_function =
-                                stringified_action.ends_with("(");
-                            stringified_action.add(
-                                // insert seperator only if the argument is not the first argument and is not the end of a function
-                                &(!is_first_argument_of_action_or_function
-                                    && curr_arg != ArgumentValueIterItem::FunctionEnd)
-                                    .then_some(String::from(", "))
-                                    .unwrap_or(String::new())
-                                    .add(&self.build_content_of_argument(curr_arg)),
-                            )
-                        },
+                if action.name == "comment" {
+                    // Pull out comment field for Comment action argument
+                    format!(
+                        "{}({})",
+                        action.pymodd_class_name(),
+                        surround_string_with_quotes(
+                            action.comment.as_ref().unwrap_or(&String::from("None"))
+                        )
                     )
-                    .add("),\n")
+                } else {
+                    action
+                        .iter_flattened_argument_values()
+                        .fold(
+                            format!("{}(", action.pymodd_class_name()),
+                            |pymodd_action, argument| {
+                                let is_first_argument = pymodd_action.ends_with("(");
+                                pymodd_action.add(&format!(
+                                    "{}{}",
+                                    // insert seperator only if the argument is not the first argument and is not the end of a function
+                                    if !is_first_argument
+                                        && argument != ArgumentValueIterItem::FunctionEnd
+                                    {
+                                        String::from(", ")
+                                    } else {
+                                        String::new()
+                                    },
+                                    &self.build_content_of_argument(argument)
+                                ))
+                            },
+                        )
+                        .add("),\n")
+                }
             })
             .collect::<String>()
     }
@@ -242,6 +256,24 @@ mod tests {
                 )),
             "UpdateUiTextForEveryone(UiTarget.TOP, 'Hello!'),\n"
         )
+    }
+
+    #[test]
+    fn parse_comment_action_into_pymodd() {
+        assert_eq!(
+            ScriptsClassContentBuilder::new(&CategoriesToVariables::new(HashMap::new()))
+                .build_content_of_actions(&parse_actions(
+                    &json!([
+                        {
+                            "type": "comment",
+                            "comment": "hey there",
+                        }
+                    ])
+                    .as_array()
+                    .unwrap()
+                )),
+            "Comment('hey there')"
+        );
     }
 
     #[test]

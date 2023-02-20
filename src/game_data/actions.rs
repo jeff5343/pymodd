@@ -15,8 +15,8 @@ pub fn parse_actions(actions_data: &Vec<Value>) -> Vec<Action> {
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct Action {
-    name: String,
-    comment: Option<String>,
+    pub name: String,
+    pub comment: Option<String>,
     pub args: Vec<Argument>,
 }
 
