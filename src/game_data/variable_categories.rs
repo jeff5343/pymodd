@@ -1,11 +1,11 @@
-use std::collections::{hash_map, HashMap};
+use std::collections::HashMap;
 
 use heck::ToPascalCase;
 use serde_json::{Map, Value};
 
 use crate::generator::utils::enum_name_of;
 
-pub static VARIABLE_CATEGORIES: [&str; 13] = [
+pub const VARIABLE_CATEGORIES: [&str; 13] = [
     "animationTypes",
     "attributeTypes",
     "dialogues",
@@ -21,10 +21,30 @@ pub static VARIABLE_CATEGORIES: [&str; 13] = [
     "unitTypes",
 ];
 
-pub static VARIABLES_CATEGORY: &str = "variables";
+pub const VARIABLES_CATEGORY_NAME: &str = "variables";
 // modd.io holds these categories in the "variables" category
-pub static SEPERATED_VARIABLE_CATEGORIES: [&str; 3] =
+pub const SEPERATED_VARIABLE_CATEGORIES: [&str; 3] =
     ["regions", "itemTypeGroups", "unitTypeGroups"];
+
+const VARIABLE_CATEGORIES_ITERATION_ORDER: [&str; 17] = [
+    "unitTypes",
+    "playerTypes",
+    "itemTypes",
+    "projectileTypes",
+    "regions",
+    "variables",
+    "entityTypeVariables",
+    "playerTypeVariables",
+    "animationTypes",
+    "attributeTypes",
+    "itemTypeGroups",
+    "unitTypeGroups",
+    "states",
+    "shops",
+    "dialogues",
+    "music",
+    "sound",
+];
 
 pub struct CategoriesToVariables {
     pub categories_to_variables: HashMap<&'static str, Vec<Variable>>,
@@ -48,7 +68,9 @@ impl CategoriesToVariables {
 
         // seperate categories from "variables" category
         category_to_variables.extend(seperated_variables_categories(
-            game_data.get(VARIABLES_CATEGORY).unwrap_or(&Value::Null),
+            game_data
+                .get(VARIABLES_CATEGORY_NAME)
+                .unwrap_or(&Value::Null),
         ));
         CategoriesToVariables {
             categories_to_variables: category_to_variables,
@@ -60,7 +82,7 @@ impl CategoriesToVariables {
         &self,
         variable_id: &str,
     ) -> Option<(&'static str, &Variable)> {
-        for (category, variables) in self.iter() {
+        for (category, variables) in self.categories_to_variables.iter() {
             if let Some(var) = variables.iter().find(|variable| variable.id == variable_id) {
                 return Some((category, &var));
             }
@@ -68,8 +90,18 @@ impl CategoriesToVariables {
         None
     }
 
-    pub fn iter(&self) -> hash_map::Iter<&'static str, Vec<Variable>> {
-        self.categories_to_variables.iter()
+    pub fn iter(&self) -> std::vec::IntoIter<(&&'static str, &Vec<Variable>)> {
+        let mut categories_of_variables = self
+            .categories_to_variables
+            .iter()
+            .collect::<Vec<(&&'static str, &Vec<Variable>)>>();
+        categories_of_variables.sort_by_key(|(category, _variables)| {
+            VARIABLE_CATEGORIES_ITERATION_ORDER
+                .iter()
+                .position(|element| &element == category)
+                .unwrap()
+        });
+        categories_of_variables.into_iter()
     }
 }
 
@@ -127,7 +159,7 @@ fn seperated_variables_categories(
     // initalize vectors for each variable category
     SEPERATED_VARIABLE_CATEGORIES
         .iter()
-        .chain(&[VARIABLES_CATEGORY])
+        .chain(&[VARIABLES_CATEGORY_NAME])
         .for_each(|category| {
             seperated_category_to_variables.insert(category, Vec::new());
         });
@@ -135,19 +167,16 @@ fn seperated_variables_categories(
     variables_from_category_data(&variables_category_data)
         .into_iter()
         .for_each(|variable| {
-            let category_index = SEPERATED_VARIABLE_CATEGORIES.iter().position(|category| {
-                category.eq(&format!(
-                    "{}s",
-                    &variable.data_type.as_ref().unwrap_or(&String::new())
-                )
-                .as_str())
-            });
+            let seperated_category_of_variable =
+                SEPERATED_VARIABLE_CATEGORIES.iter().find(|&category| {
+                    category.eq(&format!(
+                        "{}s",
+                        &variable.data_type.as_ref().unwrap_or(&String::new())
+                    ))
+                });
 
             seperated_category_to_variables
-                .get_mut(&match category_index {
-                    Some(i) => SEPERATED_VARIABLE_CATEGORIES.get(i).unwrap(),
-                    None => VARIABLES_CATEGORY,
-                })
+                .get_mut(seperated_category_of_variable.unwrap_or(&VARIABLES_CATEGORY_NAME))
                 .unwrap()
                 .push(variable);
         });

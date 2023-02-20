@@ -4,7 +4,7 @@ pub mod to_pymodd;
 use heck::{ToLowerCamelCase, ToShoutySnakeCase};
 
 use crate::game_data::variable_categories::{
-    SEPERATED_VARIABLE_CATEGORIES, VARIABLES_CATEGORY, VARIABLE_CATEGORIES,
+    SEPERATED_VARIABLE_CATEGORIES, VARIABLES_CATEGORY_NAME, VARIABLE_CATEGORIES,
 };
 
 pub(crate) fn is_valid_class_name(class_name: &str) -> bool {
@@ -20,7 +20,7 @@ fn string_starts_with_a_number(string: &str) -> bool {
 fn type_conflicts_with_a_category_class_name(class_name: &str) -> bool {
     SEPERATED_VARIABLE_CATEGORIES
         .into_iter()
-        .chain([VARIABLES_CATEGORY])
+        .chain([VARIABLES_CATEGORY_NAME])
         .collect::<Vec<&str>>()
         .contains(&class_name.to_lower_camel_case().as_str())
         || VARIABLE_CATEGORIES.contains(&class_name.to_lower_camel_case().as_str())

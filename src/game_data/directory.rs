@@ -5,7 +5,7 @@ use crate::generator::utils::{is_valid_class_name, to_pymodd::TRIGGERS_TO_PYMODD
 
 use super::actions::{self, Action};
 
-static UNDEFINED_STRING: &str = "UNDEFINED";
+const UNDEFINED_STRING: &str = "UNDEFINED";
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum DirectoryItem {

@@ -7,7 +7,7 @@ use crate::generator::utils::is_valid_class_name;
 
 use super::Directory;
 
-static ENTITY_TYPE_CATEGORIES: [&str; 3] = ["unitTypes", "projectileTypes", "itemTypes"];
+const ENTITY_TYPE_CATEGORIES: [&str; 3] = ["unitTypes", "projectileTypes", "itemTypes"];
 
 pub struct CategoriesToEntityTypes {
     categories_to_entity_types: HashMap<&'static str, Vec<EntityType>>,
