@@ -136,7 +136,18 @@ impl Argument {
             name: argument_name.to_string(),
             value: match argument_data {
                 Value::Object(function_data) => {
-                    ArgumentValue::Function(Function::parse(function_data))
+                    match Function::name_from_data(function_data).as_str() {
+                        // parse getVariable functions into variable IDs for pymodd
+                        "getPlayerVariable" | "getEntityVariable" => {
+                            ArgumentValue::variable_id_from_get_entity_variable_function(
+                                function_data,
+                            )
+                        }
+                        "getVariable" => {
+                            ArgumentValue::variable_id_from_get_variable_function(function_data)
+                        }
+                        _ => ArgumentValue::Function(Function::parse(function_data)),
+                    }
                 }
                 Value::Array(actions_data) => ArgumentValue::Actions(parse_actions(&actions_data)),
                 _ => ArgumentValue::Value(argument_data.clone()),
@@ -167,6 +178,32 @@ pub enum ArgumentValue {
     Value(Value),
     Actions(Vec<Action>),
     Function(Function),
+}
+
+impl ArgumentValue {
+    fn variable_id_from_get_entity_variable_function(
+        get_entity_variable_function_data: &Map<String, Value>,
+    ) -> ArgumentValue {
+        ArgumentValue::Value(
+            get_entity_variable_function_data
+                .get("variable")
+                .unwrap_or(&Value::Object(Map::new()))
+                .get("key")
+                .unwrap_or(&Value::Null)
+                .to_owned(),
+        )
+    }
+
+    fn variable_id_from_get_variable_function(
+        get_variable_function_data: &Map<String, Value>,
+    ) -> ArgumentValue {
+        ArgumentValue::Value(
+            get_variable_function_data
+                .get("variableName")
+                .unwrap_or(&Value::Null)
+                .to_owned(),
+        )
+    }
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -312,6 +349,50 @@ mod tests {
                 Argument::new("x", Val(json!(1))),
                 Argument::new("y", Val(json!(1)))
             ]
+        );
+    }
+
+    #[test]
+    fn parse_player_variable_argument() {
+        assert_eq!(
+            parse_arguments_of_object_data(
+                &json!({
+                    "variable": {
+                        "function": "getPlayerVariable",
+                        "variable": {
+                            "text": "unit",
+                            "dataType": "unit",
+                            "entity": "humanPlayer",
+                            "key": "OW31JD2"
+                        }
+                    }
+                })
+                .as_object()
+                .unwrap()
+            )
+            .as_slice(),
+            [Argument::new(
+                "variable",
+                Val(Value::String("OW31JD2".to_string()))
+            )]
+        );
+    }
+
+    #[test]
+    fn parse_get_variable_argument() {
+        assert_eq!(
+            parse_arguments_of_object_data(
+                &json!({
+                    "value": {
+                        "function": "getVariable",
+                        "variableName": "AI"
+                    },
+                })
+                .as_object()
+                .unwrap()
+            )
+            .as_slice(),
+            [Argument::new("value", Val(Value::String("AI".to_string())))]
         );
     }
 
