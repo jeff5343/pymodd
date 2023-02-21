@@ -25,7 +25,7 @@ impl ScriptsFile {
             "from pymodd.actions import *\n\
             from pymodd.functions import *\n\
             from pymodd.script import Script, Trigger, UiTarget, Flip\n\n\
-            from game_variables import *\n\n"
+            from game_variables import *\n\n\n"
         );
         content.add(&build_scripts_of_directory(
             &game_data.root_directory,
@@ -115,7 +115,8 @@ impl<'a> ScriptsClassContentBuilder<'a> {
                                 let is_first_argument = pymodd_action.ends_with("(");
                                 pymodd_action.add(&format!(
                                     "{}{}",
-                                    // insert seperator only if the argument is not the first argument and is not the end of a function
+                                    // add seperator only if the argument is not the first argument
+                                    // of a action/function and is not the end of a function
                                     if !is_first_argument
                                         && argument != ArgumentValueIterItem::FunctionEnd
                                     {

@@ -42,7 +42,6 @@ fn parse_arguments_of_operator_data(operator_data: &Value) -> Vec<Argument> {
         .as_array()
         .unwrap_or(&Vec::new())
         .clone();
-    dbg!(&arguments_of_operator_argument);
     vec![
         Argument::parse(
             "item_a",

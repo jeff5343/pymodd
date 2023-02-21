@@ -14,7 +14,7 @@ impl MappingFile {
         let mut content = format!(
             "from pymodd.script import Game, Folder, write_game_to_output, write_to_output\n\n\
             from scripts import *\n\
-            from entity_scripts import * \n\n\
+            from entity_scripts import * \n\n\n\
             class {game_class_name}(Game):\n\
                 \tdef _build(self):\n\
                     \t\tself.entity_scripts = [{}]\n\
@@ -137,7 +137,7 @@ mod tests {
         }"#.to_string())), 
                    "from pymodd.script import Game, Folder, write_game_to_output, write_to_output\n\n\
                     from scripts import *\n\
-                    from entity_scripts import * \n\n\
+                    from entity_scripts import * \n\n\n\
                     class TestGame(Game):\n\
                         \tdef _build(self):\n\
                             \t\tself.entity_scripts = [Bob()]\n\

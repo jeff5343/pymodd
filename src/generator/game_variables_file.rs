@@ -18,15 +18,16 @@ impl GameVariablesFile {
             .categories_to_variables
             .iter()
             .for_each(|(category, variables)| {
-                file_content
-                    .push_str(&build_class_content_of_category(&category, &variables).add("\n\n\n"));
+                file_content.push_str(
+                    &build_class_content_of_category(&category, &variables).add("\n\n\n"),
+                );
                 if variables.len() > 0 {
                     importing_clases.push(pymodd_class_type_of_category(&category));
                 }
             });
 
         format!(
-            "from pymodd.functions import {}\n\n{}",
+            "from pymodd.functions import {}\n\n\n{}",
             importing_clases.join(", "),
             file_content,
         )
