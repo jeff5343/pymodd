@@ -199,8 +199,8 @@ pub fn pymodd_class_name_of_category(category: &'static str) -> String {
 
 pub fn pymodd_class_type_of_category(category: &'static str) -> String {
     // in order to match with classes defined in pymodd/functions.py
-    if is_category_of_variable_type(category) {
-        return String::from("Variables");
+    if VARIABLES_CATEGORY_NAME == category || SEPERATED_VARIABLE_CATEGORIES.contains(&category) {
+        return String::from("Variable");
     }
     pymodd_class_name_of_category(&category)
         .strip_suffix('s')
