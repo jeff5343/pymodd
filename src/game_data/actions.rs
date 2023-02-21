@@ -160,7 +160,7 @@ mod tests {
                 "condition",
                 vec![
                     Argument::new(
-                        "condition",
+                        "conditions",
                         Func(Function::new(
                             "condition",
                             vec![
@@ -177,7 +177,7 @@ mod tests {
                             "condition",
                             vec![
                                 Argument::new(
-                                    "condition",
+                                    "conditions",
                                     Func(Function::new(
                                         "condition",
                                         vec![
