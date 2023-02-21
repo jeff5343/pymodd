@@ -38,10 +38,7 @@ pub fn parse_arguments_of_object_data(object_data: &Map<String, Value>) -> Vec<A
 
 /// Arguments of functions Calculate and Condition are formatted differently by modd.io
 fn parse_arguments_of_operator_data(operator_data: &Value) -> Vec<Argument> {
-    let arguments_of_operator_argument = operator_data
-        .as_array()
-        .unwrap_or(&Vec::new())
-        .clone();
+    let arguments_of_operator_argument = operator_data.as_array().unwrap_or(&Vec::new()).clone();
     vec![
         Argument::parse(
             "item_a",
@@ -74,10 +71,7 @@ fn parse_arguments_of_operator_data(operator_data: &Value) -> Vec<Argument> {
 }
 
 fn parse_arguments_of_force_object_data(force_object_data: &Value) -> Vec<Argument> {
-    let force_arguments_to_value = force_object_data
-        .as_object()
-        .unwrap_or(&Map::new())
-        .clone();
+    let force_arguments_to_value = force_object_data.as_object().unwrap_or(&Map::new()).clone();
     vec![
         Argument::new(
             "x",
@@ -110,11 +104,27 @@ pub fn align_arguments_with_pymodd_structure_parameters(
         aligned_args.push(
             arguments
                 .iter()
-                .position(|arg| {
-                    parameter.contains(&arg.name.to_snake_case())
-                        || arg.name.to_snake_case().contains(parameter)
-                })
-                .map(|matching_arg_position| arguments.remove(matching_arg_position)),
+                .enumerate()
+                .fold(
+                    (None, None),
+                    |(closest_matching_arg_index, closest_matching_arg), (i, arg)| {
+                        let snake_cased_arg = arg.name.to_snake_case();
+                        if (parameter.contains(&snake_cased_arg)
+                            || snake_cased_arg.contains(parameter))
+                            && snake_cased_arg.len()
+                                > closest_matching_arg
+                                    .as_ref()
+                                    .unwrap_or(&String::new())
+                                    .len()
+                        {
+                            (Some(i), Some(snake_cased_arg))
+                        } else {
+                            (closest_matching_arg_index, closest_matching_arg)
+                        }
+                    },
+                )
+                .0
+                .map(|closest_matching_arg_index| arguments.remove(closest_matching_arg_index)),
         )
     });
     aligned_args
@@ -313,23 +323,28 @@ mod tests {
 
     #[test]
     fn align_action_arguments_with_pymodd() {
+        dbg!(
+            &FUNCTIONS_TO_PYMODD_STRUCTURE
+                .get("getValueOfEntityVariable")
+                .unwrap()
+                .parameters
+        );
+
         assert_eq!(
             align_arguments_with_pymodd_structure_parameters(
                 vec![
-                    Argument::new("variableType", Val(Value::Null)),
-                    Argument::new("value", Val(Value::Null)),
-                    Argument::new("not_matching", Val(Value::Null)),
+                    Argument::new("entity", Val(Value::Null)),
+                    Argument::new("variable", Val(Value::Null)),
                 ],
-                &ACTIONS_TO_PYMODD_STRUCTURE
-                    .get("setPlayerVariable")
+                &FUNCTIONS_TO_PYMODD_STRUCTURE
+                    .get("getValueOfEntityVariable")
                     .unwrap()
                     .parameters
             )
             .as_slice(),
             [
-                Argument::new("not_matching", Val(Value::Null)),
-                Argument::new("variableType", Val(Value::Null)),
-                Argument::new("value", Val(Value::Null)),
+                Argument::new("variable", Val(Value::Null)),
+                Argument::new("entity", Val(Value::Null)),
             ]
         )
     }
