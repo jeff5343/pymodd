@@ -14,9 +14,9 @@ use self::{
     game_variables_file::GameVariablesFile, mapping_file::MappingFile, scripts_file::ScriptsFile,
 };
 
-pub struct Generator {}
+pub struct ProjectGenerator {}
 
-impl Generator {
+impl ProjectGenerator {
     pub fn generate(game_data: GameData) {
         let files: [File; 5] = [
             File {

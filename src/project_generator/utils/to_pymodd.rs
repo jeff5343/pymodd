@@ -195,7 +195,7 @@ fn read_pymodd_file(path: &str) -> String {
 
 #[cfg(test)]
 mod tests {
-    use crate::generator::utils::to_pymodd::{
+    use crate::project_generator::utils::to_pymodd::{
         parse_pymodd_structure_of_pymodd_action_class,
         parse_pymodd_structure_of_pymodd_function_class, PymoddStructure,
     };

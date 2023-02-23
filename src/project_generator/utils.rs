@@ -55,7 +55,7 @@ pub(crate) fn enum_name_of(name: &str) -> String {
 
 #[cfg(test)]
 mod tests {
-    use crate::generator::utils::{is_valid_class_name, surrounding_quote_for_string};
+    use crate::project_generator::utils::{is_valid_class_name, surrounding_quote_for_string};
 
     #[test]
     fn valid_class_name() {

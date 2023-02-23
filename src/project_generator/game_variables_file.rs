@@ -80,7 +80,7 @@ fn build_class_variables_of_category(
 mod tests {
     use crate::{
         game_data::variable_categories::Variable,
-        generator::game_variables_file::build_class_content_of_category,
+        project_generator::game_variables_file::build_class_content_of_category,
     };
 
     #[test]

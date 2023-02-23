@@ -3,7 +3,7 @@ use std::collections::{hash_map, HashMap};
 use heck::ToPascalCase;
 use serde_json::{Map, Value};
 
-use crate::generator::utils::is_valid_class_name;
+use crate::project_generator::utils::is_valid_class_name;
 
 use super::Directory;
 

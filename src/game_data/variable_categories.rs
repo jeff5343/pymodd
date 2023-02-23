@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use heck::ToPascalCase;
 use serde_json::{Map, Value};
 
-use crate::generator::utils::enum_name_of;
+use crate::project_generator::utils::enum_name_of;
 
 pub const VARIABLE_CATEGORIES: [&str; 13] = [
     "animationTypes",

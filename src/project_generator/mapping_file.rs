@@ -89,7 +89,7 @@ mod tests {
 
     use crate::{
         game_data::{directory::Directory, GameData},
-        generator::mapping_file::build_directory_elements,
+        project_generator::mapping_file::build_directory_elements,
     };
 
     use super::MappingFile;

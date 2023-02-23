@@ -89,7 +89,7 @@ mod tests {
 
     use crate::{
         game_data::{directory::Directory, entity_types::EntityType},
-        generator::entity_scripts_file::build_class_content_of_entity_type_in_category,
+        project_generator::entity_scripts_file::build_class_content_of_entity_type_in_category,
     };
 
     #[test]

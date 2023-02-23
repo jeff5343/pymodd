@@ -1,7 +1,7 @@
 use heck::ToSnakeCase;
 use serde_json::{Map, Value};
 
-use crate::generator::utils::to_pymodd::{PymoddStructure, FUNCTIONS_TO_PYMODD_STRUCTURE};
+use crate::project_generator::utils::to_pymodd::{PymoddStructure, FUNCTIONS_TO_PYMODD_STRUCTURE};
 
 use super::actions::{parse_actions, Action};
 
@@ -287,7 +287,7 @@ impl Function {
 mod tests {
     use crate::{
         game_data::argument::parse_arguments_of_object_data,
-        generator::utils::to_pymodd::FUNCTIONS_TO_PYMODD_STRUCTURE,
+        project_generator::utils::to_pymodd::FUNCTIONS_TO_PYMODD_STRUCTURE,
     };
 
     use super::{

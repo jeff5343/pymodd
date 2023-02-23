@@ -79,7 +79,7 @@ mod tests {
             actions::Action,
             argument::{Argument, ArgumentValue, Function},
         },
-        generator::utils::iterators::argument_values_iterator::ArgumentValueIterItem,
+        project_generator::utils::iterators::argument_values_iterator::ArgumentValueIterItem,
     };
 
     #[test]
