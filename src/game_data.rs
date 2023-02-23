@@ -7,7 +7,10 @@ pub mod variable_categories;
 use heck::ToSnakeCase;
 use serde_json::Value;
 
-use self::{directory::Directory, entity_types::CategoriesToEntityTypes, variable_categories::CategoriesToVariables};
+use self::{
+    directory::Directory, entity_types::CategoriesToEntityTypes,
+    variable_categories::CategoriesToVariables,
+};
 
 pub struct GameData {
     pub name: String,
@@ -18,24 +21,25 @@ pub struct GameData {
 }
 
 impl GameData {
-    pub fn parse(game_data: String) -> GameData {
-        let game_json: Value =
-            serde_json::from_str(&game_data).expect("could not parse game json file");
+    pub fn parse(game_json_file_content: String) -> Result<GameData, &'static str> {
+        let game_json: Value = serde_json::from_str(&game_json_file_content)
+            .map_err(|_| "error parsing modd.io json file!")?;
         let game_data = &game_json["data"];
-        GameData {
+        Ok(GameData {
             name: game_json
                 .get("title")
-                .expect("could not find key: title")
+                .ok_or("invalid modd.io json file! missing key: title")?
                 .to_string(),
             categories_to_variables: CategoriesToVariables::parse(&game_data),
             root_directory: Directory::parse(
                 &game_data
                     .get("scripts")
-                    .expect("could not find key: scripts"),
+                    .ok_or("invalid modd.io json file! missing key: scripts")?
+                    .to_owned(),
             ),
             categories_to_entity_types: CategoriesToEntityTypes::parse(&game_data),
             json: game_json,
-        }
+        })
     }
 
     /// returns the name of the game's generating project directory

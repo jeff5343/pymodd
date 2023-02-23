@@ -133,7 +133,7 @@ mod tests {
                     "IO53IWD": { "name": "empty" }
                 }
             }
-        }"#.to_string())), 
+        }"#.to_string()).unwrap()), 
         "from pymodd.script import Game, Folder, write_game_to_output, write_to_output\n\n\
         from scripts import *\n\
         from entity_scripts import * \n\n\n\

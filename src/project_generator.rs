@@ -17,7 +17,10 @@ use self::{
 pub struct ProjectGenerator {}
 
 impl ProjectGenerator {
-    pub fn generate(game_data: GameData) {
+    pub fn generate<F>(game_data: GameData, generation_logger: F) -> Result<(), &'static str>
+    where
+        F: Fn(File),
+    {
         let files: [File; 5] = [
             File {
                 path: PathBuf::from("game_variables.py"),
@@ -41,18 +44,29 @@ impl ProjectGenerator {
             },
         ];
 
-        files.into_iter().for_each(|mut file| {
-            file.path = PathBuf::from(game_data.pymodd_project_name()).join(file.path);
-            if let Some(parent) = file.path.parent() {
-                fs::create_dir_all(parent).expect("could not create directories");
+        for file in files.into_iter().map(|file| File {
+            // insert project directory as parent to all file paths
+            path: PathBuf::from(game_data.pymodd_project_name()).join(file.path),
+            content: file.content,
+        }) {
+            // unwrap is fine as all files have the project directory as parent
+            let parent = file.path.parent().unwrap();
+            if !parent.exists() {
+                fs::create_dir_all(parent).map_err(|_| "error creating project directories!")?;
             }
-            let mut file_output = fs::File::create(&file.path).expect("could not create file");
-            write!(file_output, "{}", file.content).expect("could not write to file");
-        });
+            write!(
+                fs::File::create(&file.path).map_err(|_| "error creating project file!")?,
+                "{}",
+                file.content
+            )
+            .map_err(|_| "error writing to project file!")?;
+            generation_logger(file);
+        }
+        Ok(())
     }
 }
 
-struct File {
-    path: PathBuf,
+pub struct File {
+    pub path: PathBuf,
     content: String,
 }
