@@ -4,7 +4,7 @@ use crate::game_data::{
 
 use super::{
     mapping_file::build_directory_elements,
-    scripts_file::{build_scripts_of_directory, ScriptsClassContentBuilder},
+    scripts_file::{build_all_scripts_content_of_directory, ScriptsClassContentBuilder},
     utils::enum_name_of,
 };
 
@@ -32,7 +32,7 @@ impl EntityScriptsFile {
                         content.push_str(&format!(
                             "{}\n{}",
                             build_class_content_of_entity_type_in_category(&entity_type, category),
-                            build_scripts_of_directory(
+                            build_all_scripts_content_of_directory(
                                 &entity_type.directory,
                                 &scripts_class_content_builder
                             )
@@ -59,7 +59,8 @@ fn build_class_content_of_entity_type_in_category(
             \tdef _build(self):\n\
                 \t\tself.entity_type = {category_class_name}.{}\n\
                 \t\tself.scripts = [\n\
-                {}\n\
+                {}\
+                \t\t\t\n\
                 \t\t]\n",
         enum_name_of(&entity_type.name),
         build_directory_elements_for_entity_type(&entity_type)
@@ -118,7 +119,7 @@ mod tests {
                         \t\t\tFolder('utils', [\n\
                             \t\t\t\tself.ChangeState(),\n\
                         \t\t\t]),\n\
-                        \n\
+                        \t\t\t\n\
                     \t\t]\n"
         );
     }

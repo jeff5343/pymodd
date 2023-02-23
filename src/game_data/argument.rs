@@ -287,7 +287,7 @@ impl Function {
 mod tests {
     use crate::{
         game_data::argument::parse_arguments_of_object_data,
-        generator::utils::to_pymodd::{ACTIONS_TO_PYMODD_STRUCTURE, FUNCTIONS_TO_PYMODD_STRUCTURE},
+        generator::utils::to_pymodd::FUNCTIONS_TO_PYMODD_STRUCTURE,
     };
 
     use super::{
@@ -323,13 +323,6 @@ mod tests {
 
     #[test]
     fn align_action_arguments_with_pymodd() {
-        dbg!(
-            &FUNCTIONS_TO_PYMODD_STRUCTURE
-                .get("getValueOfEntityVariable")
-                .unwrap()
-                .parameters
-        );
-
         assert_eq!(
             align_arguments_with_pymodd_structure_parameters(
                 vec![

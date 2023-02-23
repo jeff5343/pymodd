@@ -31,7 +31,8 @@ impl MappingFile {
         let project_directory = game_data.pymodd_project_name();
         content.add(
             &format!(
-                "\t\t]\n\n\
+                "\t\t\t\n\
+                \t\t]\n\n\
                 # run `python {project_directory}/mapping.py` to generate this game's files\n\
                 write_game_to_output({game_class_name}())\n\
                 # uncomment the following to quickly generate the json file for a script\n\
@@ -104,16 +105,14 @@ mod tests {
                 "HWI31WQ": { "folderName": "other", "key": "HWI31WQ", "parent": "31IAD2B", "order": 3 },
                 "JK32Q03": { "name": "destroy_server", "key": "JK32Q03", "actions": [], "parent": "HWI31WQ", "order": 1},
             }))).into_iter().collect::<String>(),
-            String::from(
-                "Initialize(),\
-                Folder('utils', [\
-                    \tChangeState(),\
-                    \tCheckPlayers(),\
-                    \tFolder('other', [\
-                        \t\tDestroyServer(),\
-                    \t]),\
-                ]),"
-            )
+            "Initialize(),\
+            Folder('utils', [\
+                \tChangeState(),\
+                \tCheckPlayers(),\
+                \tFolder('other', [\
+                    \t\tDestroyServer(),\
+                \t]),\
+            ]),"
         );
     }
 
@@ -135,21 +134,22 @@ mod tests {
                 }
             }
         }"#.to_string())), 
-                   "from pymodd.script import Game, Folder, write_game_to_output, write_to_output\n\n\
-                    from scripts import *\n\
-                    from entity_scripts import * \n\n\n\
-                    class TestGame(Game):\n\
-                        \tdef _build(self):\n\
-                            \t\tself.entity_scripts = [Bob()]\n\
-                            \t\tself.scripts = [\n\
-                                \t\t\tInitialize(),\n\
-                                \t\t\tFolder('utils', [\n\
-                                    \t\t\t\tChangeState(),\n\
-                                \t\t\t]),\n\
-                            \t\t]\n\n\
-                    # run `python test_game/mapping.py` to generate this game's files\n\
-                    write_game_to_output(TestGame())\n\
-                    # uncomment the following to quickly generate the json file for a script\n\
-                    # write_to_output('output/', SCRIPT_OBJECT())");
+        "from pymodd.script import Game, Folder, write_game_to_output, write_to_output\n\n\
+        from scripts import *\n\
+        from entity_scripts import * \n\n\n\
+        class TestGame(Game):\n\
+            \tdef _build(self):\n\
+                \t\tself.entity_scripts = [Bob()]\n\
+                \t\tself.scripts = [\n\
+                    \t\t\tInitialize(),\n\
+                    \t\t\tFolder('utils', [\n\
+                        \t\t\t\tChangeState(),\n\
+                    \t\t\t]),\n\
+                    \t\t\t\n\
+                \t\t]\n\n\
+        # run `python test_game/mapping.py` to generate this game's files\n\
+        write_game_to_output(TestGame())\n\
+        # uncomment the following to quickly generate the json file for a script\n\
+        # write_to_output('output/', SCRIPT_OBJECT())");
     }
 }

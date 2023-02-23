@@ -27,14 +27,14 @@ impl ScriptsFile {
             from pymodd.script import Script, Trigger, UiTarget, Flip\n\n\
             from game_variables import *\n\n\n"
         );
-        content.add(&build_scripts_of_directory(
+        content.add(&build_all_scripts_content_of_directory(
             &game_data.root_directory,
             &ScriptsClassContentBuilder::new(&game_data.categories_to_variables),
         ))
     }
 }
 
-pub fn build_scripts_of_directory(
+pub fn build_all_scripts_content_of_directory(
     directory: &Directory,
     scripts_class_content_builder: &ScriptsClassContentBuilder,
 ) -> String {
@@ -83,7 +83,8 @@ impl<'a> ScriptsClassContentBuilder<'a> {
                 \t\tself.key = '{script_key}'\n\
                 \t\tself.triggers = [{}]\n\
                 \t\tself.actions = [\n\
-                {}\n\
+                {}\
+                \t\t\t\n\
                 \t\t]\n",
             script.triggers_into_pymodd_enums().join(", "),
             self.build_content_of_actions(&script.actions)
@@ -141,7 +142,7 @@ impl<'a> ScriptsClassContentBuilder<'a> {
             }
             ArgumentValueIterItem::Actions(actions) => {
                 format!(
-                    "[\n{}\n]",
+                    "[\n{}\t\n]",
                     self.build_content_of_actions(actions)
                         .lines()
                         .map(|line| format!("\t{line}\n"))
@@ -204,7 +205,7 @@ mod tests {
                         \t\tself.key = 'WI31HDK'\n\
                         \t\tself.triggers = [Trigger.GAME_START]\n\
                         \t\tself.actions = [\n\
-                        \n\
+                        \t\t\t\n\
                         \t\t]\n",
             ))
         );
@@ -332,17 +333,17 @@ mod tests {
             "IfStatement(Condition(true, '==', true), [\n\
                 \tIfStatement(Condition(true, '==', true), [\n\
     		        \t\tIfStatement(Condition(true, '==', true), [\n\
-		            \t\t\n\
+		                \t\t\t\n\
 		            \t\t], [\n\
-		            \t\t\n\
+		                \t\t\t\n\
 		            \t\t]),\n\
-                \t\n\
+                    \t\t\n\
                 \t], [\n\
-                \t\n\
+                    \t\t\n\
                 \t]),\n\
-            \n\
+                \t\n\
             ], [\n\
-            \n\
+                \t\n\
             ]),\n"
         )
     }
