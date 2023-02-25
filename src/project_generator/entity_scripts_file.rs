@@ -30,15 +30,17 @@ impl EntityScriptsFile {
                     .filter(|entity_type| !entity_type.directory.is_empty())
                     .for_each(|entity_type| {
                         content.push_str(&format!(
-                            "{}\n{}",
+                            "{}\n{}\n\n",
                             build_class_content_of_entity_type_in_category(&entity_type, category),
                             build_all_scripts_content_of_directory(
                                 &entity_type.directory,
                                 &scripts_class_content_builder
                             )
                             .lines()
-                            .map(|line| format!("{}{line}\n", "\t"))
+                            .map(|line| { format!("\t{line}\n") })
                             .collect::<String>()
+                            // remove one line in between the scripts of the entity_type
+                            .replace("\t\n\t\n", "\n")
                         ));
                     });
             });

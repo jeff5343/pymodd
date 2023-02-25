@@ -65,7 +65,7 @@ pub struct EntityType {
 
 impl EntityType {
     pub fn pymodd_class_name(&self) -> String {
-        let class_name = self.name.to_pascal_case().to_string();
+        let class_name = self.name.replace("'", "").to_pascal_case().to_string();
         if !is_valid_class_name(&class_name) {
             return format!("q{class_name}");
         }

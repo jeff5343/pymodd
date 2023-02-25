@@ -4,7 +4,10 @@ use heck::ToPascalCase;
 
 use crate::game_data::{directory::Directory, entity_types::CategoriesToEntityTypes, GameData};
 
-use super::utils::{iterators::directory_iterator::DirectoryIterItem, surround_string_with_quotes};
+use super::{
+    utils::{iterators::directory_iterator::DirectoryIterItem, surround_string_with_quotes},
+    STORED_GAME_JSON_FILE_PATH,
+};
 
 pub struct MappingFile {}
 
@@ -34,7 +37,7 @@ impl MappingFile {
                 "\t\t\t\n\
                 \t\t]\n\n\
                 # run `python {project_directory}/mapping.py` to generate this game's files\n\
-                write_game_to_output({game_class_name}())\n\
+                write_game_to_output({game_class_name}('{project_directory}/{STORED_GAME_JSON_FILE_PATH}'))\n\
                 # uncomment the following to quickly generate the json file for a script\n\
                 # write_to_output('output/', SCRIPT_OBJECT())"
             )

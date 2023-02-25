@@ -14,6 +14,8 @@ use self::{
     game_variables_file::GameVariablesFile, mapping_file::MappingFile, scripts_file::ScriptsFile,
 };
 
+const STORED_GAME_JSON_FILE_PATH: &str = "utils/game.json";
+
 pub struct ProjectGenerator {}
 
 impl ProjectGenerator {
@@ -39,7 +41,7 @@ impl ProjectGenerator {
                 content: EntityScriptsFile::build_content(&game_data),
             },
             File {
-                path: PathBuf::from("utils/game.json"),
+                path: PathBuf::from(STORED_GAME_JSON_FILE_PATH),
                 content: GameJsonFile::build_content(&game_data),
             },
         ];
