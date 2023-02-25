@@ -27,14 +27,14 @@ fn generate_project_from_json_file_path(json_file_path: String) {
     };
 
     println!(
-        "\nGenerating {} project files...",
+        "\nGenerating pymodd project, {}...",
         game_data.pymodd_project_name().underlined()
     );
     ProjectGenerator::generate(game_data, |file| {
         log_success(&format!("{} written", file.path.to_str().unwrap()))
     })
     .unwrap_or_else(|err_msg| log_error(err_msg));
-    println!("\ncompleted generation {}!\n", "successfully".dark_green());
+    println!("\n{} completed generation!\n", "successfully".dark_green());
 }
 
 fn log_success(message: &str) {
@@ -42,7 +42,7 @@ fn log_success(message: &str) {
 }
 
 fn log_error(message: &str) {
-    println!(" {} {}", "x".dark_red().bold(), message.red().underlined());
+    println!(" {} {}", "x".dark_red(), message.red().underlined());
 }
 
 #[pymodule]

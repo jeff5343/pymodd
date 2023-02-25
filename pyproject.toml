@@ -26,4 +26,4 @@ dependencies = [
 repository = "https://github.com/jeff5343/pymodd"
 
 [project.scripts]
-generate-game = 'pymodd.console_scripts.generate:main'
+generate-game = 'pymodd.console_scripts.generate_project:main'
