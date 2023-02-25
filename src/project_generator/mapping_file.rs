@@ -151,7 +151,7 @@ mod tests {
                     \t\t\t\n\
                 \t\t]\n\n\
         # run `python test_game/mapping.py` to generate this game's files\n\
-        write_game_to_output(TestGame())\n\
+        write_game_to_output(TestGame('test_game/utils/game.json'))\n\
         # uncomment the following to quickly generate the json file for a script\n\
         # write_to_output('output/', SCRIPT_OBJECT())");
     }
