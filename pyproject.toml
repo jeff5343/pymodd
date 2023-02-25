@@ -1,0 +1,29 @@
+[build-system]
+requires = ["maturin>=0.14,<0.15"]
+build-backend = "maturin"
+
+[project]
+name = "pymodd"
+version = "0.2.0"
+description = "A package for creating modd.io games using python!"
+readme = "README.rst"
+requires-python = ">=3.8"
+license = {text = "MIT"}
+authors = [
+    {name = "Jeff"}
+]
+classifiers = [
+    "Programming Language :: Rust",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Programming Language :: Python :: Implementation :: PyPy",
+]
+
+dependencies = [
+    'case-converter==1.1.0'
+]
+
+[project.urls]
+repository = "https://github.com/jeff5343/pymodd"
+
+[project.scripts]
+generate-game = 'pymodd.console_scripts.generate_project:main'
