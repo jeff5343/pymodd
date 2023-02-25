@@ -1,14 +1,20 @@
 Pymodd
 ======
+.. image:: https://img.shields.io/github/actions/workflow/status/jeff5343/pymodd/CI.yml?label=CI&logo=github&style=plastic
+   :alt: GitHub Workflow Status
+.. image:: https://img.shields.io/pypi/v/pymodd?style=plastic
+   :alt: PyPI
+.. image:: https://img.shields.io/pypi/l/pymodd?style=plastic
+   :alt: PyPI - License
 
-Pymodd is a python package for creating modd.io games in python!
+Pymodd is a python package used for creating modd.io games in python
 
 Features
 -----------------------
 
-- mapping file for organizing scripts
-- edit global scripts and entity scripts
-- command to generate a pymodd project
+- edit global and entity scripts
+- organize folders and scripts with a mapping file
+- a command to generate a pymodd project
 
 Installing
 -----------------------
@@ -29,11 +35,11 @@ To install the library run the following command:
 Getting Started
 -----------------------
 
-Export your modd game json file from the website and then generate a project by running this command:
+Export your modd game json file from the website and then generate a pymodd project by running the following command:
 
 .. code:: sh
 
-    generate-game {PATH TO GAME JSON FILE}
+    generate-game [GAME_JSON_FILE_PATH]
 
 
 Quick Script Example
