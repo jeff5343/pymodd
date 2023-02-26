@@ -87,6 +87,7 @@ mod tests {
         assert_eq!(
             Action::new(
                 Some("opens a shop!"),
+                false,
                 "openShopForPlayer",
                 vec![
                     Argument::new(

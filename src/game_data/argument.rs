@@ -5,7 +5,7 @@ use crate::project_generator::utils::to_pymodd::{PymoddStructure, FUNCTIONS_TO_P
 
 use super::actions::{parse_actions, Action};
 
-const ARGS_TO_IGNORE: [&str; 4] = ["type", "function", "vars", "comment"];
+const ARGS_TO_IGNORE: [&str; 5] = ["type", "function", "vars", "comment", "runOnClient"];
 
 /// Accepts both pymodd action and pymodd function data
 pub fn parse_arguments_of_object_data(object_data: &Map<String, Value>) -> Vec<Argument> {
