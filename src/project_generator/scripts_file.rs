@@ -102,7 +102,7 @@ impl<'a> ScriptsClassContentBuilder<'a> {
                     // Pull out comment field for Comment action argument
                     "comment" => {
                         format!(
-                            "{}({})",
+                            "{}({}),\n",
                             action.pymodd_class_name(),
                             surround_string_with_quotes(
                                 action.comment.as_ref().unwrap_or(&String::from("None"))
@@ -277,7 +277,7 @@ mod tests {
                     .as_array()
                     .unwrap()
                 )),
-            "Comment('hey there')"
+            "Comment('hey there'),\n"
         );
     }
 
