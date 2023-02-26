@@ -169,7 +169,10 @@ impl<'a> ScriptsClassContentBuilder<'a> {
                         surround_string_with_quotes(string)
                     }
                 }
-                Value::Bool(boolean) => boolean.to_string(),
+                Value::Bool(boolean) => String::from(match boolean {
+                    true => "True",
+                    false => "False",
+                }),
                 Value::Number(number) => number.to_string(),
                 _ => String::from("None"),
             },
