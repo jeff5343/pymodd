@@ -16,9 +16,10 @@ pub fn parse_actions(actions_data: &Vec<Value>) -> Vec<Action> {
 #[derive(Debug, PartialEq, Eq)]
 pub struct Action {
     pub name: String,
-    pub comment: Option<String>,
-    pub ranOnClient: bool,
     pub args: Vec<Argument>,
+    pub comment: Option<String>,
+    pub ran_on_client: bool,
+    pub disabled: bool,
 }
 
 impl Action {
@@ -34,8 +35,13 @@ impl Action {
                 .unwrap_or(&Value::Null)
                 .as_str()
                 .map(|val| val.to_string()),
-            ranOnClient: action_data
+            ran_on_client: action_data
                 .get("runOnClient")
+                .unwrap_or(&Value::Null)
+                .as_bool()
+                .unwrap_or(false),
+            disabled: action_data
+                .get("disabled")
                 .unwrap_or(&Value::Null)
                 .as_bool()
                 .unwrap_or(false),
@@ -73,16 +79,18 @@ mod tests {
 
     impl Action {
         pub fn new(
-            comment: Option<&str>,
-            ranOnClient: bool,
             name: &str,
             args: Vec<Argument>,
+            comment: Option<&str>,
+            ran_on_client: bool,
+            disabled: bool,
         ) -> Action {
             Action {
                 name: name.to_string(),
-                ranOnClient,
-                comment: { comment.map(|comment| comment.to_string()) },
                 args,
+                comment: { comment.map(|comment| comment.to_string()) },
+                ran_on_client,
+                disabled,
             }
         }
     }
@@ -105,6 +113,7 @@ mod tests {
                         },
                         "shop": "OJbEQyc7is",
                         "runOnClient": true,
+                        "disabled": true,
                         "vars": []
                     }
                 ])
@@ -113,8 +122,6 @@ mod tests {
             )
             .as_slice(),
             [Action::new(
-                Some("opens a shop!"),
-                true,
                 "openShopForPlayer",
                 vec![
                     Argument::new("shop", Val(Value::String("OJbEQyc7is".to_string()))),
@@ -128,7 +135,10 @@ mod tests {
                             )]
                         )),
                     ),
-                ]
+                ],
+                Some("opens a shop!"),
+                true,
+                true,
             ),]
         );
     }
@@ -171,8 +181,6 @@ mod tests {
             )
             .as_slice(),
             [Action::new(
-                None,
-                false,
                 "condition",
                 vec![
                     Argument::new(
@@ -189,8 +197,6 @@ mod tests {
                     Argument::new(
                         "then",
                         Actions(vec![Action::new(
-                            None,
-                            false,
                             "condition",
                             vec![
                                 Argument::new(
@@ -209,11 +215,17 @@ mod tests {
                                 ),
                                 Argument::new("then", Actions(vec![])),
                                 Argument::new("else", Actions(vec![])),
-                            ]
+                            ],
+                            None,
+                            false,
+                            false
                         ),])
                     ),
                     Argument::new("else", Actions(vec![])),
-                ]
+                ],
+                None,
+                false,
+                false,
             ),]
         );
     }

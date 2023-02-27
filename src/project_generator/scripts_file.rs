@@ -336,9 +336,9 @@ mod tests {
                     .unwrap(),
                 ))
                 .as_str(),
-            "IfStatement(Condition(true, '==', true), [\n\
-                \tIfStatement(Condition(true, '==', true), [\n\
-    		        \t\tIfStatement(Condition(true, '==', true), [\n\
+            "IfStatement(Condition(True, '==', True), [\n\
+                \tIfStatement(Condition(True, '==', True), [\n\
+    		        \t\tIfStatement(Condition(True, '==', True), [\n\
 		                \t\t\t\n\
 		            \t\t], [\n\
 		                \t\t\t\n\
