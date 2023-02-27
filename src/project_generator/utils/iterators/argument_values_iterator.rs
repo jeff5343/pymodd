@@ -86,7 +86,6 @@ mod tests {
     fn flatten_arguments_of_action() {
         assert_eq!(
             Action::new(
-                Some("opens a shop!"),
                 "openShopForPlayer",
                 vec![
                     Argument::new(
@@ -106,7 +105,10 @@ mod tests {
                             )]
                         )),
                     ),
-                ]
+                ],
+                Some("opens a shop!"),
+                false,
+                false,
             )
             .iter_flattened_argument_values()
             .collect::<Vec<ArgumentValueIterItem>>()

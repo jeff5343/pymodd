@@ -16,23 +16,43 @@ pub fn parse_actions(actions_data: &Vec<Value>) -> Vec<Action> {
 #[derive(Debug, PartialEq, Eq)]
 pub struct Action {
     pub name: String,
-    pub comment: Option<String>,
     pub args: Vec<Argument>,
+    pub comment: Option<String>,
+    pub ran_on_client: bool,
+    pub disabled: bool,
 }
 
 impl Action {
     pub fn parse(action_data: &Map<String, Value>) -> Action {
-        let action_name = string_value_of_key("type", action_data).unwrap_or(String::from("null"));
+        let action_name = action_data
+            .get("type")
+            .unwrap_or(&Value::Null)
+            .as_str()
+            .unwrap_or("null");
         Action {
-            comment: string_value_of_key("comment", action_data),
+            comment: action_data
+                .get("comment")
+                .unwrap_or(&Value::Null)
+                .as_str()
+                .map(|val| val.to_string()),
+            ran_on_client: action_data
+                .get("runOnClient")
+                .unwrap_or(&Value::Null)
+                .as_bool()
+                .unwrap_or(false),
+            disabled: action_data
+                .get("disabled")
+                .unwrap_or(&Value::Null)
+                .as_bool()
+                .unwrap_or(false),
             args: align_arguments_with_pymodd_structure_parameters(
                 parse_arguments_of_object_data(action_data),
                 &ACTIONS_TO_PYMODD_STRUCTURE
-                    .get(&action_name)
+                    .get(action_name)
                     .unwrap_or(&PymoddStructure::default())
                     .parameters,
             ),
-            name: action_name,
+            name: action_name.to_string(),
         }
     }
 
@@ -43,13 +63,6 @@ impl Action {
             .name
             .clone()
     }
-}
-
-fn string_value_of_key(key: &str, data: &Map<String, Value>) -> Option<String> {
-    data.get(key)
-        .unwrap_or(&Value::Null)
-        .as_str()
-        .map(|value| value.to_string())
 }
 
 #[cfg(test)]
@@ -65,11 +78,19 @@ mod tests {
     use serde_json::{json, Value};
 
     impl Action {
-        pub fn new(comment: Option<&str>, name: &str, args: Vec<Argument>) -> Action {
+        pub fn new(
+            name: &str,
+            args: Vec<Argument>,
+            comment: Option<&str>,
+            ran_on_client: bool,
+            disabled: bool,
+        ) -> Action {
             Action {
                 name: name.to_string(),
-                comment: { comment.map(|comment| comment.to_string()) },
                 args,
+                comment: { comment.map(|comment| comment.to_string()) },
+                ran_on_client,
+                disabled,
             }
         }
     }
@@ -91,6 +112,8 @@ mod tests {
                             "vars": []
                         },
                         "shop": "OJbEQyc7is",
+                        "runOnClient": true,
+                        "disabled": true,
                         "vars": []
                     }
                 ])
@@ -99,7 +122,6 @@ mod tests {
             )
             .as_slice(),
             [Action::new(
-                Some("opens a shop!"),
                 "openShopForPlayer",
                 vec![
                     Argument::new("shop", Val(Value::String("OJbEQyc7is".to_string()))),
@@ -113,7 +135,10 @@ mod tests {
                             )]
                         )),
                     ),
-                ]
+                ],
+                Some("opens a shop!"),
+                true,
+                true,
             ),]
         );
     }
@@ -156,7 +181,6 @@ mod tests {
             )
             .as_slice(),
             [Action::new(
-                None,
                 "condition",
                 vec![
                     Argument::new(
@@ -173,7 +197,6 @@ mod tests {
                     Argument::new(
                         "then",
                         Actions(vec![Action::new(
-                            None,
                             "condition",
                             vec![
                                 Argument::new(
@@ -192,11 +215,17 @@ mod tests {
                                 ),
                                 Argument::new("then", Actions(vec![])),
                                 Argument::new("else", Actions(vec![])),
-                            ]
+                            ],
+                            None,
+                            false,
+                            false
                         ),])
                     ),
                     Argument::new("else", Actions(vec![])),
-                ]
+                ],
+                None,
+                false,
+                false,
             ),]
         );
     }

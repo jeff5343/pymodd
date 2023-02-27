@@ -102,7 +102,7 @@ impl<'a> ScriptsClassContentBuilder<'a> {
                     // Pull out comment field for Comment action argument
                     "comment" => {
                         format!(
-                            "{}({})",
+                            "{}({}),\n",
                             action.pymodd_class_name(),
                             surround_string_with_quotes(
                                 action.comment.as_ref().unwrap_or(&String::from("None"))
@@ -169,7 +169,10 @@ impl<'a> ScriptsClassContentBuilder<'a> {
                         surround_string_with_quotes(string)
                     }
                 }
-                Value::Bool(boolean) => boolean.to_string(),
+                Value::Bool(boolean) => String::from(match boolean {
+                    true => "True",
+                    false => "False",
+                }),
                 Value::Number(number) => number.to_string(),
                 _ => String::from("None"),
             },
@@ -277,7 +280,7 @@ mod tests {
                     .as_array()
                     .unwrap()
                 )),
-            "Comment('hey there')"
+            "Comment('hey there'),\n"
         );
     }
 
@@ -333,9 +336,9 @@ mod tests {
                     .unwrap(),
                 ))
                 .as_str(),
-            "IfStatement(Condition(true, '==', true), [\n\
-                \tIfStatement(Condition(true, '==', true), [\n\
-    		        \t\tIfStatement(Condition(true, '==', true), [\n\
+            "IfStatement(Condition(True, '==', True), [\n\
+                \tIfStatement(Condition(True, '==', True), [\n\
+    		        \t\tIfStatement(Condition(True, '==', True), [\n\
 		                \t\t\t\n\
 		            \t\t], [\n\
 		                \t\t\t\n\
