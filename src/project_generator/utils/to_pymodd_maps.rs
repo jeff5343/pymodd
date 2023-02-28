@@ -64,49 +64,51 @@ fn generate_to_pymodd_enums_map_for_type(
 // ACTIONS
 fn generate_actions_to_pymodd_structures_map() -> HashMap<String, PymoddStructure> {
     let mut actions_to_structures: HashMap<String, PymoddStructure> = HashMap::new();
-    // IfStatement class is formatted differently from the other classes
-    actions_to_structures.insert(
-        String::from("condition"),
-        PymoddStructure::new("IfStatement", vec!["conditions", "then", "else"]),
-    );
 
     let actions_file = read_pymodd_file("actions.py");
-    let action_classes: Vec<&str> = actions_file.split("\n\n\n").skip(3).collect();
-    action_classes.into_iter().for_each(|class_content| {
+    let action_functions: Vec<&str> = actions_file.split("\n\n\n").skip(3).collect();
+    action_functions.into_iter().for_each(|function_content| {
         actions_to_structures.insert(
-            parse_action_name_of_pymodd_action_class(&class_content),
-            parse_pymodd_structure_of_pymodd_action_class(&class_content),
+            parse_action_name_of_pymodd_action_function(&function_content),
+            parse_pymodd_structure_of_pymodd_action_function(&function_content),
         );
     });
 
     actions_to_structures
 }
 
-fn parse_action_name_of_pymodd_action_class(action_class_content: &str) -> String {
+fn parse_action_name_of_pymodd_action_function(action_function_content: &str) -> String {
     strip_quotes(
-        &action_class_content
+        &action_function_content
             .lines()
-            .find(|line| line.contains("self.action = "))
-            .expect("action's name could not be found")
-            .split(" = ")
+            .find(|line| line.contains("'type': "))
+            .expect("action's type could not be found")
+            .split("'type': ")
             .last()
-            .unwrap(),
+            .unwrap()
+            .trim()
+            .strip_suffix(",")
+            .expect("action's type does not trail with a comma"),
     )
 }
 
-fn parse_pymodd_structure_of_pymodd_action_class(action_class_content: &str) -> PymoddStructure {
-    let parameters = action_class_content
+fn parse_pymodd_structure_of_pymodd_action_function(
+    action_function_content: &str,
+) -> PymoddStructure {
+    let parameters = action_function_content
         .lines()
-        .find(|line| line.contains("def __init__("))
-        .unwrap_or("")
+        .find(|line| line.contains("def "))
+        .expect("function not defined for action")
         .trim()
-        .replace("):", "")
+        .strip_suffix("):")
+        .unwrap()
         .split(['(', ','])
-        .skip(2)
+        .skip(1)
+        .take_while(|arg| !arg.contains("comment=None"))
         .map(|parameter| parameter.trim().to_string())
         .collect();
     PymoddStructure {
-        name: parse_class_name(action_class_content),
+        name: parse_function_name(action_function_content),
         parameters,
     }
 }
@@ -140,7 +142,7 @@ fn parse_function_type_of_pymodd_function_class(function_class_content: &str) ->
         &function_class_content
             .lines()
             .find(|line| line.contains("self.function = "))
-            .expect("action's type could not be found")
+            .expect("function's type could not be found")
             .split(" = ")
             .last()
             .unwrap(),
@@ -167,6 +169,19 @@ fn parse_pymodd_structure_of_pymodd_function_class(
 }
 
 // HELPER FUNCTIONS
+fn parse_function_name(function_content: &str) -> String {
+    function_content
+        .lines()
+        .find(|line| line.starts_with("def "))
+        .expect("function name line could not be found")
+        .strip_prefix("def ")
+        .unwrap()
+        .split("(")
+        .next()
+        .expect("function name could not be parsed")
+        .to_string()
+}
+
 fn parse_class_name(class_content: &str) -> String {
     class_content
         .lines()
@@ -195,37 +210,37 @@ fn read_pymodd_file(path: &str) -> String {
 
 #[cfg(test)]
 mod tests {
-    use crate::project_generator::utils::to_pymodd::{
-        parse_pymodd_structure_of_pymodd_action_class,
+    use crate::project_generator::utils::to_pymodd_maps::{
+        parse_pymodd_structure_of_pymodd_action_function,
         parse_pymodd_structure_of_pymodd_function_class, PymoddStructure,
     };
 
     #[test]
     fn parse_action_class() {
         assert_eq!(
-            parse_pymodd_structure_of_pymodd_action_class(
-                "class SetPlayerVariable(Action):\n\
-                    \tdef __init__(self, player, variable_type, value):\n\
-                        \t\tself.action = 'setPlayerVariable'\n\
-                        \t\tself.options = {\n\
-                            \t\t\t'player': to_dict(player),\n\
-                            \t\t\t'variable': to_dict(variable_type),\n\
-                            \t\t\t'value': to_dict(value),\n\
-                        }"
+            parse_pymodd_structure_of_pymodd_action_function(
+                "@action\n\
+                def set_player_variable(player, variable_type, value, comment=None, disabled=False, run_on_client=False):\n\
+                    \treturn {\n\
+                        \t\t'type': 'setPlayerVariable',\n\
+                        \t\t'player': to_dict(player),\n\
+                        \t\t'variable': to_dict(variable_type),\n\
+                        \t\t'value': to_dict(value)\n\
+                    \t}"
             ),
             PymoddStructure::new(
-                "SetPlayerVariable",
+                "set_player_variable",
                 vec!["player", "variable_type", "value"]
-            )
-        );
+            ));
         assert_eq!(
-            parse_pymodd_structure_of_pymodd_action_class(
-                "class EndGame(Action):\n\
-                    \tdef __init__(self):\n\
-                        \t\tself.action = 'endGame'\n\
-                        \t\tself.options = {}"
+            parse_pymodd_structure_of_pymodd_action_function(
+                "@action\n\
+                def end_game(comment=None, disabled=False, run_on_client=False):\n\
+                    \treturn {\n\
+                        \t\t'type': 'endGame',\n\
+                    \t}"
             ),
-            PymoddStructure::new("EndGame", vec![])
+            PymoddStructure::new("end_game", vec![])
         );
     }
 

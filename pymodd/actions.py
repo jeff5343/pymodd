@@ -34,8 +34,8 @@ def if_else(condition: Condition, then_actions=[], else_actions=[], comment=None
     return {
         'type': 'condition',
         'conditions': to_dict(condition),
-        'then': [action() for action in then_actions],
-        'else': [action() for action in else_actions],
+        'then': then_actions,
+        'else': else_actions,
     }
 
 
@@ -72,7 +72,7 @@ def set_time_out(duration: Number, actions=[], comment=None, disabled=False, run
     return {
         'type': 'setTimeOut',
         'duration': to_dict(duration),
-        'actions': [action() for action in actions],
+        'actions': actions,
     }
 
 
@@ -311,7 +311,7 @@ def for_all_items(itemGroup, actions=[], comment=None, disabled=False, run_on_cl
     return {
         'type': 'forAllItems',
         'itemGroup': to_dict(itemGroup),
-        'actions': [action() for action in actions],
+        'actions': actions,
     }
 
 
@@ -490,7 +490,7 @@ def while_do(conditions, actions=[], comment=None, disabled=False, run_on_client
     return {
         'type': 'while',
         'conditions': to_dict(conditions),
-        'actions': [action() for action in actions],
+        'actions': actions,
     }
 
 
@@ -583,7 +583,7 @@ def repeat(count: Number, actions=[], comment=None, disabled=False, run_on_clien
     return {
         'type': 'repeat',
         'count': to_dict(count),
-        'actions': [action() for action in actions],
+        'actions': actions,
     }
 
 
@@ -662,7 +662,7 @@ def for_all_entities(entityGroup, actions=[], comment=None, disabled=False, run_
     return {
         'type': 'forAllEntities',
         'entityGroup': to_dict(entityGroup),
-        'actions': [action() for action in actions],
+        'actions': actions,
     }
 
 
@@ -690,7 +690,7 @@ def for_all_item_types(itemTypeGroup, actions=[], comment=None, disabled=False, 
     return {
         'type': 'forAllItemTypes',
         'itemTypeGroup': to_dict(itemTypeGroup),
-        'actions': [action() for action in actions],
+        'actions': actions,
     }
 
 
@@ -728,7 +728,7 @@ def for_all_units(unitGroup, actions=[], comment=None, disabled=False, run_on_cl
     return {
         'type': 'forAllUnits',
         'unitGroup': to_dict(unitGroup),
-        'actions': [action() for action in actions],
+        'actions': actions,
     }
 
 
@@ -737,7 +737,7 @@ def for_all_projectiles(projectileGroup, actions=[], comment=None, disabled=Fals
     return {
         'type': 'forAllProjectiles',
         'projectileGroup': to_dict(projectileGroup),
-        'actions': [action() for action in actions],
+        'actions': actions,
     }
 
 
@@ -801,7 +801,7 @@ def for_all_regions(regionGroup, actions=[], comment=None, disabled=False, run_o
     return {
         'type': 'forAllRegions',
         'regionGroup': to_dict(regionGroup),
-        'actions': [action() for action in actions],
+        'actions': actions,
     }
 
 
@@ -839,7 +839,7 @@ def for_all_unit_types(unitTypeGroup, actions=[], comment=None, disabled=False, 
     return {
         'type': 'forAllUnitTypes',
         'unitTypeGroup': to_dict(unitTypeGroup),
-        'actions': [action() for action in actions],
+        'actions': actions,
     }
 
 
@@ -865,7 +865,7 @@ def for_all_players(playerGroup, actions=[], comment=None, disabled=False, run_o
     return {
         'type': 'forAllPlayers',
         'playerGroup': to_dict(playerGroup),
-        'actions': [action() for action in actions],
+        'actions': actions,
     }
 
 
@@ -946,13 +946,13 @@ def move_entity(entity, position, comment=None, disabled=False, run_on_client=Fa
 
 
 @action
-def for_do(variable, start: Number, stop: Number, actions=[], comment=None, disabled=False, run_on_client=False):
+def for_range(variable, start: Number, stop: Number, actions=[], comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'for',
         'variableName': variable.name,
         'start': to_dict(start),
         'stop': to_dict(stop),
-        'actions': [action() for action in actions],
+        'actions': actions,
     }
 
 
@@ -1019,7 +1019,7 @@ def for_all_debris(debrisGroup, actions=[], comment=None, disabled=False, run_on
     return {
         'type': 'forAllDebris',
         'debrisGroup': to_dict(debrisGroup),
-        'actions': [action() for action in actions],
+        'actions': actions,
     }
 
 

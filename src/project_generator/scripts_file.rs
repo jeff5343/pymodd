@@ -14,7 +14,7 @@ use super::utils::{
         argument_values_iterator::ArgumentValueIterItem, directory_iterator::DirectoryIterItem,
     },
     surround_string_with_quotes,
-    to_pymodd::CONSTANTS_TO_PYMODD_ENUM,
+    to_pymodd_maps::CONSTANTS_TO_PYMODD_ENUM,
 };
 
 pub struct ScriptsFile {}
@@ -243,7 +243,7 @@ mod tests {
                 .as_array()
                 .unwrap()
             )),
-            "OpenShopForPlayer(Shops.WEAPONS, OwnerOfEntity(LastCastingUnit())),\n"
+            "open_shop_for_player(Shops.WEAPONS, OwnerOfEntity(LastCastingUnit())),\n"
         )
     }
 
@@ -262,7 +262,7 @@ mod tests {
                     .as_array()
                     .unwrap()
                 )),
-            "UpdateUiTextForEveryone(UiTarget.TOP, 'Hello!'),\n"
+            "update_ui_text_for_everyone(UiTarget.TOP, 'Hello!'),\n"
         )
     }
 
@@ -280,7 +280,7 @@ mod tests {
                     .as_array()
                     .unwrap()
                 )),
-            "Comment('hey there'),\n"
+            "comment('hey there'),\n"
         );
     }
 
@@ -336,9 +336,9 @@ mod tests {
                     .unwrap(),
                 ))
                 .as_str(),
-            "IfStatement(Condition(True, '==', True), [\n\
-                \tIfStatement(Condition(True, '==', True), [\n\
-    		        \t\tIfStatement(Condition(True, '==', True), [\n\
+            "if_else(Condition(True, '==', True), [\n\
+                \tif_else(Condition(True, '==', True), [\n\
+    		        \t\tif_else(Condition(True, '==', True), [\n\
 		                \t\t\t\n\
 		            \t\t], [\n\
 		                \t\t\t\n\

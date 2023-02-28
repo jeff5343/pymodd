@@ -1,6 +1,6 @@
 use serde_json::{Map, Value};
 
-use crate::project_generator::utils::to_pymodd::{PymoddStructure, ACTIONS_TO_PYMODD_STRUCTURE};
+use crate::project_generator::utils::to_pymodd_maps::{PymoddStructure, ACTIONS_TO_PYMODD_STRUCTURE};
 
 use super::argument::{
     align_arguments_with_pymodd_structure_parameters, parse_arguments_of_object_data, Argument,

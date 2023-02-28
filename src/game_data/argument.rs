@@ -1,11 +1,21 @@
 use heck::ToSnakeCase;
 use serde_json::{Map, Value};
 
-use crate::project_generator::utils::to_pymodd::{PymoddStructure, FUNCTIONS_TO_PYMODD_STRUCTURE};
+use crate::project_generator::utils::to_pymodd_maps::{
+    PymoddStructure, FUNCTIONS_TO_PYMODD_STRUCTURE,
+};
 
 use super::actions::{parse_actions, Action};
 
-const ARGS_TO_IGNORE: [&str; 5] = ["type", "function", "vars", "comment", "runOnClient"];
+const ARGS_TO_IGNORE: [&str; 7] = [
+    "type",
+    "entityType",
+    "vars",
+    "function",
+    "comment",
+    "disabled",
+    "runOnClient",
+];
 
 /// Accepts both pymodd action and pymodd function data
 pub fn parse_arguments_of_object_data(object_data: &Map<String, Value>) -> Vec<Argument> {
@@ -287,7 +297,7 @@ impl Function {
 mod tests {
     use crate::{
         game_data::argument::parse_arguments_of_object_data,
-        project_generator::utils::to_pymodd::FUNCTIONS_TO_PYMODD_STRUCTURE,
+        project_generator::utils::to_pymodd_maps::FUNCTIONS_TO_PYMODD_STRUCTURE,
     };
 
     use super::{

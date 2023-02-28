@@ -128,7 +128,7 @@ class Script(File):
         return {
             'triggers': [{'type': trigger.value} for trigger in self.triggers],
             'conditions': [{'operator': '==', 'operandType': 'boolean'}, True, True],
-            'actions': [action.to_dict() for action in self.actions],
+            'actions': self.actions,
             'name': self.name,
             'parent': self.parent,
             'key': self.key,
