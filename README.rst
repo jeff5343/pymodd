@@ -53,22 +53,22 @@ view examples/sample_scripts.py in the github repo for the full example
 
 .. code:: py
 
-	class EverySecond(Script):
-		def _build(self):
-			self.key = 'P8MwXcSxq7'
-			self.triggers = [Trigger.EVERY_SECOND]
-			self.actions = [
-				if_else(Condition(NumberOfUnitsOfUnitType(UnitTypes.FROG), '<', 5), [
-					create_unit_for_player_at_position(UnitTypes.FROG, Variables.AI, RandomPositionInRegion(EntireMapRegion()), 0),
-				], [
-					if_else(Condition(NumberOfUnitsOfUnitType(UnitTypes.FROG_BOSS), '==', 0), [
-						if_else(Condition(Variables.BOSS_TIMER, '<=', 0), [
-							create_unit_for_player_at_position(UnitTypes.FROG_BOSS, Variables.AI, RandomPositionInRegion(EntireMapRegion()), 0),
-							update_ui_text_for_time_for_player(UiTarget.CENTER, 'BOSS SPAWNED', Undefined(), 5000),
-						], [
-						]),
-						decrease_variable_by_number(Variables.BOSS_TIMER, 1),
-					], [
-					]),
-				]),
-			]
+    class EverySecond(Script):
+      def _build(self):
+        self.key = 'P8MwXcSxq7'
+        self.triggers = [Trigger.EVERY_SECOND]
+        self.actions = [
+          if_else(Condition(NumberOfUnitsOfUnitType(UnitTypes.FROG), '<', 5), [
+            create_unit_for_player_at_position(UnitTypes.FROG, Variables.AI, RandomPositionInRegion(EntireMapRegion()), 0),
+          ], [
+            if_else(Condition(NumberOfUnitsOfUnitType(UnitTypes.FROG_BOSS), '==', 0), [
+              if_else(Condition(Variables.BOSS_TIMER, '<=', 0), [
+                create_unit_for_player_at_position(UnitTypes.FROG_BOSS, Variables.AI, RandomPositionInRegion(EntireMapRegion()), 0),
+                update_ui_text_for_time_for_player(UiTarget.CENTER, 'BOSS SPAWNED', Undefined(), 5000),
+              ], [
+              ]),
+              decrease_variable_by_number(Variables.BOSS_TIMER, 1),
+            ], [
+            ]),
+          ]),
+        ]
