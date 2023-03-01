@@ -1,23 +1,27 @@
 //! holds maps of modd.io object names to their corresponding pymodd class names
 
-use std::{collections::HashMap, fs};
+use std::collections::HashMap;
 
 use lazy_static::lazy_static;
 
 use super::strip_quotes;
 
+// pymodd files
+const PYMODD_SCRIPT_FILE_CONTENT: &str = include_str!("../../../pymodd/script.py");
+const PYMODD_ACTIONS_FILE_CONTENT: &str = include_str!("../../../pymodd/actions.py");
+const PYMODD_FUNCTIONS_FILE_CONTENT: &str = include_str!("../../../pymodd/functions.py");
+
 lazy_static! {
     // enum maps
-    static ref SCRIPTS_FILE_CONTENT: String = read_pymodd_file("script.py");
-    pub static ref TRIGGERS_TO_PYMODD_ENUM: HashMap<String, String> = generate_to_pymodd_enums_map_for_type("Trigger", &SCRIPTS_FILE_CONTENT);
-    pub static ref CONSTANTS_TO_PYMODD_ENUM: HashMap<String, String> = generate_to_pymodd_enums_map_for_type("UiTarget", &SCRIPTS_FILE_CONTENT)
+    pub static ref TRIGGERS_TO_PYMODD_ENUM: HashMap<String, String> = generate_to_pymodd_enums_map_for_type("Trigger", PYMODD_SCRIPT_FILE_CONTENT);
+    pub static ref CONSTANTS_TO_PYMODD_ENUM: HashMap<String, String> = generate_to_pymodd_enums_map_for_type("UiTarget", PYMODD_SCRIPT_FILE_CONTENT)
         .into_iter()
-        .chain(generate_to_pymodd_enums_map_for_type("Flip", &SCRIPTS_FILE_CONTENT))
+        .chain(generate_to_pymodd_enums_map_for_type("Flip", PYMODD_SCRIPT_FILE_CONTENT))
         .collect();
 
     // action/function maps
-    pub static ref ACTIONS_TO_PYMODD_STRUCTURE: HashMap<String, PymoddStructure> = generate_actions_to_pymodd_structures_map();
-    pub static ref FUNCTIONS_TO_PYMODD_STRUCTURE: HashMap<String, PymoddStructure> = generate_functions_to_pymodd_structures_map();
+    pub static ref ACTIONS_TO_PYMODD_STRUCTURE: HashMap<String, PymoddStructure> = generate_actions_to_pymodd_structure_map();
+    pub static ref FUNCTIONS_TO_PYMODD_STRUCTURE: HashMap<String, PymoddStructure> = generate_functions_to_pymodd_structure_map();
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -62,19 +66,19 @@ fn generate_to_pymodd_enums_map_for_type(
 }
 
 // ACTIONS
-fn generate_actions_to_pymodd_structures_map() -> HashMap<String, PymoddStructure> {
-    let mut actions_to_structures: HashMap<String, PymoddStructure> = HashMap::new();
-
-    let actions_file = read_pymodd_file("actions.py");
-    let action_functions: Vec<&str> = actions_file.split("\n\n\n").skip(3).collect();
+fn generate_actions_to_pymodd_structure_map() -> HashMap<String, PymoddStructure> {
+    let mut actions_to_structure: HashMap<String, PymoddStructure> = HashMap::new();
+    let action_functions: Vec<&str> = PYMODD_ACTIONS_FILE_CONTENT
+        .split("\n\n\n")
+        .skip(3)
+        .collect();
     action_functions.into_iter().for_each(|function_content| {
-        actions_to_structures.insert(
+        actions_to_structure.insert(
             parse_action_name_of_pymodd_action_function(&function_content),
             parse_pymodd_structure_of_pymodd_action_function(&function_content),
         );
     });
-
-    actions_to_structures
+    actions_to_structure
 }
 
 fn parse_action_name_of_pymodd_action_function(action_function_content: &str) -> String {
@@ -114,27 +118,29 @@ fn parse_pymodd_structure_of_pymodd_action_function(
 }
 
 // FUNCTIONS
-fn generate_functions_to_pymodd_structures_map() -> HashMap<String, PymoddStructure> {
-    let mut functions_to_structures: HashMap<String, PymoddStructure> = HashMap::new();
+fn generate_functions_to_pymodd_structure_map() -> HashMap<String, PymoddStructure> {
+    let mut functions_to_structure: HashMap<String, PymoddStructure> = HashMap::new();
 
     // Condition class is formatted differently from the other classes
-    functions_to_structures.insert(
+    functions_to_structure.insert(
         String::from("condition"),
         PymoddStructure::new("Condition", vec!["item_a", "operator", "item_b"]),
     );
 
-    let functions_file = read_pymodd_file("functions.py");
-    let function_classes: Vec<&str> = functions_file.split("\n\n\n").skip(3).collect();
+    let function_classes: Vec<&str> = PYMODD_FUNCTIONS_FILE_CONTENT
+        .split("\n\n\n")
+        .skip(3)
+        .collect();
     function_classes.into_iter().for_each(|class_content| {
         // skip over empty classes
         if class_content.contains("self.options = ") {
-            functions_to_structures.insert(
+            functions_to_structure.insert(
                 parse_function_type_of_pymodd_function_class(&class_content),
                 parse_pymodd_structure_of_pymodd_function_class(&class_content),
             );
         }
     });
-    functions_to_structures
+    functions_to_structure
 }
 
 fn parse_function_type_of_pymodd_function_class(function_class_content: &str) -> String {
@@ -201,11 +207,6 @@ fn parse_class_content_from_file(class_name: &str, file_content: &str) -> String
         .take_while(|line| !line.starts_with("class"))
         .map(|line| format!("{line}\n"))
         .collect::<String>()
-}
-
-fn read_pymodd_file(path: &str) -> String {
-    let path = format!("pymodd/{path}");
-    fs::read_to_string(path).expect("could not read file")
 }
 
 #[cfg(test)]
