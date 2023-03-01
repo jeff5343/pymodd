@@ -220,16 +220,6 @@ pub struct Variable {
     pub data_type: Option<String>,
 }
 
-impl Variable {
-    pub fn new(id: &str, enum_name: &str, data_type: Option<&str>) -> Variable {
-        Variable {
-            id: id.to_string(),
-            enum_name: enum_name.to_string(),
-            data_type: data_type.map(|val| val.to_string()),
-        }
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use std::collections::HashMap;
@@ -242,6 +232,16 @@ mod tests {
         resolve_duplicate_variable_enum_names, variables_from_category_data, CategoriesToVariables,
         Variable,
     };
+
+    impl Variable {
+        pub fn new(id: &str, enum_name: &str, data_type: Option<&str>) -> Variable {
+            Variable {
+                id: id.to_string(),
+                enum_name: enum_name.to_string(),
+                data_type: data_type.map(|val| val.to_string()),
+            }
+        }
+    }
 
     impl CategoriesToVariables {
         pub fn new(map: HashMap<&'static str, Vec<Variable>>) -> CategoriesToVariables {

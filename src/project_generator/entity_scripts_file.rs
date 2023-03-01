@@ -3,8 +3,8 @@ use crate::game_data::{
 };
 
 use super::{
-    mapping_file::build_directory_elements,
-    scripts_file::{build_all_scripts_content_of_directory, ScriptsClassContentBuilder},
+    mapping_file::build_directory_items_contents,
+    scripts_file::{build_directory_content, ScriptsContentBuilder},
     utils::enum_name_of,
 };
 
@@ -19,7 +19,7 @@ impl EntityScriptsFile {
             from game_variables import *\n\n\n"
         );
         let scripts_class_content_builder =
-            ScriptsClassContentBuilder::new(&game_data.categories_to_variables);
+            ScriptsContentBuilder::new(&game_data.categories_to_variables);
 
         game_data
             .categories_to_entity_types
@@ -32,7 +32,7 @@ impl EntityScriptsFile {
                         content.push_str(&format!(
                             "{}\n{}\n\n",
                             build_class_content_of_entity_type_in_category(&entity_type, category),
-                            build_all_scripts_content_of_directory(
+                            build_directory_content(
                                 &entity_type.directory,
                                 &scripts_class_content_builder
                             )
@@ -73,7 +73,7 @@ fn build_class_content_of_entity_type_in_category(
 }
 
 fn build_directory_elements_for_entity_type(entity_type: &EntityType) -> Vec<String> {
-    build_directory_elements(&entity_type.directory)
+    build_directory_items_contents(&entity_type.directory)
         .into_iter()
         .map(|mut element| {
             if !element.trim_start().starts_with("Folder") && !element.trim_start().starts_with("]")

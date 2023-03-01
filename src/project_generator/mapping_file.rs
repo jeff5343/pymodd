@@ -25,7 +25,7 @@ impl MappingFile {
             retrieve_clases_of_entity_scripts(&game_data.categories_to_entity_types).join(", ")
         );
         content.push_str(
-            &build_directory_elements(&game_data.root_directory)
+            &build_directory_items_contents(&game_data.root_directory)
                 .into_iter()
                 .map(|element| format!("{}{element}\n", "\t".repeat(3)))
                 .collect::<String>()
@@ -57,7 +57,7 @@ fn retrieve_clases_of_entity_scripts(
         .collect()
 }
 
-pub fn build_directory_elements(directory: &Directory) -> Vec<String> {
+pub fn build_directory_items_contents(directory: &Directory) -> Vec<String> {
     let mut elements = Vec::new();
     let mut curr_depth = 0;
     directory.iter_flattened().for_each(|game_item| {
@@ -92,7 +92,7 @@ mod tests {
 
     use crate::{
         game_data::{directory::Directory, GameData},
-        project_generator::mapping_file::build_directory_elements,
+        project_generator::mapping_file::build_directory_items_contents,
     };
 
     use super::MappingFile;
@@ -100,7 +100,7 @@ mod tests {
     #[test]
     fn directory_content() {
         assert_eq!(
-            build_directory_elements(&Directory::parse(&json!({
+            build_directory_items_contents(&Directory::parse(&json!({
                 "WI31HDK": { "name": "initialize", "key": "WI31HDK", "actions": [], "parent": None::<&str>, "order": 1},
                 "31IAD2B": { "folderName": "utils", "key": "31IAD2B", "parent": None::<&str>, "order": 2 },
                 "SDUW31W": { "name": "change_state", "key": "SDUW31W", "actions": [], "parent": "31IAD2B", "order": 1 },
