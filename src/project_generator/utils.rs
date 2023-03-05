@@ -1,5 +1,5 @@
 pub mod iterators;
-pub mod to_pymodd;
+pub mod to_pymodd_maps;
 
 use heck::{ToLowerCamelCase, ToShoutySnakeCase};
 

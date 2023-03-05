@@ -19,7 +19,7 @@ class Pooper(EntityScripts):
 			self.key = 'umIqJLd7De'
 			self.triggers = []
 			self.actions = [
-				StartUsingItem(ItemCurrentlyHeldByUnit(ThisEntity())),
+				start_using_item(ItemCurrentlyHeldByUnit(ThisEntity())),
 				
 			]
 
@@ -28,7 +28,7 @@ class Pooper(EntityScripts):
 			self.key = 'OJ9Po4VSQg'
 			self.triggers = []
 			self.actions = [
-				StopUsingItem(ItemCurrentlyHeldByUnit(ThisEntity())),
+				stop_using_item(ItemCurrentlyHeldByUnit(ThisEntity())),
 				
 			]
 
@@ -46,7 +46,7 @@ class Frog(EntityScripts):
 			self.key = 'XUAEBhSryo'
 			self.triggers = []
 			self.actions = [
-				Comment('wdwadawd')
+				comment('wdwadawd'),
 				
 			]
 

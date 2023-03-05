@@ -14,7 +14,7 @@ use super::utils::{
         argument_values_iterator::ArgumentValueIterItem, directory_iterator::DirectoryIterItem,
     },
     surround_string_with_quotes,
-    to_pymodd::CONSTANTS_TO_PYMODD_ENUM,
+    to_pymodd_maps::CONSTANTS_TO_PYMODD_ENUM,
 };
 
 pub struct ScriptsFile {}
@@ -27,16 +27,16 @@ impl ScriptsFile {
             from pymodd.script import Script, Trigger, UiTarget, Flip\n\n\
             from game_variables import *\n\n\n"
         );
-        content.add(&build_all_scripts_content_of_directory(
+        content.add(&build_directory_content(
             &game_data.root_directory,
-            &ScriptsClassContentBuilder::new(&game_data.categories_to_variables),
+            &ScriptsContentBuilder::new(&game_data.categories_to_variables),
         ))
     }
 }
 
-pub fn build_all_scripts_content_of_directory(
+pub fn build_directory_content(
     directory: &Directory,
-    scripts_class_content_builder: &ScriptsClassContentBuilder,
+    scripts_class_content_builder: &ScriptsContentBuilder,
 ) -> String {
     directory
         .iter_flattened()
@@ -48,7 +48,7 @@ pub fn build_all_scripts_content_of_directory(
                 directory.name.to_uppercase()
             ),
             DirectoryIterItem::Script(script) => scripts_class_content_builder
-                .build_class_content_of(&script)
+                .build_script_content(&script)
                 .add("\n\n"),
             DirectoryIterItem::DirectoryEnd => String::from(
                 "# |\n\
@@ -60,23 +60,22 @@ pub fn build_all_scripts_content_of_directory(
         .to_string()
 }
 
-pub struct ScriptsClassContentBuilder<'a> {
-    // may need to add Directory for script keys later on
+pub struct ScriptsContentBuilder<'a> {
     categories_to_variables: &'a CategoriesToVariables,
 }
 
-impl<'a> ScriptsClassContentBuilder<'a> {
+impl<'a> ScriptsContentBuilder<'a> {
     pub fn new(
         categories_to_variables: &'a CategoriesToVariables,
-    ) -> ScriptsClassContentBuilder<'a> {
-        ScriptsClassContentBuilder {
+    ) -> ScriptsContentBuilder<'a> {
+        ScriptsContentBuilder {
             categories_to_variables,
         }
     }
 
-    pub fn build_class_content_of(&self, script: &Script) -> String {
+    pub fn build_script_content(&self, script: &Script) -> String {
         let (class_name, script_key): (String, &str) =
-            (script.pymodd_class_name(), script.key.as_ref());
+            (script.pymodd_class_name(), &script.key);
         format!(
             "class {class_name}(Script):\n\
             \tdef _build(self):\n\
@@ -87,58 +86,77 @@ impl<'a> ScriptsClassContentBuilder<'a> {
                 \t\t\t\n\
                 \t\t]\n",
             script.triggers_into_pymodd_enums().join(", "),
-            self.build_content_of_actions(&script.actions)
+            self.build_script_actions_content(&script.actions)
                 .lines()
                 .map(|action| format!("{}{action}\n", "\t".repeat(3)))
                 .collect::<String>(),
         )
     }
 
-    fn build_content_of_actions(&self, actions: &Vec<Action>) -> String {
+    fn build_script_actions_content(&self, actions: &Vec<Action>) -> String {
         actions
             .iter()
             .map(|action| {
                 match action.name.as_str() {
-                    // Pull out comment field for Comment action argument
                     "comment" => {
+                        // Pull out comment field for Comment action argument
                         format!(
-                            "{}({}),\n",
+                            "{}({}{}),\n",
                             action.pymodd_class_name(),
                             surround_string_with_quotes(
                                 action.comment.as_ref().unwrap_or(&String::from("None"))
-                            )
+                            ),
+                            self.build_optional_arguments_content(&action)
+                                .into_iter()
+                                .skip(1)
+                                .map(|arg| String::from(", ") + &arg)
+                                .collect::<String>(),
                         )
                     }
-                    _ => {
-                        action
-                            .iter_flattened_argument_values()
-                            .fold(
-                                format!("{}(", action.pymodd_class_name()),
-                                |pymodd_action, argument| {
-                                    let is_first_argument = pymodd_action.ends_with("(");
-                                    pymodd_action.add(&format!(
-                                        "{}{}",
-                                        // add seperator only if the argument is not the first argument
-                                        // of a action/function and is not the end of a function
-                                        if !is_first_argument
-                                            && argument != ArgumentValueIterItem::FunctionEnd
-                                        {
-                                            String::from(", ")
-                                        } else {
-                                            String::new()
-                                        },
-                                        &self.build_content_of_argument(argument)
-                                    ))
-                                },
-                            )
-                            .add("),\n")
-                    }
+                    _ => self.build_action_content(&action),
                 }
             })
             .collect::<String>()
     }
 
-    fn build_content_of_argument(&self, arg: ArgumentValueIterItem) -> String {
+    fn build_action_content(&self, action: &Action) -> String {
+        action
+            .iter_flattened_argument_values()
+            .fold(
+                format!("{}(", action.pymodd_class_name()),
+                |pymodd_action, argument| {
+                    let is_first_argument = pymodd_action.ends_with("(");
+                    pymodd_action.add(&format!(
+                        "{}{}",
+                        // add seperator only if the argument is not the first argument
+                        // of a action/function and is not the end of a function
+                        if !is_first_argument && argument != ArgumentValueIterItem::FunctionEnd {
+                            String::from(", ")
+                        } else {
+                            String::new()
+                        },
+                        &self.build_argument_content(argument)
+                    ))
+                },
+            )
+            .add(
+                &self
+                    .build_optional_arguments_content(&action)
+                    .into_iter()
+                    .enumerate()
+                    .map(|(i, arg)| {
+                        if action.args.is_empty() && i == 0 {
+                            arg
+                        } else {
+                            String::from(", ") + &arg
+                        }
+                    })
+                    .collect::<String>(),
+            )
+            .add("),\n")
+    }
+
+    fn build_argument_content(&self, arg: ArgumentValueIterItem) -> String {
         match arg {
             ArgumentValueIterItem::StartOfFunction(function) => {
                 format!("{}(", function.pymodd_class_name())
@@ -146,7 +164,7 @@ impl<'a> ScriptsClassContentBuilder<'a> {
             ArgumentValueIterItem::Actions(actions) => {
                 format!(
                     "[\n{}\t\n]",
-                    self.build_content_of_actions(actions)
+                    self.build_script_actions_content(actions)
                         .lines()
                         .map(|line| format!("\t{line}\n"))
                         .collect::<String>()
@@ -179,6 +197,23 @@ impl<'a> ScriptsClassContentBuilder<'a> {
             ArgumentValueIterItem::FunctionEnd => String::from(")"),
         }
     }
+
+    fn build_optional_arguments_content(&self, action: &Action) -> Vec<String> {
+        let mut optional_arguments: Vec<String> = Vec::new();
+        if let Some(comment) = &action.comment {
+            if !comment.is_empty() {
+                optional_arguments
+                    .push(format!("comment={}", surround_string_with_quotes(comment)));
+            }
+        }
+        if action.disabled {
+            optional_arguments.push(String::from("disabled=True"));
+        }
+        if action.ran_on_client {
+            optional_arguments.push(String::from("run_on_client=True"));
+        }
+        optional_arguments
+    }
 }
 
 #[cfg(test)]
@@ -193,13 +228,13 @@ mod tests {
         variable_categories::{CategoriesToVariables, Variable},
     };
 
-    use super::ScriptsClassContentBuilder;
+    use super::ScriptsContentBuilder;
 
     #[test]
     fn script_content() {
         assert_eq!(
-            ScriptsClassContentBuilder::new(&CategoriesToVariables::new(HashMap::new()))
-                .build_class_content_of(&Script::new(
+            ScriptsContentBuilder::new(&CategoriesToVariables::new(HashMap::new()))
+                .build_script_content(&Script::new(
                     "initialize",
                     "WI31HDK",
                     vec!["gameStart"],
@@ -220,11 +255,11 @@ mod tests {
     #[test]
     fn parse_action_with_variable_into_pymodd() {
         assert_eq!(
-            ScriptsClassContentBuilder::new(&CategoriesToVariables::new(HashMap::from([(
+            ScriptsContentBuilder::new(&CategoriesToVariables::new(HashMap::from([(
                 "shops",
                 vec![Variable::new("OJbEQyc7is", "WEAPONS", None)]
             )])))
-            .build_content_of_actions(&parse_actions(
+            .build_script_actions_content(&parse_actions(
                 &json!([
                     {
                         "type": "openShopForPlayer",
@@ -243,15 +278,56 @@ mod tests {
                 .as_array()
                 .unwrap()
             )),
-            "OpenShopForPlayer(Shops.WEAPONS, OwnerOfEntity(LastCastingUnit())),\n"
+            "open_shop_for_player(Shops.WEAPONS, OwnerOfEntity(LastCastingUnit())),\n"
+        )
+    }
+
+    #[test]
+    fn parse_action_with_optional_arguments_into_pymodd() {
+        assert_eq!(
+            ScriptsContentBuilder::new(&CategoriesToVariables::new(HashMap::new()))
+                .build_script_actions_content(&parse_actions(
+                    &json!([
+                        {
+                            "type": "runScript",
+                            "scriptName": "fjw24WdJ",
+                            "comment": "hi!",
+                            "runOnClient": true,
+                            "disabled": true,
+                        }
+                    ])
+                    .as_array()
+                    .unwrap()
+                )),
+            "run_script('fjw24WdJ', comment='hi!', disabled=True, run_on_client=True),\n"
+        )
+    }
+
+    #[test]
+    fn parse_action_with_only_optional_arguments_into_pymodd() {
+        assert_eq!(
+            ScriptsContentBuilder::new(&CategoriesToVariables::new(HashMap::new()))
+                .build_script_actions_content(&parse_actions(
+                    &json!([
+                        {
+                            "type": "return",
+                            "comment": "hi!",
+                            "runOnClient": true,
+                            "disabled": false,
+                        }
+                    ])
+                    .as_array()
+                    .unwrap()
+                )),
+            "return_loop(comment='hi!', run_on_client=True),\n"
         )
     }
 
     #[test]
     fn parse_action_with_constant_into_pymodd() {
         assert_eq!(
-            ScriptsClassContentBuilder::new(&CategoriesToVariables::new(HashMap::new()))
-                .build_content_of_actions(&parse_actions(
+            ScriptsContentBuilder::new(&CategoriesToVariables::new(HashMap::new()))
+                .build_script_actions_content(&parse_actions(
                     &json!([
                         {
                             "type": "updateUiTextForEveryone",
@@ -262,15 +338,15 @@ mod tests {
                     .as_array()
                     .unwrap()
                 )),
-            "UpdateUiTextForEveryone(UiTarget.TOP, 'Hello!'),\n"
+            "update_ui_text_for_everyone(UiTarget.TOP, 'Hello!'),\n"
         )
     }
 
     #[test]
     fn parse_comment_action_into_pymodd() {
         assert_eq!(
-            ScriptsClassContentBuilder::new(&CategoriesToVariables::new(HashMap::new()))
-                .build_content_of_actions(&parse_actions(
+            ScriptsContentBuilder::new(&CategoriesToVariables::new(HashMap::new()))
+                .build_script_actions_content(&parse_actions(
                     &json!([
                         {
                             "type": "comment",
@@ -280,15 +356,15 @@ mod tests {
                     .as_array()
                     .unwrap()
                 )),
-            "Comment('hey there'),\n"
+            "comment('hey there'),\n"
         );
     }
 
     #[test]
     fn parse_nested_if_statements_into_pymodd() {
         assert_eq!(
-            ScriptsClassContentBuilder::new(&CategoriesToVariables::new(HashMap::new()))
-                .build_content_of_actions(&parse_actions(
+            ScriptsContentBuilder::new(&CategoriesToVariables::new(HashMap::new()))
+                .build_script_actions_content(&parse_actions(
                     json!([
                          {
                             "type": "condition",
@@ -336,9 +412,9 @@ mod tests {
                     .unwrap(),
                 ))
                 .as_str(),
-            "IfStatement(Condition(True, '==', True), [\n\
-                \tIfStatement(Condition(True, '==', True), [\n\
-    		        \t\tIfStatement(Condition(True, '==', True), [\n\
+            "if_else(Condition(True, '==', True), [\n\
+                \tif_else(Condition(True, '==', True), [\n\
+    		        \t\tif_else(Condition(True, '==', True), [\n\
 		                \t\t\t\n\
 		            \t\t], [\n\
 		                \t\t\t\n\

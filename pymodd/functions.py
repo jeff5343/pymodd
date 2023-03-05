@@ -35,8 +35,6 @@ class Condition(Function):
             operator (str): can be regular comparisons (==, !=, >=, ...) or 'AND' and 'OR'
             item_b (Base): any object
         """
-        # generation of this function is done directly in the generation.py (not included in class_dicts.py)
-
         # find type of item_a for comparison type
         if not (comparison := self.type_of_item(item_a, operator)):
             comparison = self.type_of_item(item_b, operator)
@@ -1292,7 +1290,7 @@ class IsPositionInWall(Boolean):
         }
 
 
-class SubString(Boolean):
+class StringContainsString(Boolean):
     def __init__(self, source_string, pattern_string):
         self.function = 'subString'
         self.options = {
