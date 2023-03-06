@@ -129,10 +129,10 @@ fn generate_functions_to_pymodd_structure_map() -> HashMap<String, PymoddStructu
 
     let function_classes: Vec<&str> = PYMODD_FUNCTIONS_FILE_CONTENT
         .split("\n\n\n")
-        .skip(3)
+        .skip(5)
         .collect();
     function_classes.into_iter().for_each(|class_content| {
-        // skip over empty classes
+        // skip over invalid classes
         if class_content.contains("self.options = ") {
             functions_to_structure.insert(
                 parse_function_type_of_pymodd_function_class(&class_content),
