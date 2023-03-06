@@ -4,6 +4,7 @@ use serde_json::Value;
 
 use crate::game_data::{
     actions::Action,
+    argument::Function,
     directory::{Directory, Script},
     variable_categories::{pymodd_class_name_of_category, CategoriesToVariables},
     GameData,
@@ -11,7 +12,8 @@ use crate::game_data::{
 
 use super::utils::{
     iterators::{
-        argument_values_iterator::ArgumentValueIterItem, directory_iterator::DirectoryIterItem,
+        argument_values_iterator::{ArgumentValueIterItem, ArgumentValuesIterator},
+        directory_iterator::DirectoryIterItem,
     },
     surround_string_with_quotes,
     to_pymodd_maps::CONSTANTS_TO_PYMODD_ENUM,
@@ -65,17 +67,14 @@ pub struct ScriptsContentBuilder<'a> {
 }
 
 impl<'a> ScriptsContentBuilder<'a> {
-    pub fn new(
-        categories_to_variables: &'a CategoriesToVariables,
-    ) -> ScriptsContentBuilder<'a> {
+    pub fn new(categories_to_variables: &'a CategoriesToVariables) -> ScriptsContentBuilder<'a> {
         ScriptsContentBuilder {
             categories_to_variables,
         }
     }
 
     pub fn build_script_content(&self, script: &Script) -> String {
-        let (class_name, script_key): (String, &str) =
-            (script.pymodd_class_name(), &script.key);
+        let (class_name, script_key): (String, &str) = (script.pymodd_class_name(), &script.key);
         format!(
             "class {class_name}(Script):\n\
             \tdef _build(self):\n\
@@ -106,7 +105,7 @@ impl<'a> ScriptsContentBuilder<'a> {
                             surround_string_with_quotes(
                                 action.comment.as_ref().unwrap_or(&String::from("None"))
                             ),
-                            self.build_optional_arguments_content(&action)
+                            self.build_optional_arguments_contents(&action)
                                 .into_iter()
                                 .skip(1)
                                 .map(|arg| String::from(", ") + &arg)
@@ -120,40 +119,43 @@ impl<'a> ScriptsContentBuilder<'a> {
     }
 
     fn build_action_content(&self, action: &Action) -> String {
-        action
-            .iter_flattened_argument_values()
-            .fold(
-                format!("{}(", action.pymodd_class_name()),
-                |pymodd_action, argument| {
-                    let is_first_argument = pymodd_action.ends_with("(");
-                    pymodd_action.add(&format!(
+        format!(
+            "{}({}",
+            action.pymodd_class_name(),
+            self.build_arguments_content(action.iter_flattened_argument_values())
+        )
+        .add(
+            &self
+                .build_optional_arguments_contents(&action)
+                .into_iter()
+                .enumerate()
+                .map(|(i, arg)| {
+                    if action.args.is_empty() && i == 0 {
+                        arg
+                    } else {
+                        String::from(", ") + &arg
+                    }
+                })
+                .collect::<String>(),
+        )
+        .add("),\n")
+    }
+
+    fn build_arguments_content(&self, args_iter: ArgumentValuesIterator) -> String {
+        args_iter
+            .fold(String::from("("), |pymodd_args, arg| {
+                let include_seperator =
+                    !pymodd_args.ends_with("(") && arg != ArgumentValueIterItem::FunctionEnd;
+                pymodd_args
+                    + &format!(
                         "{}{}",
-                        // add seperator only if the argument is not the first argument
-                        // of a action/function and is not the end of a function
-                        if !is_first_argument && argument != ArgumentValueIterItem::FunctionEnd {
-                            String::from(", ")
-                        } else {
-                            String::new()
-                        },
-                        &self.build_argument_content(argument)
-                    ))
-                },
-            )
-            .add(
-                &self
-                    .build_optional_arguments_content(&action)
-                    .into_iter()
-                    .enumerate()
-                    .map(|(i, arg)| {
-                        if action.args.is_empty() && i == 0 {
-                            arg
-                        } else {
-                            String::from(", ") + &arg
-                        }
-                    })
-                    .collect::<String>(),
-            )
-            .add("),\n")
+                        String::from(if include_seperator { ", " } else { "" }),
+                        &self.build_argument_content(arg)
+                    )
+            })
+            .strip_prefix("(")
+            .unwrap()
+            .to_string()
     }
 
     fn build_argument_content(&self, arg: ArgumentValueIterItem) -> String {
@@ -172,19 +174,18 @@ impl<'a> ScriptsContentBuilder<'a> {
             }
             ArgumentValueIterItem::Value(value) => match value {
                 Value::String(string) => {
-                    if let Some(constant) = CONSTANTS_TO_PYMODD_ENUM.get(string) {
-                        constant.to_owned()
-                    } else if let Some((category, variable)) = self
-                        .categories_to_variables
-                        .find_categoried_variable_with_id(string)
-                    {
-                        format!(
+                    match (
+                        CONSTANTS_TO_PYMODD_ENUM.get(string),
+                        self.categories_to_variables
+                            .find_categoried_variable_with_id(string),
+                    ) {
+                        (Some(constant), _) => constant.to_owned(),
+                        (_, Some((category, variable))) => format!(
                             "{}.{}",
                             pymodd_class_name_of_category(category),
                             variable.enum_name
-                        )
-                    } else {
-                        surround_string_with_quotes(string)
+                        ),
+                        _ => surround_string_with_quotes(string),
                     }
                 }
                 Value::Bool(boolean) => String::from(match boolean {
@@ -194,11 +195,43 @@ impl<'a> ScriptsContentBuilder<'a> {
                 Value::Number(number) => number.to_string(),
                 _ => String::from("None"),
             },
+            ArgumentValueIterItem::Condition(condition) => self.build_condition_content(&condition),
             ArgumentValueIterItem::FunctionEnd => String::from(")"),
         }
     }
 
-    fn build_optional_arguments_content(&self, action: &Action) -> Vec<String> {
+    fn build_condition_content(&self, condition: &Function) -> String {
+        let (item_a, operator, item_b) = (
+            ArgumentValueIterItem::from(&condition.args[0]),
+            ArgumentValueIterItem::from(&condition.args[1]),
+            ArgumentValueIterItem::from(&condition.args[2]),
+        );
+
+        format!(
+            "{} {} {}",
+            self.build_condition_item_content(item_a),
+            if let ArgumentValueIterItem::Value(operator_value) = operator {
+                into_operator(operator_value.as_str().unwrap_or("")).unwrap_or("")
+            } else {
+                ""
+            },
+            self.build_condition_item_content(item_b)
+        )
+    }
+
+    fn build_condition_item_content(&self, condition_item: ArgumentValueIterItem) -> String {
+        if let ArgumentValueIterItem::Condition(_) = condition_item {
+            format!("({})", self.build_argument_content(condition_item))
+        } else if let ArgumentValueIterItem::StartOfFunction(_) = condition_item {
+            self.build_arguments_content(ArgumentValuesIterator::from_argument_iter_value(
+                condition_item,
+            ))
+        } else {
+            self.build_argument_content(condition_item)
+        }
+    }
+
+    fn build_optional_arguments_contents(&self, action: &Action) -> Vec<String> {
         let mut optional_arguments: Vec<String> = Vec::new();
         if let Some(comment) = &action.comment {
             if !comment.is_empty() {
@@ -213,6 +246,17 @@ impl<'a> ScriptsContentBuilder<'a> {
             optional_arguments.push(String::from("run_on_client=True"));
         }
         optional_arguments
+    }
+}
+
+fn into_operator(string: &str) -> Option<&str> {
+    if ["==", "!=", "<=", "<", ">", ">="].contains(&string) {
+        return Some(string);
+    }
+    match string.to_lowercase().as_str() {
+        "and" => Some("&"),
+        "or" => Some("|"),
+        _ => None,
     }
 }
 
@@ -412,9 +456,9 @@ mod tests {
                     .unwrap(),
                 ))
                 .as_str(),
-            "if_else(Condition(True, '==', True), [\n\
-                \tif_else(Condition(True, '==', True), [\n\
-    		        \t\tif_else(Condition(True, '==', True), [\n\
+            "if_else(True == True, [\n\
+                \tif_else(True == True, [\n\
+    		        \t\tif_else(True == True, [\n\
 		                \t\t\t\n\
 		            \t\t], [\n\
 		                \t\t\t\n\
@@ -428,5 +472,54 @@ mod tests {
                 \t\n\
             ]),\n"
         )
+    }
+
+    #[test]
+    fn parse_nested_conditions_into_pymodd() {
+        assert_eq!(
+            ScriptsContentBuilder::new(&CategoriesToVariables::new(HashMap::new()))
+                .build_script_actions_content(&parse_actions(
+                    json!([
+                         {
+                            "type": "condition",
+                            "conditions": [
+                                {
+                                    "operandType": "and",
+                                    "operator": "AND"
+                                },
+                                [
+                                    {
+                                        "operandType": "boolean",
+                                        "operator": "=="
+                                    },
+                                    {
+                                         "function": "getNumberOfUnitsOfUnitType",
+                                         "unitType": "oTDQ3jlcMa"
+                                    },
+                                    5
+                                ],
+                                [
+                                    {
+                                        "operandType": "boolean",
+                                        "operator": "=="
+                                    },
+                                    true,
+                                    true
+                                ]
+                            ],
+                            "then": [],
+                            "else": []
+                         }
+                    ])
+                    .as_array()
+                    .unwrap(),
+                ))
+                .as_str(),
+            "if_else((NumberOfUnitsOfUnitType('oTDQ3jlcMa') == 5) & (True == True), [\n\
+                \t\n\
+            ], [\n\
+                \t\n\
+            ]),\n"
+        );
     }
 }

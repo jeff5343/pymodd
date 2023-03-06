@@ -242,7 +242,7 @@ impl ArgumentValue {
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct Function {
-    name: String,
+    pub name: String,
     pub args: Vec<Argument>,
 }
 
