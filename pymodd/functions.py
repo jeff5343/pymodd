@@ -41,16 +41,16 @@ class Function(Base):
 
     # calculation functions
     def __add__(self, other):
-        return Calculate(self, '+', other)
+        return Calculation(self, '+', other)
 
     def __sub__(self, other):
-        return Calculate(self, '-', other)
+        return Calculation(self, '-', other)
 
     def __mul__(self, other):
-        return Calculate(self, '*', other)
+        return Calculation(self, '*', other)
 
     def __truediv__(self, other):
-        return Calculate(self, '/', other)
+        return Calculation(self, '/', other)
 
     def __pow__(self, other):
         return Exponent(self, other)
@@ -1030,7 +1030,7 @@ class UnitSensorRadius(Number):
         }
 
 
-class Calculate(Number):
+class Calculation(Number):
     def __init__(self, item_a: Number, operator: str, item_b: Number):
         self.function = 'calculate'
         self.options = {
