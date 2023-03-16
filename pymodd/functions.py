@@ -20,6 +20,7 @@ class Function(Base):
             data.update(self.options)
         return data
 
+    # condition functions
     def __eq__(self, other):
         return Condition(self, '==', other)
 
@@ -37,6 +38,22 @@ class Function(Base):
 
     def __lt__(self, other):
         return Condition(self, '<', other)
+
+    # calculation functions
+    def __add__(self, other):
+        return Calculate(self, '+', other)
+
+    def __sub__(self, other):
+        return Calculate(self, '-', other)
+
+    def __mul__(self, other):
+        return Calculate(self, '*', other)
+
+    def __truediv__(self, other):
+        return Calculate(self, '/', other)
+
+    def __pow__(self, other):
+        return Exponent(self, other)
 
 
 # ---------------------------------------------------------------------------- #
