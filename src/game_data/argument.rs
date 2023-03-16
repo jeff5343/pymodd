@@ -149,7 +149,7 @@ pub fn align_arguments_with_pymodd_structure_parameters(
         .collect()
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Argument {
     pub name: String,
     pub value: ArgumentValue,
@@ -163,16 +163,17 @@ impl Argument {
                 Value::Object(function_data) => {
                     match Function::name_from_data(function_data).as_str() {
                         // parse getVariable functions into variable IDs for pymodd
-                        "getPlayerVariable" | "getEntityVariable" => {
-                            ArgumentValue::variable_id_from_get_unit_variable_function_data(
-                                function_data,
-                            )
-                        }
-                        "getVariable" => {
-                            ArgumentValue::variable_id_from_get_variable_function_data(
-                                function_data,
-                            )
-                        }
+                        "getPlayerVariable" | "getEntityVariable" => ArgumentValue::Value(
+                            variable_id_from_get_unit_variable_function_data(function_data),
+                        ),
+                        "getVariable" => ArgumentValue::Value(
+                            variable_id_from_get_variable_function_data(function_data),
+                        ),
+                        "getExponent" => ArgumentValue::Function(
+                            Function::convert_exponent_function_into_calculate_function(
+                                Function::parse(function_data),
+                            ),
+                        ),
                         _ => ArgumentValue::Function(Function::parse(function_data)),
                     }
                 }
@@ -197,6 +198,26 @@ impl Argument {
     }
 }
 
+fn variable_id_from_get_variable_function_data(
+    get_variable_function_data: &Map<String, Value>,
+) -> Value {
+    get_variable_function_data
+        .get("variableName")
+        .unwrap_or(&Value::Null)
+        .to_owned()
+}
+
+fn variable_id_from_get_unit_variable_function_data(
+    get_entity_variable_function_data: &Map<String, Value>,
+) -> Value {
+    get_entity_variable_function_data
+        .get("variable")
+        .unwrap_or(&Value::Object(Map::new()))
+        .get("key")
+        .unwrap_or(&Value::Null)
+        .to_owned()
+}
+
 fn list_data_contains_operator(list_data: &Vec<Value>) -> bool {
     list_data.len() == 3
         && list_data.iter().any(|value| {
@@ -207,40 +228,14 @@ fn list_data_contains_operator(list_data: &Vec<Value>) -> bool {
         })
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum ArgumentValue {
     Value(Value),
     Actions(Vec<Action>),
     Function(Function),
 }
 
-impl ArgumentValue {
-    fn variable_id_from_get_unit_variable_function_data(
-        get_entity_variable_function_data: &Map<String, Value>,
-    ) -> ArgumentValue {
-        ArgumentValue::Value(
-            get_entity_variable_function_data
-                .get("variable")
-                .unwrap_or(&Value::Object(Map::new()))
-                .get("key")
-                .unwrap_or(&Value::Null)
-                .to_owned(),
-        )
-    }
-
-    fn variable_id_from_get_variable_function_data(
-        get_variable_function_data: &Map<String, Value>,
-    ) -> ArgumentValue {
-        ArgumentValue::Value(
-            get_variable_function_data
-                .get("variableName")
-                .unwrap_or(&Value::Null)
-                .to_owned(),
-        )
-    }
-}
-
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Function {
     pub name: String,
     pub args: Vec<Argument>,
@@ -268,11 +263,43 @@ impl Function {
         )
     }
 
+    fn convert_exponent_function_into_calculate_function(exponent_function: Function) -> Function {
+        Function::new(
+            "calculate",
+            vec![
+                Argument::new(
+                    "item_a",
+                    exponent_function
+                        .find_argument_with_name("base")
+                        .unwrap_or(&Argument::new("", ArgumentValue::Value(Value::Null)))
+                        .value
+                        .clone(),
+                ),
+                Argument::new(
+                    "operator",
+                    ArgumentValue::Value(Value::String("**".to_string())),
+                ),
+                Argument::new(
+                    "item_b",
+                    exponent_function
+                        .find_argument_with_name("power")
+                        .unwrap_or(&Argument::new("", ArgumentValue::Value(Value::Null)))
+                        .value
+                        .clone(),
+                ),
+            ],
+        )
+    }
+
     pub fn new(name: &str, args: Vec<Argument>) -> Function {
         Function {
             name: name.to_string(),
             args,
         }
+    }
+
+    pub fn find_argument_with_name(&self, name: &str) -> Option<&Argument> {
+        self.args.iter().find(|arg| arg.name == name)
     }
 
     fn name_from_data(function_data: &Map<String, Value>) -> String {

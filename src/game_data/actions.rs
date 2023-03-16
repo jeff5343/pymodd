@@ -13,7 +13,7 @@ pub fn parse_actions(actions_data: &Vec<Value>) -> Vec<Action> {
         .collect()
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Action {
     pub name: String,
     pub args: Vec<Argument>,

@@ -63,7 +63,8 @@ pub enum ArgumentValueIterItem<'a> {
     StartOfFunction(&'a Function),
     Actions(&'a Vec<Action>),
     Value(&'a Value),
-    Condition(&'a Function),
+    Condition(Function),
+    Calculation(Function),
     FunctionEnd,
 }
 
@@ -71,7 +72,8 @@ impl<'a> ArgumentValueIterItem<'a> {
     pub fn from(argument: &Argument) -> ArgumentValueIterItem {
         match &argument.value {
             ArgumentValue::Function(function) => match function.name.as_str() {
-                "condition" => ArgumentValueIterItem::Condition(function),
+                "condition" => ArgumentValueIterItem::Condition(function.clone()),
+                "calculate" => ArgumentValueIterItem::Calculation(function.clone()),
                 _ => ArgumentValueIterItem::StartOfFunction(&function),
             },
             ArgumentValue::Value(value) => ArgumentValueIterItem::Value(&value),
@@ -173,7 +175,7 @@ mod tests {
             .collect::<Vec<ArgumentValueIterItem>>()
             .as_slice(),
             [
-                ArgumentValueIterItem::Condition(&Function::new(
+                ArgumentValueIterItem::Condition(Function::new(
                     "condition",
                     vec![
                         Argument::new("item_a", ArgumentValue::Value(Value::Bool(true))),

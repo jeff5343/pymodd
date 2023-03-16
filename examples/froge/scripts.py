@@ -76,16 +76,16 @@ class WhenAUnitsAttributeBecomes0OrLess(Script):
 			if_else(AttributeTypeOfAttribute(TriggeringAttribute()) == AttributeTypes.HEALTH, [
 				if_else(PlayerTypeOfPlayer(OwnerOfEntity(LastTriggeringUnit())) == PlayerTypes.PLAYER, [
 					set_entity_attribute(AttributeTypes.HEALTH, LastTriggeringUnit(), EntityAttributeMax(AttributeTypes.HEALTH, LastTriggeringUnit())),
-					set_entity_variable(LastTriggeringUnit(), PlayerVariables.TARGET_UNIT, Undefined()),
+					set_entity_variable(LastTriggeringUnit(), EntityVariables.TARGET_UNIT, Undefined()),
 					move_entity(LastTriggeringUnit(), CenterOfRegion(EntireMapRegion())),
 					
 				], [
 					if_else(UnitTypeOfUnit(LastTriggeringUnit()) == UnitTypes.FROG_BOSS, [
 						set_variable(Variables.BOSS_TIMER, 200),
-						set_player_attribute(AttributeTypes.FROG_KILLS, OwnerOfEntity(LastAttackingUnit()), Calculate(PlayerAttribute(AttributeTypes.FROG_KILLS, OwnerOfEntity(LastAttackingUnit())), '+', 7)),
+						set_player_attribute(AttributeTypes.FROG_KILLS, OwnerOfEntity(LastAttackingUnit()), PlayerAttribute(AttributeTypes.FROG_KILLS, OwnerOfEntity(LastAttackingUnit())) + 7),
 						
 					], [
-						set_player_attribute(AttributeTypes.FROG_KILLS, OwnerOfEntity(LastAttackingUnit()), Calculate(PlayerAttribute(AttributeTypes.FROG_KILLS, OwnerOfEntity(LastAttackingUnit())), '+', 1)),
+						set_player_attribute(AttributeTypes.FROG_KILLS, OwnerOfEntity(LastAttackingUnit()), PlayerAttribute(AttributeTypes.FROG_KILLS, OwnerOfEntity(LastAttackingUnit())) + 1),
 						
 					]),
 					destroy_entity(LastTriggeringUnit()),
@@ -94,12 +94,12 @@ class WhenAUnitsAttributeBecomes0OrLess(Script):
 				
 			], [
 				if_else(AttributeTypeOfAttribute(TriggeringAttribute()) == AttributeTypes.MOVE, [
-					set_entity_variable(LastTriggeringUnit(), PlayerVariables.TARGET_UNIT, Undefined()),
-					for_all_entities(EntitiesInRegion(DynamicRegion(Calculate(PositionX(EntityPosition(LastTriggeringUnit())), '-', Calculate(ValueOfEntityVariable(EntityVariables.SENSOR_RADIUS, LastTriggeringUnit()), '/', 2)), Calculate(PositionY(EntityPosition(LastTriggeringUnit())), '-', Calculate(ValueOfEntityVariable(EntityVariables.SENSOR_RADIUS, LastTriggeringUnit()), '/', 2)), ValueOfEntityVariable(EntityVariables.SENSOR_RADIUS, LastTriggeringUnit()), ValueOfEntityVariable(EntityVariables.SENSOR_RADIUS, LastTriggeringUnit()))), [
+					set_entity_variable(LastTriggeringUnit(), EntityVariables.TARGET_UNIT, Undefined()),
+					for_all_entities(EntitiesInRegion(DynamicRegion(PositionX(EntityPosition(LastTriggeringUnit())) - (ValueOfEntityVariable(EntityVariables.SENSOR_RADIUS, LastTriggeringUnit()) / 2), PositionY(EntityPosition(LastTriggeringUnit())) - (ValueOfEntityVariable(EntityVariables.SENSOR_RADIUS, LastTriggeringUnit()) / 2), ValueOfEntityVariable(EntityVariables.SENSOR_RADIUS, LastTriggeringUnit()), ValueOfEntityVariable(EntityVariables.SENSOR_RADIUS, LastTriggeringUnit()))), [
 						if_else(PlayerTypeOfPlayer(OwnerOfEntity(SelectedEntity())) == PlayerTypes.PLAYER, [
-							if_else((ValueOfEntityVariable(PlayerVariables.TARGET_UNIT, LastTriggeringUnit()) == Undefined()) | (DistanceBetweenPositions(EntityPosition(SelectedEntity()), EntityPosition(LastTriggeringUnit())) > DistanceBetweenPositions(EntityPosition(ValueOfEntityVariable(PlayerVariables.TARGET_UNIT, LastTriggeringUnit())), EntityPosition(LastTriggeringUnit()))), [
+							if_else((ValueOfEntityVariable(EntityVariables.TARGET_UNIT, LastTriggeringUnit()) == Undefined()) | (DistanceBetweenPositions(EntityPosition(SelectedEntity()), EntityPosition(LastTriggeringUnit())) > DistanceBetweenPositions(EntityPosition(ValueOfEntityVariable(EntityVariables.TARGET_UNIT, LastTriggeringUnit())), EntityPosition(LastTriggeringUnit()))), [
 								create_floating_text('Froge sense', EntityPosition(LastTriggeringUnit()), '#327117', disabled=True),
-								set_entity_variable(LastTriggeringUnit(), PlayerVariables.TARGET_UNIT, SelectedEntity()),
+								set_entity_variable(LastTriggeringUnit(), EntityVariables.TARGET_UNIT, SelectedEntity()),
 								
 							], [
 								
@@ -110,8 +110,8 @@ class WhenAUnitsAttributeBecomes0OrLess(Script):
 						]),
 						
 					]),
-					if_else(ValueOfEntityVariable(PlayerVariables.TARGET_UNIT, LastTriggeringUnit()) != Undefined(), [
-						rotate_entity_to_face_position(LastTriggeringUnit(), EntityPosition(ValueOfEntityVariable(PlayerVariables.TARGET_UNIT, LastTriggeringUnit()))),
+					if_else(ValueOfEntityVariable(EntityVariables.TARGET_UNIT, LastTriggeringUnit()) != Undefined(), [
+						rotate_entity_to_face_position(LastTriggeringUnit(), EntityPosition(ValueOfEntityVariable(EntityVariables.TARGET_UNIT, LastTriggeringUnit()))),
 						if_else(UnitTypeOfUnit(LastTriggeringUnit()) == UnitTypes.FROG_BOSS, [
 							apply_force_on_entity_angle(RandomNumberBetween(3000, 6000), LastTriggeringUnit(), UnitsFacingAngle(LastTriggeringUnit())),
 							

@@ -85,20 +85,20 @@ impl<'a> ScriptsContentBuilder<'a> {
                 \t\t\t\n\
                 \t\t]\n",
             script.triggers_into_pymodd_enums().join(", "),
-            self.build_script_actions_content(&script.actions)
+            self.build_actions_content(&script.actions)
                 .lines()
                 .map(|action| format!("{}{action}\n", "\t".repeat(3)))
                 .collect::<String>(),
         )
     }
 
-    fn build_script_actions_content(&self, actions: &Vec<Action>) -> String {
+    fn build_actions_content(&self, actions: &Vec<Action>) -> String {
         actions
             .iter()
             .map(|action| {
                 match action.name.as_str() {
                     "comment" => {
-                        // Pull out comment field for Comment action argument
+                        // pull out comment field for Comment action
                         format!(
                             "{}({}{}),\n",
                             action.pymodd_class_name(),
@@ -166,7 +166,7 @@ impl<'a> ScriptsContentBuilder<'a> {
             ArgumentValueIterItem::Actions(actions) => {
                 format!(
                     "[\n{}\t\n]",
-                    self.build_script_actions_content(actions)
+                    self.build_actions_content(actions)
                         .lines()
                         .map(|line| format!("\t{line}\n"))
                         .collect::<String>()
@@ -195,39 +195,49 @@ impl<'a> ScriptsContentBuilder<'a> {
                 Value::Number(number) => number.to_string(),
                 _ => String::from("None"),
             },
-            ArgumentValueIterItem::Condition(condition) => self.build_condition_content(&condition),
+            ArgumentValueIterItem::Condition(condition) => {
+                self.build_operator_function_content(&condition)
+            }
+            ArgumentValueIterItem::Calculation(calculation) => {
+                self.build_operator_function_content(&calculation)
+            }
             ArgumentValueIterItem::FunctionEnd => String::from(")"),
         }
     }
 
-    fn build_condition_content(&self, condition: &Function) -> String {
+    fn build_operator_function_content(&self, operator_function: &Function) -> String {
         let (item_a, operator, item_b) = (
-            ArgumentValueIterItem::from(&condition.args[0]),
-            ArgumentValueIterItem::from(&condition.args[1]),
-            ArgumentValueIterItem::from(&condition.args[2]),
+            ArgumentValueIterItem::from(&operator_function.args[0]),
+            ArgumentValueIterItem::from(&operator_function.args[1]),
+            ArgumentValueIterItem::from(&operator_function.args[2]),
         );
 
         format!(
             "{} {} {}",
-            self.build_condition_item_content(item_a),
+            self.build_operator_function_item_content(item_a),
             if let ArgumentValueIterItem::Value(operator_value) = operator {
                 into_operator(operator_value.as_str().unwrap_or("")).unwrap_or("")
             } else {
                 ""
             },
-            self.build_condition_item_content(item_b)
+            self.build_operator_function_item_content(item_b)
         )
     }
 
-    fn build_condition_item_content(&self, condition_item: ArgumentValueIterItem) -> String {
-        if let ArgumentValueIterItem::Condition(_) = condition_item {
-            format!("({})", self.build_argument_content(condition_item))
-        } else if let ArgumentValueIterItem::StartOfFunction(_) = condition_item {
+    fn build_operator_function_item_content(
+        &self,
+        operator_function_item: ArgumentValueIterItem,
+    ) -> String {
+        if let ArgumentValueIterItem::Condition(_) | ArgumentValueIterItem::Calculation(_) =
+            operator_function_item
+        {
+            format!("({})", self.build_argument_content(operator_function_item))
+        } else if let ArgumentValueIterItem::StartOfFunction(_) = operator_function_item {
             self.build_arguments_content(ArgumentValuesIterator::from_argument_iter_value(
-                condition_item,
+                operator_function_item,
             ))
         } else {
-            self.build_argument_content(condition_item)
+            self.build_argument_content(operator_function_item)
         }
     }
 
@@ -250,7 +260,7 @@ impl<'a> ScriptsContentBuilder<'a> {
 }
 
 fn into_operator(string: &str) -> Option<&str> {
-    if ["==", "!=", "<=", "<", ">", ">="].contains(&string) {
+    if ["==", "!=", "<=", "<", ">", ">=", "+", "-", "/", "*", "**"].contains(&string) {
         return Some(string);
     }
     match string.to_lowercase().as_str() {
@@ -303,7 +313,7 @@ mod tests {
                 "shops",
                 vec![Variable::new("OJbEQyc7is", "WEAPONS", None)]
             )])))
-            .build_script_actions_content(&parse_actions(
+            .build_actions_content(&parse_actions(
                 &json!([
                     {
                         "type": "openShopForPlayer",
@@ -330,7 +340,7 @@ mod tests {
     fn parse_action_with_optional_arguments_into_pymodd() {
         assert_eq!(
             ScriptsContentBuilder::new(&CategoriesToVariables::new(HashMap::new()))
-                .build_script_actions_content(&parse_actions(
+                .build_actions_content(&parse_actions(
                     &json!([
                         {
                             "type": "runScript",
@@ -351,7 +361,7 @@ mod tests {
     fn parse_action_with_only_optional_arguments_into_pymodd() {
         assert_eq!(
             ScriptsContentBuilder::new(&CategoriesToVariables::new(HashMap::new()))
-                .build_script_actions_content(&parse_actions(
+                .build_actions_content(&parse_actions(
                     &json!([
                         {
                             "type": "return",
@@ -371,7 +381,7 @@ mod tests {
     fn parse_action_with_constant_into_pymodd() {
         assert_eq!(
             ScriptsContentBuilder::new(&CategoriesToVariables::new(HashMap::new()))
-                .build_script_actions_content(&parse_actions(
+                .build_actions_content(&parse_actions(
                     &json!([
                         {
                             "type": "updateUiTextForEveryone",
@@ -390,7 +400,7 @@ mod tests {
     fn parse_comment_action_into_pymodd() {
         assert_eq!(
             ScriptsContentBuilder::new(&CategoriesToVariables::new(HashMap::new()))
-                .build_script_actions_content(&parse_actions(
+                .build_actions_content(&parse_actions(
                     &json!([
                         {
                             "type": "comment",
@@ -405,18 +415,46 @@ mod tests {
     }
 
     #[test]
+    fn parse_nested_calculations_into_pymodd() {
+        assert_eq!(
+            ScriptsContentBuilder::new(&CategoriesToVariables::new(HashMap::new()))
+                .build_actions_content(&parse_actions(
+                    &json!([
+                        {
+                            "type": "increaseVariableByNumber",
+                            "variable": null,
+                            "number": {
+                                "function": "calculate",
+                                "items": [
+                                    { "operator": "*" },
+                                    { "function": "getRandomNumberBetween", "min": 0, "max": 5 },
+                                    { "function": "calculate", "items": [
+                                            { "operator": "+" },
+                                            { "function": "getExponent", "base": { "function": "currentTimeStamp" }, "power": 2 },
+                                            3
+                                       ]
+                                    }
+                                ]
+                            }
+                        }
+                    ])
+                    .as_array()
+                    .unwrap()
+                )),
+            "increase_variable_by_number(None, RandomNumberBetween(0, 5) * ((CurrentTimeStamp() ** 2) + 3)),\n"
+        );
+    }
+
+    #[test]
     fn parse_nested_if_statements_into_pymodd() {
         assert_eq!(
             ScriptsContentBuilder::new(&CategoriesToVariables::new(HashMap::new()))
-                .build_script_actions_content(&parse_actions(
+                .build_actions_content(&parse_actions(
                     json!([
                          {
                             "type": "condition",
                             "conditions": [
-                                {
-                                    "operandType": "boolean",
-                                    "operator": "=="
-                                },
+                                { "operandType": "boolean", "operator": "==" },
                                 true,
                                 true
                             ],
@@ -424,10 +462,7 @@ mod tests {
                                 {
                                     "type": "condition",
                                     "conditions": [
-                                        {
-                                            "operandType": "boolean",
-                                            "operator": "=="
-                                        },
+                                        { "operandType": "boolean", "operator": "==" },
                                         true,
                                         true
                                     ],
@@ -435,10 +470,7 @@ mod tests {
                                         {
                                             "type": "condition",
                                             "conditions": [
-                                                {
-                                                    "operandType": "boolean",
-                                                    "operator": "=="
-                                                },
+                                                { "operandType": "boolean", "operator": "==" },
                                                 true,
                                                 true
                                             ],
@@ -478,31 +510,19 @@ mod tests {
     fn parse_nested_conditions_into_pymodd() {
         assert_eq!(
             ScriptsContentBuilder::new(&CategoriesToVariables::new(HashMap::new()))
-                .build_script_actions_content(&parse_actions(
+                .build_actions_content(&parse_actions(
                     json!([
                          {
                             "type": "condition",
                             "conditions": [
-                                {
-                                    "operandType": "and",
-                                    "operator": "AND"
-                                },
+                                { "operandType": "and", "operator": "AND" },
                                 [
-                                    {
-                                        "operandType": "boolean",
-                                        "operator": "=="
-                                    },
-                                    {
-                                         "function": "getNumberOfUnitsOfUnitType",
-                                         "unitType": "oTDQ3jlcMa"
-                                    },
+                                    { "operandType": "boolean", "operator": "==" },
+                                    { "function": "getNumberOfUnitsOfUnitType", "unitType": "oTDQ3jlcMa" },
                                     5
                                 ],
                                 [
-                                    {
-                                        "operandType": "boolean",
-                                        "operator": "=="
-                                    },
+                                    { "operandType": "boolean", "operator": "==" },
                                     true,
                                     true
                                 ]

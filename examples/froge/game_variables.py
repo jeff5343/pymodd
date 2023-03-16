@@ -1,4 +1,4 @@
-from pymodd.functions import UnitType, PlayerType, ItemType, Variable, EntityVariable, PlayerVariable, AnimationType, AttributeType, State, Shop, Music
+from pymodd.functions import UnitType, PlayerType, ItemType, Variable, EntityVariable, AnimationType, AttributeType, State, Shop, Music
 
 
 class UnitTypes:
@@ -41,7 +41,7 @@ class EntityVariables:
 
 
 class PlayerVariables:
-	TARGET_UNIT = PlayerVariable("targetUnit", variable_type='unit')
+	pass
 
 
 class AnimationTypes:
