@@ -41,7 +41,10 @@ class Function(Base):
 
     # calculation functions
     def __add__(self, other):
-        return Calculation(self, '+', other)
+        if 'string' in [type_of_item(self).lower(), type_of_item(other).lower()]:
+            return Concat(self, other)
+        else:
+            return Calculation(self, '+', other)
 
     def __sub__(self, other):
         return Calculation(self, '-', other)
