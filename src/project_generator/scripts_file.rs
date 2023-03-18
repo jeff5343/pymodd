@@ -4,7 +4,6 @@ use serde_json::Value;
 
 use crate::game_data::{
     actions::Action,
-    argument::Function,
     directory::{Directory, Script},
     variable_categories::{pymodd_class_name_of_category, CategoriesToVariables},
     GameData,
@@ -12,7 +11,7 @@ use crate::game_data::{
 
 use super::utils::{
     iterators::{
-        argument_values_iterator::{ArgumentValueIterItem, ArgumentValuesIterator},
+        argument_values_iterator::{ArgumentValueIterItem, ArgumentValuesIterator, Operation},
         directory_iterator::DirectoryIterItem,
     },
     surround_string_with_quotes,
@@ -195,40 +194,36 @@ impl<'a> ScriptsContentBuilder<'a> {
                 Value::Number(number) => number.to_string(),
                 _ => String::from("None"),
             },
-            ArgumentValueIterItem::Condition(condition) => {
-                self.build_operator_function_content(&condition)
-            }
-            ArgumentValueIterItem::Calculation(calculation) => {
-                self.build_operator_function_content(&calculation)
-            }
+            ArgumentValueIterItem::Condition(condition) => self.build_operation_content(&condition),
+            ArgumentValueIterItem::Operation(operation) => self.build_operation_content(&operation),
             ArgumentValueIterItem::FunctionEnd => String::from(")"),
         }
     }
 
-    fn build_operator_function_content(&self, operator_function: &Function) -> String {
+    fn build_operation_content(&self, operator: &Operation) -> String {
         let (item_a, operator, item_b) = (
-            ArgumentValueIterItem::from(&operator_function.args[0]),
-            ArgumentValueIterItem::from(&operator_function.args[1]),
-            ArgumentValueIterItem::from(&operator_function.args[2]),
+            ArgumentValueIterItem::from_argument(&operator.item_a),
+            ArgumentValueIterItem::from_argument(&operator.operator),
+            ArgumentValueIterItem::from_argument(&operator.item_b),
         );
 
         format!(
             "{} {} {}",
-            self.build_operator_function_item_content(item_a),
+            self.build_operation_item_content(item_a),
             if let ArgumentValueIterItem::Value(operator_value) = operator {
                 into_operator(operator_value.as_str().unwrap_or("")).unwrap_or("")
             } else {
                 ""
             },
-            self.build_operator_function_item_content(item_b)
+            self.build_operation_item_content(item_b)
         )
     }
 
-    fn build_operator_function_item_content(
+    fn build_operation_item_content(
         &self,
         operator_function_item: ArgumentValueIterItem,
     ) -> String {
-        if let ArgumentValueIterItem::Condition(_) | ArgumentValueIterItem::Calculation(_) =
+        if let ArgumentValueIterItem::Condition(_) | ArgumentValueIterItem::Operation(_) =
             operator_function_item
         {
             format!("({})", self.build_argument_content(operator_function_item))

@@ -169,11 +169,6 @@ impl Argument {
                         "getVariable" => ArgumentValue::Value(
                             variable_id_from_get_variable_function_data(function_data),
                         ),
-                        "getExponent" => ArgumentValue::Function(
-                            Function::convert_exponent_function_into_calculate_function(
-                                Function::parse(function_data),
-                            ),
-                        ),
                         _ => ArgumentValue::Function(Function::parse(function_data)),
                     }
                 }
@@ -260,34 +255,6 @@ impl Function {
         Function::new(
             "condition",
             parse_arguments_of_operator_data(&Value::from(condition_data)),
-        )
-    }
-
-    fn convert_exponent_function_into_calculate_function(exponent_function: Function) -> Function {
-        Function::new(
-            "calculate",
-            vec![
-                Argument::new(
-                    "item_a",
-                    exponent_function
-                        .find_argument_with_name("base")
-                        .unwrap_or(&Argument::new("", ArgumentValue::Value(Value::Null)))
-                        .value
-                        .clone(),
-                ),
-                Argument::new(
-                    "operator",
-                    ArgumentValue::Value(Value::String("**".to_string())),
-                ),
-                Argument::new(
-                    "item_b",
-                    exponent_function
-                        .find_argument_with_name("power")
-                        .unwrap_or(&Argument::new("", ArgumentValue::Value(Value::Null)))
-                        .value
-                        .clone(),
-                ),
-            ],
         )
     }
 
