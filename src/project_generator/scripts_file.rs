@@ -194,8 +194,11 @@ impl<'a> ScriptsContentBuilder<'a> {
                 Value::Number(number) => number.to_string(),
                 _ => String::from("None"),
             },
-            ArgumentValueIterItem::Condition(condition) => self.build_operation_content(&condition),
-            ArgumentValueIterItem::Operation(operation) => self.build_operation_content(&operation),
+            ArgumentValueIterItem::Condition(operation)
+            | ArgumentValueIterItem::Concatenation(operation)
+            | ArgumentValueIterItem::Calculation(operation) => {
+                self.build_operation_content(&operation)
+            }
             ArgumentValueIterItem::FunctionEnd => String::from(")"),
         }
     }
@@ -219,20 +222,16 @@ impl<'a> ScriptsContentBuilder<'a> {
         )
     }
 
-    fn build_operation_item_content(
-        &self,
-        operator_function_item: ArgumentValueIterItem,
-    ) -> String {
-        if let ArgumentValueIterItem::Condition(_) | ArgumentValueIterItem::Operation(_) =
-            operator_function_item
-        {
-            format!("({})", self.build_argument_content(operator_function_item))
-        } else if let ArgumentValueIterItem::StartOfFunction(_) = operator_function_item {
-            self.build_arguments_content(ArgumentValuesIterator::from_argument_iter_value(
-                operator_function_item,
-            ))
-        } else {
-            self.build_argument_content(operator_function_item)
+    fn build_operation_item_content(&self, operation_item: ArgumentValueIterItem) -> String {
+        match operation_item {
+            // only surround conditions and calculations with parenthesis
+            ArgumentValueIterItem::Condition(_) | ArgumentValueIterItem::Calculation(_) => {
+                format!("({})", self.build_argument_content(operation_item))
+            }
+            ArgumentValueIterItem::StartOfFunction(_) => self.build_arguments_content(
+                ArgumentValuesIterator::from_argument_iter_value(operation_item),
+            ),
+            _ => self.build_argument_content(operation_item),
         }
     }
 
@@ -467,7 +466,7 @@ mod tests {
                     .as_array()
                     .unwrap()
                 )),
-            "send_chat_message('hi ' + (PlayerId(LastTriggeringPlayer()) + ' player!')),\n"
+            "send_chat_message('hi ' + PlayerId(LastTriggeringPlayer()) + ' player!'),\n"
         );
     }
 

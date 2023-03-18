@@ -64,7 +64,8 @@ pub enum ArgumentValueIterItem<'a> {
     Actions(&'a Vec<Action>),
     Value(&'a Value),
     Condition(Operation),
-    Operation(Operation),
+    Concatenation(Operation),
+    Calculation(Operation),
     FunctionEnd,
 }
 
@@ -74,7 +75,8 @@ impl<'a> ArgumentValueIterItem<'a> {
             ArgumentValue::Function(function) => {
                 match (function.name.as_str(), Operation::from_function(function)) {
                     ("condition", Some(operation)) => ArgumentValueIterItem::Condition(operation),
-                    (_, Some(operation)) => ArgumentValueIterItem::Operation(operation),
+                    ("concat", Some(operation)) => ArgumentValueIterItem::Concatenation(operation),
+                    (_, Some(operation)) => ArgumentValueIterItem::Calculation(operation),
                     _ => ArgumentValueIterItem::StartOfFunction(&function),
                 }
             }
