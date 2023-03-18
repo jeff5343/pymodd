@@ -58,6 +58,24 @@ class Function(Base):
     def __pow__(self, other):
         return Exponent(self, other)
 
+    def __radd__(self, other):
+        if 'string' in [type_of_item(self).lower(), type_of_item(other).lower()]:
+            return Concat(other, self)
+        else:
+            return Calculation(other, '+', self)
+
+    def __rsub__(self, other):
+        return Calculation(other, '-', self)
+
+    def __rmul__(self, other):
+        return Calculation(other, '*', self)
+
+    def __rtruediv__(self, other):
+        return Calculation(other, '/', self)
+
+    def __rpow__(self, other):
+        return Exponent(other, self)
+
 
 # ---------------------------------------------------------------------------- #
 #                                     Other                                    #
