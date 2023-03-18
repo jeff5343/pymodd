@@ -441,6 +441,37 @@ mod tests {
     }
 
     #[test]
+    fn parse_nested_concatenations_into_pymodd() {
+        assert_eq!(
+            ScriptsContentBuilder::new(&CategoriesToVariables::new(HashMap::new()))
+                .build_actions_content(&parse_actions(
+                    &json!([
+                        {
+                            "type": "sendChatMessage",
+                            "message": {
+                                "function": "concat",
+                                "textA": "hi ",
+                                "textB": {
+                                    "function": "concat",
+                                    "textA": {
+                                        "function": "getPlayerId",
+                                        "player": {
+                                            "function": "getTriggeringPlayer"
+                                        }
+                                    },
+                                    "textB": " player!"
+                                }
+                            }
+                        }
+                    ])
+                    .as_array()
+                    .unwrap()
+                )),
+            "send_chat_message('hi ' + (PlayerId(LastTriggeringPlayer()) + ' player!')),\n"
+        );
+    }
+
+    #[test]
     fn parse_nested_if_statements_into_pymodd() {
         assert_eq!(
             ScriptsContentBuilder::new(&CategoriesToVariables::new(HashMap::new()))
