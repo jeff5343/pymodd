@@ -2,7 +2,8 @@ use heck::ToSnakeCase;
 use serde_json::{Map, Value};
 
 use crate::project_generator::utils::to_pymodd_maps::{
-    PymoddStructure, FUNCTIONS_TO_PYMODD_STRUCTURE,
+    PymoddStructure, FLIP_CONSTANTS_TO_PYMODD_ENUM, FUNCTIONS_TO_PYMODD_STRUCTURE,
+    UI_TARGET_CONSTANTS_TO_PYMODD_ENUM,
 };
 
 use super::actions::{parse_actions, Action};
@@ -39,6 +40,29 @@ pub fn parse_arguments_of_object_data(object_data: &Map<String, Value>) -> Vec<A
                         // return a force argument with only one number
                         vec![Argument::parse("force", arg_data)]
                     }
+                }
+                // Constants
+                "target" if arg_data.is_string() => {
+                    vec![Argument::new(
+                        "target",
+                        ArgumentValue::Constant(
+                            UI_TARGET_CONSTANTS_TO_PYMODD_ENUM
+                                .get(arg_data.as_str().unwrap())
+                                .unwrap_or(&arg_data.as_str().unwrap().to_string())
+                                .to_owned(),
+                        ),
+                    )]
+                }
+                "flip" if arg_data.is_string() => {
+                    vec![Argument::new(
+                        "flip",
+                        ArgumentValue::Constant(
+                            FLIP_CONSTANTS_TO_PYMODD_ENUM
+                                .get(arg_data.as_str().unwrap())
+                                .unwrap_or(&arg_data.as_str().unwrap().to_string())
+                                .to_owned(),
+                        ),
+                    )]
                 }
                 _ => vec![Argument::parse(arg_name, arg_data)],
             })
@@ -228,6 +252,7 @@ pub enum ArgumentValue {
     Value(Value),
     Actions(Vec<Action>),
     Function(Function),
+    Constant(String),
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]

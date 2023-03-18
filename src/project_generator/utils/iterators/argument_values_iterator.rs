@@ -63,6 +63,7 @@ pub enum ArgumentValueIterItem<'a> {
     StartOfFunction(&'a Function),
     Actions(&'a Vec<Action>),
     Value(&'a Value),
+    Constant(&'a String),
     Condition(Operation),
     Concatenation(Operation),
     Calculation(Operation),
@@ -80,6 +81,7 @@ impl<'a> ArgumentValueIterItem<'a> {
                     _ => ArgumentValueIterItem::StartOfFunction(&function),
                 }
             }
+            ArgumentValue::Constant(constant) => ArgumentValueIterItem::Constant(&constant),
             ArgumentValue::Value(value) => ArgumentValueIterItem::Value(&value),
             ArgumentValue::Actions(actions) => ArgumentValueIterItem::Actions(&actions),
         }

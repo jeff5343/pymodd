@@ -15,7 +15,6 @@ use super::utils::{
         directory_iterator::DirectoryIterItem,
     },
     surround_string_with_quotes,
-    to_pymodd_maps::CONSTANTS_TO_PYMODD_ENUM,
 };
 
 pub struct ScriptsFile {}
@@ -173,13 +172,11 @@ impl<'a> ScriptsContentBuilder<'a> {
             }
             ArgumentValueIterItem::Value(value) => match value {
                 Value::String(string) => {
-                    match (
-                        CONSTANTS_TO_PYMODD_ENUM.get(string),
-                        self.categories_to_variables
-                            .find_categoried_variable_with_id(string),
-                    ) {
-                        (Some(constant), _) => constant.to_owned(),
-                        (_, Some((category, variable))) => format!(
+                    match self
+                        .categories_to_variables
+                        .find_categoried_variable_with_id(string)
+                    {
+                        Some((category, variable)) => format!(
                             "{}.{}",
                             pymodd_class_name_of_category(category),
                             variable.enum_name
@@ -194,6 +191,7 @@ impl<'a> ScriptsContentBuilder<'a> {
                 Value::Number(number) => number.to_string(),
                 _ => String::from("None"),
             },
+            ArgumentValueIterItem::Constant(constant) => constant.to_owned(),
             ArgumentValueIterItem::Condition(operation)
             | ArgumentValueIterItem::Concatenation(operation)
             | ArgumentValueIterItem::Calculation(operation) => {
