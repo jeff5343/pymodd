@@ -148,7 +148,12 @@ impl<'a> ScriptsContentBuilder<'a> {
                     + &format!(
                         "{}{}",
                         String::from(if include_seperator { ", " } else { "" }),
-                        &self.build_argument_content(arg)
+                        match arg {
+                            // surround entire condition with parenthesis
+                            ArgumentValueIterItem::Condition(_) =>
+                                format!("({})", self.build_argument_content(arg)),
+                            _ => self.build_argument_content(arg),
+                        }
                     )
             })
             .strip_prefix("(")
@@ -511,9 +516,9 @@ mod tests {
                     .unwrap(),
                 ))
                 .as_str(),
-            "if_else(True == True, [\n\
-                \tif_else(True == True, [\n\
-    		        \t\tif_else(True == True, [\n\
+            "if_else((True == True), [\n\
+                \tif_else((True == True), [\n\
+    		        \t\tif_else((True == True), [\n\
 		                \t\t\t\n\
 		            \t\t], [\n\
 		                \t\t\t\n\
@@ -558,7 +563,7 @@ mod tests {
                     .unwrap(),
                 ))
                 .as_str(),
-            "if_else((NumberOfUnitsOfUnitType('oTDQ3jlcMa') == 5) & (True == True), [\n\
+            "if_else(((NumberOfUnitsOfUnitType('oTDQ3jlcMa') == 5) & (True == True)), [\n\
                 \t\n\
             ], [\n\
                 \t\n\
