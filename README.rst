@@ -58,11 +58,11 @@ view examples/sample_scripts.py in the github repo for the full example
             self.key = 'P8MwXcSxq7'
             self.triggers = [Trigger.EVERY_SECOND]
             self.actions = [
-                if_else((NumberOfUnitsOfUnitType(UnitTypes.FROG) < 5), [
+                if_else(NumberOfUnitsOfUnitType(UnitTypes.FROG) < 5, [
                     create_unit_for_player_at_position(UnitTypes.FROG, Variables.AI, RandomPositionInRegion(EntireMapRegion()), 0),
                 ], [
-                    if_else((NumberOfUnitsOfUnitType(UnitTypes.FROG_BOSS) == 0), [
-                        if_else((Variables.BOSS_TIMER <= 0), [
+                    if_else(NumberOfUnitsOfUnitType(UnitTypes.FROG_BOSS) == 0, [
+                        if_else(Variables.BOSS_TIMER <= 0, [
                             create_unit_for_player_at_position(UnitTypes.FROG_BOSS, Variables.AI, RandomPositionInRegion(EntireMapRegion()), 0),
                             update_ui_text_for_time_for_player(UiTarget.CENTER, 'BOSS SPAWNED', Undefined(), 5000),
                         ], [
