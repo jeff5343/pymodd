@@ -191,12 +191,15 @@ impl<'a> ScriptsContentBuilder<'a> {
                 Value::Number(number) => number.to_string(),
                 _ => String::from("None"),
             },
-            ArgumentValueIterItem::Constant(constant) => constant.to_owned(),
-            ArgumentValueIterItem::Condition(operation)
-            | ArgumentValueIterItem::Concatenation(operation)
+            ArgumentValueIterItem::Concatenation(operation)
             | ArgumentValueIterItem::Calculation(operation) => {
                 self.build_operation_content(&operation)
             }
+            ArgumentValueIterItem::Condition(operation) => {
+                // surround entire condition with paranthesis
+                format!("({})", self.build_operation_content(&operation))
+            }
+            ArgumentValueIterItem::Constant(constant) => constant.to_owned(),
             ArgumentValueIterItem::FunctionEnd => String::from(")"),
         }
     }
