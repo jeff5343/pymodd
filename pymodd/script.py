@@ -72,7 +72,6 @@ class EntityScripts(Game):
         self.entity_type_id = self.get_entity_type_id()
 
     def get_entity_type_id(self):
-        print(self.entity_type)
         return self.entity_type.function.get('value')
 
     def to_dict(self):

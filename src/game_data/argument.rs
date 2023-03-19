@@ -2,7 +2,8 @@ use heck::ToSnakeCase;
 use serde_json::{Map, Value};
 
 use crate::project_generator::utils::to_pymodd_maps::{
-    PymoddStructure, FUNCTIONS_TO_PYMODD_STRUCTURE,
+    PymoddStructure, FLIP_CONSTANTS_TO_PYMODD_ENUM, FUNCTIONS_TO_PYMODD_STRUCTURE,
+    UI_TARGET_CONSTANTS_TO_PYMODD_ENUM,
 };
 
 use super::actions::{parse_actions, Action};
@@ -39,6 +40,29 @@ pub fn parse_arguments_of_object_data(object_data: &Map<String, Value>) -> Vec<A
                         // return a force argument with only one number
                         vec![Argument::parse("force", arg_data)]
                     }
+                }
+                // Constants
+                "target" if arg_data.is_string() => {
+                    vec![Argument::new(
+                        "target",
+                        ArgumentValue::Constant(
+                            UI_TARGET_CONSTANTS_TO_PYMODD_ENUM
+                                .get(arg_data.as_str().unwrap())
+                                .unwrap_or(&arg_data.as_str().unwrap().to_string())
+                                .to_owned(),
+                        ),
+                    )]
+                }
+                "flip" if arg_data.is_string() => {
+                    vec![Argument::new(
+                        "flip",
+                        ArgumentValue::Constant(
+                            FLIP_CONSTANTS_TO_PYMODD_ENUM
+                                .get(arg_data.as_str().unwrap())
+                                .unwrap_or(&arg_data.as_str().unwrap().to_string())
+                                .to_owned(),
+                        ),
+                    )]
                 }
                 _ => vec![Argument::parse(arg_name, arg_data)],
             })
@@ -149,7 +173,7 @@ pub fn align_arguments_with_pymodd_structure_parameters(
         .collect()
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Argument {
     pub name: String,
     pub value: ArgumentValue,
@@ -163,16 +187,12 @@ impl Argument {
                 Value::Object(function_data) => {
                     match Function::name_from_data(function_data).as_str() {
                         // parse getVariable functions into variable IDs for pymodd
-                        "getPlayerVariable" | "getEntityVariable" => {
-                            ArgumentValue::variable_id_from_get_unit_variable_function_data(
-                                function_data,
-                            )
-                        }
-                        "getVariable" => {
-                            ArgumentValue::variable_id_from_get_variable_function_data(
-                                function_data,
-                            )
-                        }
+                        "getPlayerVariable" | "getEntityVariable" => ArgumentValue::Value(
+                            variable_id_from_get_unit_variable_function_data(function_data),
+                        ),
+                        "getVariable" => ArgumentValue::Value(
+                            variable_id_from_get_variable_function_data(function_data),
+                        ),
                         _ => ArgumentValue::Function(Function::parse(function_data)),
                     }
                 }
@@ -197,6 +217,26 @@ impl Argument {
     }
 }
 
+fn variable_id_from_get_variable_function_data(
+    get_variable_function_data: &Map<String, Value>,
+) -> Value {
+    get_variable_function_data
+        .get("variableName")
+        .unwrap_or(&Value::Null)
+        .to_owned()
+}
+
+fn variable_id_from_get_unit_variable_function_data(
+    get_entity_variable_function_data: &Map<String, Value>,
+) -> Value {
+    get_entity_variable_function_data
+        .get("variable")
+        .unwrap_or(&Value::Object(Map::new()))
+        .get("key")
+        .unwrap_or(&Value::Null)
+        .to_owned()
+}
+
 fn list_data_contains_operator(list_data: &Vec<Value>) -> bool {
     list_data.len() == 3
         && list_data.iter().any(|value| {
@@ -207,42 +247,17 @@ fn list_data_contains_operator(list_data: &Vec<Value>) -> bool {
         })
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum ArgumentValue {
     Value(Value),
     Actions(Vec<Action>),
     Function(Function),
+    Constant(String),
 }
 
-impl ArgumentValue {
-    fn variable_id_from_get_unit_variable_function_data(
-        get_entity_variable_function_data: &Map<String, Value>,
-    ) -> ArgumentValue {
-        ArgumentValue::Value(
-            get_entity_variable_function_data
-                .get("variable")
-                .unwrap_or(&Value::Object(Map::new()))
-                .get("key")
-                .unwrap_or(&Value::Null)
-                .to_owned(),
-        )
-    }
-
-    fn variable_id_from_get_variable_function_data(
-        get_variable_function_data: &Map<String, Value>,
-    ) -> ArgumentValue {
-        ArgumentValue::Value(
-            get_variable_function_data
-                .get("variableName")
-                .unwrap_or(&Value::Null)
-                .to_owned(),
-        )
-    }
-}
-
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Function {
-    name: String,
+    pub name: String,
     pub args: Vec<Argument>,
 }
 
@@ -273,6 +288,10 @@ impl Function {
             name: name.to_string(),
             args,
         }
+    }
+
+    pub fn find_argument_with_name(&self, name: &str) -> Option<&Argument> {
+        self.args.iter().find(|arg| arg.name == name)
     }
 
     fn name_from_data(function_data: &Map<String, Value>) -> String {

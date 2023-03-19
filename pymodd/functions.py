@@ -20,10 +20,87 @@ class Function(Base):
             data.update(self.options)
         return data
 
+    # condition functions
+    def __eq__(self, other):
+        return Condition(self, '==', other)
+
+    def __ne__(self, other):
+        return Condition(self, '!=', other)
+
+    def __ge__(self, other):
+        return Condition(self, '>=', other)
+
+    def __gt__(self, other):
+        return Condition(self, '>', other)
+
+    def __le__(self, other):
+        return Condition(self, '<=', other)
+
+    def __lt__(self, other):
+        return Condition(self, '<', other)
+
+    # calculation functions
+    def __add__(self, other):
+        if 'string' in [type_of_item(self).lower(), type_of_item(other).lower()]:
+            return Concat(self, other)
+        else:
+            return Calculation(self, '+', other)
+
+    def __sub__(self, other):
+        return Calculation(self, '-', other)
+
+    def __mul__(self, other):
+        return Calculation(self, '*', other)
+
+    def __truediv__(self, other):
+        return Calculation(self, '/', other)
+
+    def __pow__(self, other):
+        return Exponent(self, other)
+
+    def __radd__(self, other):
+        if 'string' in [type_of_item(self).lower(), type_of_item(other).lower()]:
+            return Concat(other, self)
+        else:
+            return Calculation(other, '+', self)
+
+    def __rsub__(self, other):
+        return Calculation(other, '-', self)
+
+    def __rmul__(self, other):
+        return Calculation(other, '*', self)
+
+    def __rtruediv__(self, other):
+        return Calculation(other, '/', self)
+
+    def __rpow__(self, other):
+        return Exponent(other, self)
+
 
 # ---------------------------------------------------------------------------- #
 #                                     Other                                    #
 # ---------------------------------------------------------------------------- #
+
+
+def type_of_item(item):
+    primitive_to_type = {
+        int: 'number',
+        bool: 'boolean',
+        str: 'string',
+    }
+
+    if isinstance(item, (Undefined, Null)):
+        return None
+    if (primitive := primitive_to_type.get(type(item))):
+        return primitive
+    if isinstance(item, Variable):
+        return camelcase(item.type)
+    if isinstance(item, Function):
+        base_classes = item.__class__.mro()
+        for i, base_class in enumerate(base_classes):
+            if base_class.__name__ == 'Function':
+                return camelcase(base_classes[i-1].__name__)
+    return None
 
 
 class Condition(Function):
@@ -35,35 +112,16 @@ class Condition(Function):
             operator (str): can be regular comparisons (==, !=, >=, ...) or 'AND' and 'OR'
             item_b (Base): any object
         """
-        # find type of item_a for comparison type
-        if not (comparison := self.type_of_item(item_a, operator)):
-            comparison = self.type_of_item(item_b, operator)
-        self.comparison = comparison
+
         self.item_a = item_a
         self.operator = operator.upper()
         self.item_b = item_b
-
-    def type_of_item(self, item, operator):
-        primitive_to_type = {
-            int: 'number',
-            bool: 'boolean',
-            str: 'string',
-        }
-
+        comparison = None
         if (operator := operator.lower()) == 'and' or operator == 'or':
-            return operator
-        if (primitive := primitive_to_type.get(type(item))):
-            return primitive
-        if isinstance(item, Variable):
-            return camelcase(item.type)
-        if isinstance(item, (Undefined, Null)):
-            return None
-        if isinstance(item, Function):
-            base_classes = item.__class__.mro()
-            for i, base_class in enumerate(base_classes):
-                if base_class.__name__ == 'Function':
-                    return camelcase(base_classes[i-1].__name__)
-        return None
+            comparison = operator
+        else:
+            comparison = type_of_item(item_a) or type_of_item(item_b)
+        self.comparison = comparison
 
     def to_dict(self):
         return [
@@ -74,6 +132,12 @@ class Condition(Function):
             to_dict(self.item_a),
             to_dict(self.item_b)
         ]
+
+    def __and__(self, other):
+        return Condition(self, 'AND', other)
+
+    def __or__(self, other):
+        return Condition(self, 'OR', other)
 
 
 class Undefined(Function):
@@ -987,7 +1051,7 @@ class UnitSensorRadius(Number):
         }
 
 
-class Calculate(Number):
+class Calculation(Number):
     def __init__(self, item_a: Number, operator: str, item_b: Number):
         self.function = 'calculate'
         self.options = {
@@ -1588,7 +1652,7 @@ class ProjectileTypeOfProjectile(ProjectileType):
         self.options = {
             'entity': to_dict(entity),
         }
-        
+
 
 # ---------------------------------------------------------------------------- #
 #                                 Player Types                                 #
