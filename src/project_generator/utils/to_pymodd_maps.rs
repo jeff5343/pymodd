@@ -1,10 +1,8 @@
-//! holds maps of modd.io object names to their corresponding pymodd class names
+// holds maps of modd.io object names to their corresponding pymodd class names
 
 use std::collections::HashMap;
 
 use lazy_static::lazy_static;
-
-use super::strip_quotes;
 
 // pymodd files
 const PYMODD_SCRIPT_FILE_CONTENT: &str = include_str!("../../../pymodd/script.py");
@@ -205,6 +203,15 @@ fn parse_class_content_from_file(class_name: &str, file_content: &str) -> String
         .take_while(|line| !line.starts_with("class"))
         .map(|line| format!("{line}\n"))
         .collect::<String>()
+}
+
+fn strip_quotes(string: &str) -> String {
+    let string = string.trim();
+    let left_quote_removed = string.strip_prefix(['\'', '"']).unwrap_or(string);
+    left_quote_removed
+        .strip_suffix(['\'', '"'])
+        .unwrap_or(left_quote_removed)
+        .to_string()
 }
 
 #[cfg(test)]
