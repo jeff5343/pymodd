@@ -1,5 +1,5 @@
 [package]
-name = "pymodd_library_checker"
+name = "pymodd_library_validator"
 version = "0.1.0"
 edition = "2021"
 

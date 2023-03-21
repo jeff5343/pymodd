@@ -6,7 +6,7 @@ use std::fs::File;
 use std::io::Write;
 
 use crossterm::style::Stylize;
-use pymodd_library_checker::{
+use pymodd_library_validator::{
     geneerate_function_class_from_object, generate_action_function_from_object,
     get_modd_io_editor_data, Object, ObjectType,
 };
