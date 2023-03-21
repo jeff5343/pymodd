@@ -1,7 +1,9 @@
-use serde_json::Value;
+//! find and log actions and functions not implemented in pymodd
+
+use serde_json::{Map, Value};
 
 include!("../../src/project_generator/utils/to_pymodd_maps.rs");
-const excluded_actions: [&str; 2] = [
+const EXCLUDED_ACTIONS: [&str; 2] = [
     // these actions do not work in modd.io as of (3/20/2023)
     "addUnitToUnitGroup",
     "addPlayerToPlayerGroup",
@@ -23,42 +25,42 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .as_array()
         .expect("invalid data: missing message content");
 
-    let (mut missing_actions, mut missing_functions) = (Vec::new(), Vec::new());
+    let (mut non_included_actions, mut non_included_functions) = (Vec::new(), Vec::new());
 
-    // find missing actions
+    // find non included actions
     modd_objects_data.iter().for_each(|object_data| {
         if ObjectType::from_object_data(object_data) == ObjectType::Action {
-            let object_key = object_data.get("key").unwrap().as_str().unwrap();
-            if ACTIONS_TO_PYMODD_STRUCTURE.get(object_key) == None {
-                missing_actions.push(object_key);
+            let action_object = Object::from_object_data(object_data);
+            if ACTIONS_TO_PYMODD_STRUCTURE.get(&action_object.name) == None {
+                non_included_actions.push(action_object);
             }
         }
     });
 
-    // find missing functions
+    // find non included functions
     modd_objects_data.iter().for_each(|object_data| {
         if ObjectType::from_object_data(object_data) == ObjectType::Function {
-            let object_key = object_data.get("key").unwrap().as_str().unwrap();
-            if FUNCTIONS_TO_PYMODD_STRUCTURE.get(object_key) == None {
-                missing_functions.push(object_key);
+            let function_object = Object::from_object_data(object_data);
+            if FUNCTIONS_TO_PYMODD_STRUCTURE.get(&function_object.name) == None {
+                non_included_functions.push(function_object);
             }
         }
     });
 
-    missing_actions = missing_actions
+    non_included_actions = non_included_actions
         .into_iter()
-        .filter(|action| !excluded_actions.contains(action))
+        .filter(|action| !EXCLUDED_ACTIONS.contains(&action.name.as_str()))
         .collect();
 
-    dbg!(&missing_actions);
-    dbg!(&missing_functions);
-    dbg!(&missing_actions.len());
-    dbg!(&missing_functions.len());
+    dbg!(&non_included_actions);
+    dbg!(&non_included_functions);
+    dbg!(&non_included_actions.len());
+    dbg!(&non_included_functions.len());
 
     Ok(())
 }
 
-#[derive(PartialEq)]
+#[derive(Debug, PartialEq)]
 enum ObjectType {
     Action,
     Function,
@@ -80,6 +82,41 @@ impl ObjectType {
             }
         } else {
             ObjectType::Undefined
+        }
+    }
+}
+
+#[derive(Debug)]
+struct Object {
+    name: String,
+    parameters: Vec<String>,
+}
+
+impl Object {
+    fn from_object_data(object_data: &Value) -> Object {
+        Object {
+            name: object_data
+                .get("key")
+                .unwrap_or(&Value::Null)
+                .as_str()
+                .unwrap_or("none")
+                .to_string(),
+            parameters: object_data
+                .get("data")
+                .unwrap_or(&Value::Object(Map::new()))
+                .get("fragments")
+                .unwrap_or(&Value::Null)
+                .as_array()
+                .unwrap_or(&Vec::new())
+                .iter()
+                .filter_map(|parameter_data| {
+                    parameter_data
+                        .get("field")
+                        .unwrap_or(&Value::Null)
+                        .as_str()
+                        .map(|field| field.to_string())
+                })
+                .collect(),
         }
     }
 }
