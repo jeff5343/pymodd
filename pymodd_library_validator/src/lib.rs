@@ -1,7 +1,7 @@
 use heck::{ToPascalCase, ToSnakeCase, ToUpperCamelCase};
 use serde_json::{Map, Value};
 
-pub fn get_modd_io_editor_data() -> Result<Value, Box<dyn std::error::Error>> {
+pub fn fetch_modd_io_editor_data() -> Result<Value, Box<dyn std::error::Error>> {
     Ok(serde_json::from_str::<Value>(
         minreq::get("https://www.modd.io/api/editor-api/?game=two-houses")
             .with_header(
