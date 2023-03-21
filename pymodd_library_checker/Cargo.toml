@@ -9,4 +9,5 @@ edition = "2021"
 heck = "0.4.0"
 lazy_static = "1.4.0"
 serde_json = "1.0"
+crossterm = "0.26.0"
 minreq = { version = "2.7", features = ["https-rustls"] }
