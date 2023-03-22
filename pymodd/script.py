@@ -258,8 +258,14 @@ class Trigger(Enum):
     ENTITY_ATTRIBUTE_BECOMES_ZERO = 'entityAttributeBecomesZero'
     ENTITY_ATTRIBUTE_BECOMES_FULL = 'entityAttributeBecomesFull'
     ENTITY_ENTERS_REGION = 'entityEntersRegion'
+    ENTITY_GETS_ATTACKED = 'entityGetsAttacked'
 
     DEBRIS_ENTERS_REGION = 'debrisEntersRegion'
+
+    AD_PLAY_COMPLETED = 'adPlayCompleted'
+    AD_PLAY_SKIPPED = 'adPlaySkipped'
+    AD_PLAY_FAILED = 'adPlayFailed'
+    AD_PLAY_BLOCKED = 'adPlayBlocked'
 
 
 class UiTarget(Enum):

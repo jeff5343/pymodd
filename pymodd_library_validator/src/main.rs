@@ -94,7 +94,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             "# auto generated\n\n\n{}\n",
             missing_triggers
                 .iter()
-                .map(|trigger_name| format!("{}\n", trigger_name.to_shouty_snake_case()))
+                .map(|trigger_name| format!("{} = '{}'\n", trigger_name.to_shouty_snake_case(), trigger_name))
                 .collect::<String>()
                 .trim_end()
         )?;
