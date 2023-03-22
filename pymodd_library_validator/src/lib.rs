@@ -1,7 +1,20 @@
 use heck::{ToPascalCase, ToSnakeCase, ToUpperCamelCase};
 use serde_json::{Map, Value};
 
-pub fn fetch_modd_io_editor_data() -> Result<Value, Box<dyn std::error::Error>> {
+pub fn fetch_modd_io_triggers_data() -> Result<Value, Box<dyn std::error::Error>> {
+    Ok(serde_json::from_str::<Value>(
+        minreq::get("https://www.modd.io/api/editor-api/?game=two-houses&type=trigger")
+            .with_header(
+                "User-Agent",
+                "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:15.0) Gecko/20100101 Firefox/15.0.1",
+            )
+            .send()?
+            .as_str()?,
+    )?["message"]
+        .take())
+}
+
+pub fn fetch_modd_io_functions_and_actions_data() -> Result<Value, Box<dyn std::error::Error>> {
     Ok(serde_json::from_str::<Value>(
         minreq::get("https://www.modd.io/api/editor-api/?game=two-houses")
             .with_header(
@@ -10,7 +23,8 @@ pub fn fetch_modd_io_editor_data() -> Result<Value, Box<dyn std::error::Error>> 
             )
             .send()?
             .as_str()?,
-    )?)
+    )?["message"]
+        .take())
 }
 
 #[derive(Debug)]
@@ -57,6 +71,7 @@ impl Object {
 
 #[derive(Debug, PartialEq)]
 pub enum ObjectType {
+    Trigger,
     Action,
     Function,
     Undefined,
@@ -71,6 +86,7 @@ impl ObjectType {
                 .as_str()
                 .unwrap_or("none")
             {
+                "trigger" => ObjectType::Trigger,
                 "action" => ObjectType::Action,
                 "function" => ObjectType::Function,
                 _ => ObjectType::Undefined,
@@ -110,7 +126,7 @@ pub fn generate_action_function_from_object(object: &Object) -> String {
     )
 }
 
-pub fn geneerate_function_class_from_object(object: &Object) -> String {
+pub fn generate_function_class_from_object(object: &Object) -> String {
     let (function_name, function_category, function_parameters) = (
         &object.name,
         &object.category.to_upper_camel_case(),
