@@ -40,15 +40,6 @@ fn surrounding_quote_for_string(string: &str) -> &str {
     "'"
 }
 
-pub(crate) fn strip_quotes(string: &str) -> String {
-    let string = string.trim();
-    let left_quote_removed = string.strip_prefix(['\'', '"']).unwrap_or(string);
-    left_quote_removed
-        .strip_suffix(['\'', '"'])
-        .unwrap_or(left_quote_removed)
-        .to_string()
-}
-
 pub(crate) fn enum_name_of(name: &str) -> String {
     name.to_shouty_snake_case()
 }

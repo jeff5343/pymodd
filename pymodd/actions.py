@@ -1154,10 +1154,27 @@ def send_chat_message_to_player(message: String, player, comment=None, disabled=
     }
 
 
+@action
+def add_chat_filter(word, comment=None, disabled=False, run_on_client=False):
+    return {
+        'type': 'addChatFilter',
+        'words': to_dict(word),
+    }
+
+
 @ action
 def play_ad_for_everyone(comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'playAdForEveryone',
+    }
+
+
+@action
+def send_coins_to_player(coins, player, comment=None, disabled=False, run_on_client=False):
+    return {
+        'type': 'sendCoinsToPlayer',
+        'coins': to_dict(coins),
+        'player': to_dict(player),
     }
 
 

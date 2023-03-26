@@ -1264,6 +1264,14 @@ class EntityName(String):
         }
 
 
+class NumberToString(String):
+    def __init__(self, value):
+        self.function = 'numberToString'
+        self.options = {
+            'value': to_dict(value),
+        }
+
+
 # ---------------------------------------------------------------------------- #
 #                                   Booleans                                   #
 # ---------------------------------------------------------------------------- #
