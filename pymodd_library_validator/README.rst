@@ -31,7 +31,7 @@ up to three files may be generated
     insert generated trigger enums inside the ``Trigger`` class located within ``pymodd/script.py``
 
 - ``new_actions.py`` if any new actions are detected
-    insert geneerated action functions inside ``pymodd/actions.py``
+    insert generated action functions inside ``pymodd/actions.py``
 
 - ``new_functions.py`` if any new functions are detected
     insert generated function classes under their correct commented categories located inside ``pymodd/functions.py``
