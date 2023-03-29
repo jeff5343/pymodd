@@ -316,7 +316,7 @@ impl Function {
 mod tests {
     use crate::{
         game_data::argument::parse_arguments_of_object_data,
-        project_generator::utils::to_pymodd_maps::FUNCTIONS_TO_PYMODD_STRUCTURE,
+        project_generator::utils::to_pymodd_maps::{FUNCTIONS_TO_PYMODD_STRUCTURE, ACTIONS_TO_PYMODD_STRUCTURE},
     };
 
     use super::{
@@ -366,6 +366,25 @@ mod tests {
             .as_slice(),
             [
                 Argument::new("variable", Val(Value::Null)),
+                Argument::new("entity", Val(Value::Null)),
+            ]
+        )
+    }
+
+    #[test]
+    fn align_missing_arguments_with_pymodd() {
+        assert_eq!(
+            align_arguments_with_pymodd_structure_parameters(
+                vec![
+                    Argument::new("entity", Val(Value::Null)),
+                ],
+                &ACTIONS_TO_PYMODD_STRUCTURE
+                    .get("startUsingItem")
+                    .unwrap()
+                    .parameters
+            )
+            .as_slice(),
+            [
                 Argument::new("entity", Val(Value::Null)),
             ]
         )

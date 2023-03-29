@@ -438,7 +438,7 @@ mod tests {
                     .as_array()
                     .unwrap()
                 )),
-            "increase_variable_by_number(None, RandomNumberBetween(0, 5) * ((CurrentTimeStamp() ** 2) + 3)),\n"
+            "increase_variable_by_number(None, RandomNumberBetween(0, 5) * ((CurrentUnixTimeStamp() ** 2) + 3)),\n"
         );
     }
 
@@ -469,7 +469,7 @@ mod tests {
                     .as_array()
                     .unwrap()
                 )),
-            "send_chat_message('hi ' + PlayerId(LastTriggeringPlayer()) + ' player!'),\n"
+            "send_chat_message_to_everyone('hi ' + IdOfPlayer(LastTriggeringPlayer()) + ' player!'),\n"
         );
     }
 
