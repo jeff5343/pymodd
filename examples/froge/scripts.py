@@ -76,7 +76,7 @@ class WhenAUnitsAttributeBecomes0OrLess(Script):
 			if_else((AttributeTypeOfAttribute(TriggeringAttribute()) == AttributeTypes.HEALTH), [
 				if_else((PlayerTypeOfPlayer(OwnerOfEntity(LastTriggeringUnit())) == PlayerTypes.PLAYER), [
 					set_entity_attribute(AttributeTypes.HEALTH, LastTriggeringUnit(), AttributeMaxOfEntity(AttributeTypes.HEALTH, LastTriggeringUnit())),
-					set_entity_variable(LastTriggeringUnit(), EntityVariables.TARGET_UNIT, Undefined()),
+					set_entity_variable(EntityVariables.TARGET_UNIT, LastTriggeringUnit(), Undefined()),
 					move_entity_to_position(LastTriggeringUnit(), CenterOfRegion(EntireMapRegion())),
 					
 				], [
@@ -94,12 +94,12 @@ class WhenAUnitsAttributeBecomes0OrLess(Script):
 				
 			], [
 				if_else((AttributeTypeOfAttribute(TriggeringAttribute()) == AttributeTypes.MOVE), [
-					set_entity_variable(LastTriggeringUnit(), EntityVariables.TARGET_UNIT, Undefined()),
+					set_entity_variable(EntityVariables.TARGET_UNIT, LastTriggeringUnit(), Undefined()),
 					for_all_entities_in(AllEntitiesInRegion(DynamicRegion(XCoordinateOfPosition(PositionOfEntity(LastTriggeringUnit())) - (ValueOfEntityVariable(EntityVariables.SENSOR_RADIUS, LastTriggeringUnit()) / 2), YCoordinateOfPosition(PositionOfEntity(LastTriggeringUnit())) - (ValueOfEntityVariable(EntityVariables.SENSOR_RADIUS, LastTriggeringUnit()) / 2), ValueOfEntityVariable(EntityVariables.SENSOR_RADIUS, LastTriggeringUnit()), ValueOfEntityVariable(EntityVariables.SENSOR_RADIUS, LastTriggeringUnit()))), [
 						if_else((PlayerTypeOfPlayer(OwnerOfEntity(SelectedEntity())) == PlayerTypes.PLAYER), [
 							if_else(((ValueOfEntityVariable(EntityVariables.TARGET_UNIT, LastTriggeringUnit()) == Undefined()) | (DistanceBetweenPositions(PositionOfEntity(SelectedEntity()), PositionOfEntity(LastTriggeringUnit())) > DistanceBetweenPositions(PositionOfEntity(ValueOfEntityVariable(EntityVariables.TARGET_UNIT, LastTriggeringUnit())), PositionOfEntity(LastTriggeringUnit())))), [
 								create_floating_text_at_position_with_color('Froge sense', PositionOfEntity(LastTriggeringUnit()), '#327117', disabled=True),
-								set_entity_variable(LastTriggeringUnit(), EntityVariables.TARGET_UNIT, SelectedEntity()),
+								set_entity_variable(EntityVariables.TARGET_UNIT, LastTriggeringUnit(), SelectedEntity()),
 								
 							], [
 								

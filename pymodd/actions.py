@@ -1222,10 +1222,10 @@ def play_music_for_everyone(music, comment=None, disabled=False, run_on_client=F
 
 
 @ action
-def assign_player_to_player_type(player, player_type, comment=None, disabled=False, run_on_client=False):
+def assign_player_to_player_type(entity, player_type, comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'assignPlayerType',
-        'entity': to_dict(player),
+        'entity': to_dict(entity),
         'playerType': to_dict(player_type),
     }
 

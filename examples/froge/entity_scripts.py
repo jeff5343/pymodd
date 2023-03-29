@@ -19,7 +19,7 @@ class Pooper(EntityScripts):
 			self.key = 'umIqJLd7De'
 			self.triggers = []
 			self.actions = [
-				start_using_item(ItemCurrentlyHeldByUnit(ThisEntity())),
+				use_item_continuously_until_stopped(ItemCurrentlyHeldByUnit(ThisEntity())),
 				
 			]
 
