@@ -4,7 +4,7 @@ build-backend = "maturin"
 
 [project]
 name = "pymodd"
-version = "0.2.0"
+version = "0.2.1"
 description = "A package for creating modd.io games using python!"
 readme = "README.rst"
 requires-python = ">=3.8"
@@ -19,11 +19,15 @@ classifiers = [
 ]
 
 dependencies = [
-    'case-converter==1.1.0'
+    "case-converter==1.1.0"
 ]
 
 [project.urls]
 repository = "https://github.com/jeff5343/pymodd"
 
 [project.scripts]
-generate-game = 'pymodd.console_scripts.generate_project:main'
+generate-game = "pymodd.console_scripts.generate_project:main"
+
+[tool.maturin]
+module-name = "pymodd._pymodd_generator"
+bindings = 'pyo3'

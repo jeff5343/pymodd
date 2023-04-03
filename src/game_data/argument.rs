@@ -8,7 +8,7 @@ use crate::project_generator::utils::to_pymodd_maps::{
 
 use super::actions::{parse_actions, Action};
 
-const ARGS_TO_IGNORE: [&str; 7] = [
+const ARGS_TO_IGNORE: [&str; 8] = [
     "type",
     "entityType",
     "vars",
@@ -16,6 +16,7 @@ const ARGS_TO_IGNORE: [&str; 7] = [
     "comment",
     "disabled",
     "runOnClient",
+    "hasFixedCSP",
 ];
 
 /// Accepts both pymodd action and pymodd function data
@@ -316,7 +317,9 @@ impl Function {
 mod tests {
     use crate::{
         game_data::argument::parse_arguments_of_object_data,
-        project_generator::utils::to_pymodd_maps::FUNCTIONS_TO_PYMODD_STRUCTURE,
+        project_generator::utils::to_pymodd_maps::{
+            ACTIONS_TO_PYMODD_STRUCTURE, FUNCTIONS_TO_PYMODD_STRUCTURE,
+        },
     };
 
     use super::{
@@ -368,6 +371,27 @@ mod tests {
                 Argument::new("variable", Val(Value::Null)),
                 Argument::new("entity", Val(Value::Null)),
             ]
+        )
+    }
+
+    #[test]
+    fn align_missing_arguments_with_pymodd() {
+        assert_eq!(
+            align_arguments_with_pymodd_structure_parameters(
+                vec![Argument::new(
+                    "entity",
+                    Val(Value::String("test".to_string()))
+                ),],
+                &ACTIONS_TO_PYMODD_STRUCTURE
+                    .get("startUsingItem")
+                    .unwrap()
+                    .parameters
+            )
+            .as_slice(),
+            [Argument::new(
+                "entity",
+                Val(Value::String("test".to_string()))
+            ),]
         )
     }
 

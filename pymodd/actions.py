@@ -7,7 +7,7 @@ from .script import Base, to_dict
 
 def action(func):
     @functools.wraps(func)
-    def wrapper_action(*args, **kwargs):
+    def wrapper_action(args, **kwargs):
         action_dictionary = (func(*args))
         action_dictionary.update(
             parse_optional_arguments_into_dictionary(
@@ -40,7 +40,7 @@ def if_else(condition: Condition, then_actions=[], else_actions=[], comment=None
 
 
 @action
-def set_player_variable(player, variable_type, value, comment=None, disabled=False, run_on_client=False):
+def set_player_variable(variable_type, player, value, comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'setPlayerVariable',
         'player': to_dict(player),
@@ -50,7 +50,7 @@ def set_player_variable(player, variable_type, value, comment=None, disabled=Fal
 
 
 @action
-def set_entity_variable(entity, variable_type, value, comment=None, disabled=False, run_on_client=False):
+def set_entity_variable(variable_type, entity, value, comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'setEntityVariable',
         'entity': to_dict(entity),
@@ -77,7 +77,7 @@ def set_time_out(duration: Number, actions=[], comment=None, disabled=False, run
 
 
 @action
-def rotate_entity_to_face_position(entity, position, comment=None, disabled=False, run_on_client=False):
+def rotate_entity_instantly_to_face_position(entity, position, comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'rotateEntityToFacePosition',
         'entity': to_dict(entity),
@@ -94,7 +94,7 @@ def destroy_entity(entity, comment=None, disabled=False, run_on_client=False):
 
 
 @action
-def set_entity_depth(entity, value: Number, comment=None, disabled=False, run_on_client=False):
+def set_depth_of_entity(value: Number, entity, comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'setEntityDepth',
         'entity': to_dict(entity),
@@ -121,7 +121,7 @@ def show_unit_to_player(entity, player, comment=None, disabled=False, run_on_cli
 
 
 @action
-def send_chat_message(message: String, comment=None, disabled=False, run_on_client=False):
+def send_chat_message_to_everyone(message: String, comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'sendChatMessage',
         'message': to_dict(message),
@@ -147,7 +147,7 @@ def drop_item_at_position(item, position, comment=None, disabled=False, run_on_c
 
 
 @action
-def apply_force_on_entity_angle(force: Number, entity, angle: Number, comment=None, disabled=False, run_on_client=False):
+def apply_force_on_entity_at_angle(force: Number, entity, angle: Number, comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'applyForceOnEntityAngle',
         'force': to_dict(force),
@@ -191,16 +191,16 @@ def open_website_for_player(string: String, player, comment=None, disabled=False
 
 
 @action
-def set_entity_life_span(entity, lifeSpan: Number, comment=None, disabled=False, run_on_client=False):
+def set_lifespan_of_entity(lifespan: Number, entity, comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'setEntityLifeSpan',
         'entity': to_dict(entity),
-        'lifeSpan': to_dict(lifeSpan),
+        'lifeSpan': to_dict(lifespan),
     }
 
 
 @action
-def hide_unit_name_label(entity, comment=None, disabled=False, run_on_client=False):
+def hide_name_label_of_entity_from_hostile_players(entity, comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'hideUnitNameLabel',
         'entity': to_dict(entity),
@@ -216,10 +216,10 @@ def set_triggering_unit(entity, comment=None, disabled=False, run_on_client=Fals
 
 
 @action
-def create_unit_for_player_at_position(unitType, player, position, angle: Number, comment=None, disabled=False, run_on_client=False):
+def create_unit_for_player_at_position_with_rotation(unit_type, player, position, angle: Number, comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'createUnitAtPosition',
-        'unitType': to_dict(unitType),
+        'unitType': to_dict(unit_type),
         'entity': to_dict(player),
         'position': to_dict(position),
         'angle': to_dict(angle),
@@ -227,7 +227,7 @@ def create_unit_for_player_at_position(unitType, player, position, angle: Number
 
 
 @action
-def hide_ui_text_for_everyone(target, comment=None, disabled=False, run_on_client=False):
+def hide_ui_target_for_everyone(target, comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'hideUiTextForEveryone',
         'target': to_dict(target),
@@ -243,7 +243,7 @@ def hide_game_suggestions_for_player(player, comment=None, disabled=False, run_o
 
 
 @action
-def transform_region_dimensions(region, x: Number, y: Number, width: Number, height: Number, comment=None, disabled=False, run_on_client=False):
+def transform_dimensions_of_region(x: Number, y: Number, width: Number, height: Number, region, comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'transformRegionDimensions',
         'region': to_dict(region),
@@ -255,7 +255,7 @@ def transform_region_dimensions(region, x: Number, y: Number, width: Number, hei
 
 
 @action
-def make_unit_invisible_to_friendly_players(entity, comment=None, disabled=False, run_on_client=False):
+def make_entity_invisible_to_friendly_players(entity, comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'makeUnitInvisibleToFriendlyPlayers',
         'entity': to_dict(entity),
@@ -273,7 +273,7 @@ def set_entity_attribute_min(attribute, entity, value: Number, comment=None, dis
 
 
 @action
-def show_invite_friends_modal(player, comment=None, disabled=False, run_on_client=False):
+def show_invite_friends_modal_to_player(player, comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'showInviteFriendsModal',
         'player': to_dict(player),
@@ -281,16 +281,16 @@ def show_invite_friends_modal(player, comment=None, disabled=False, run_on_clien
 
 
 @action
-def show_custom_modal_to_player(htmlContent, player, comment=None, disabled=False, run_on_client=False):
+def show_custom_modal_to_player(html_content, player, comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'showCustomModalToPlayer',
-        'htmlContent': to_dict(htmlContent),
+        'htmlContent': to_dict(html_content),
         'player': to_dict(player),
     }
 
 
 @action
-def show_ui_text_for_everyone(target, comment=None, disabled=False, run_on_client=False):
+def show_ui_target_for_everyone(target, comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'showUiTextForEveryone',
         'target': to_dict(target),
@@ -298,7 +298,7 @@ def show_ui_text_for_everyone(target, comment=None, disabled=False, run_on_clien
 
 
 @action
-def move_debris(entity, position, comment=None, disabled=False, run_on_client=False):
+def move_debris_to_position(entity, position, comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'moveDebris',
         'entity': to_dict(entity),
@@ -307,25 +307,25 @@ def move_debris(entity, position, comment=None, disabled=False, run_on_client=Fa
 
 
 @action
-def for_all_items(itemGroup, actions=[], comment=None, disabled=False, run_on_client=False):
+def for_all_items_in(item_group, actions=[], comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'forAllItems',
-        'itemGroup': to_dict(itemGroup),
+        'itemGroup': to_dict(item_group),
         'actions': actions,
     }
 
 
 @action
-def remove_player_from_player_group(player, playerGroup, comment=None, disabled=False, run_on_client=False):
+def remove_player_from_player_group(player, player_group, comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'removePlayerFromPlayerGroup',
         'player': to_dict(player),
-        'playerGroup': to_dict(playerGroup),
+        'playerGroup': to_dict(player_group),
     }
 
 
 @action
-def set_unit_owner(unit, player, comment=None, disabled=False, run_on_client=False):
+def set_owner_of_unit(player, unit, comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'setUnitOwner',
         'unit': to_dict(unit),
@@ -334,7 +334,7 @@ def set_unit_owner(unit, player, comment=None, disabled=False, run_on_client=Fal
 
 
 @action
-def update_item_quantity(entity, quantity: Number, comment=None, disabled=False, run_on_client=False):
+def update_quantity_of_item(quantity: Number, entity, comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'updateItemQuantity',
         'entity': to_dict(entity),
@@ -343,7 +343,7 @@ def update_item_quantity(entity, quantity: Number, comment=None, disabled=False,
 
 
 @action
-def apply_force_on_entity_angle_lt(force: Number, entity, angle: Number, comment=None, disabled=False, run_on_client=False):
+def apply_loss_tolerant_force_on_entity_at_angle(force: Number, entity, angle: Number, comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'applyForceOnEntityAngleLT',
         'force': to_dict(force),
@@ -353,7 +353,7 @@ def apply_force_on_entity_angle_lt(force: Number, entity, angle: Number, comment
 
 
 @action
-def set_entity_state(entity, state, comment=None, disabled=False, run_on_client=False):
+def set_state_of_entity(state, entity, comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'setEntityState',
         'entity': to_dict(entity),
@@ -362,7 +362,7 @@ def set_entity_state(entity, state, comment=None, disabled=False, run_on_client=
 
 
 @action
-def hide_unit_in_player_minimap(unit, player, comment=None, disabled=False, run_on_client=False):
+def hide_unit_in_minimap_for_player(unit, player, comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'hideUnitInPlayerMinimap',
         'unit': to_dict(unit),
@@ -378,15 +378,15 @@ def return_loop(comment=None, disabled=False, run_on_client=False):
 
 
 @action
-def run_script(scriptName, comment=None, disabled=False, run_on_client=False):
+def run_script(script_name, comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'runScript',
-        'scriptName': to_dict(scriptName),
+        'scriptName': to_dict(script_name),
     }
 
 
 @action
-def player_camera_set_zoom(player, zoom: Number, comment=None, disabled=False, run_on_client=False):
+def set_camera_zoom_of_player(zoom: Number, player, comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'playerCameraSetZoom',
         'player': to_dict(player),
@@ -395,11 +395,11 @@ def player_camera_set_zoom(player, zoom: Number, comment=None, disabled=False, r
 
 
 @action
-def set_unit_name_label(unit, name: String, comment=None, disabled=False, run_on_client=False):
+def set_name_label_of_unit(name_label: String, unit, comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'setUnitNameLabel',
         'unit': to_dict(unit),
-        'name': to_dict(name),
+        'name': to_dict(name_label),
     }
 
 
@@ -459,7 +459,7 @@ def increase_variable_by_number(variable, number: Number, comment=None, disabled
 
 
 @action
-def player_camera_track_unit(player, unit, comment=None, disabled=False, run_on_client=False):
+def make_camera_of_player_track_unit(player, unit, comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'playerCameraTrackUnit',
         'player': to_dict(player),
@@ -468,16 +468,16 @@ def player_camera_track_unit(player, unit, comment=None, disabled=False, run_on_
 
 
 @action
-def cast_ability(entity, abilityName, comment=None, disabled=False, run_on_client=False):
+def make_unit_cast_ability_once(entity, ability_name, comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'castAbility',
         'entity': to_dict(entity),
-        'abilityName': to_dict(abilityName),
+        'abilityName': to_dict(ability_name),
     }
 
 
 @action
-def play_entity_animation(entity, animation, comment=None, disabled=False, run_on_client=False):
+def play_animation_for_entity(animation, entity, comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'playEntityAnimation',
         'entity': to_dict(entity),
@@ -507,7 +507,7 @@ def apply_force_on_entity_xy(force_x: Number, force_y: Number, entity, comment=N
 
 
 @action
-def show_unit_in_player_minimap(unit, color: String, player, comment=None, disabled=False, run_on_client=False):
+def show_unit_with_color_in_minimap_of_player(unit, color: String, player, comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'showUnitInPlayerMinimap',
         'unit': to_dict(unit),
@@ -517,7 +517,7 @@ def show_unit_in_player_minimap(unit, color: String, player, comment=None, disab
 
 
 @action
-def save_player_data(player, comment=None, disabled=False, run_on_client=False):
+def save_data_of_player(player, comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'savePlayerData',
         'player': to_dict(player),
@@ -525,7 +525,7 @@ def save_player_data(player, comment=None, disabled=False, run_on_client=False):
 
 
 @action
-def hide_unit_name_label_from_player(entity, player, comment=None, disabled=False, run_on_client=False):
+def hide_name_label_of_unit_from_player(entity, player, comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'hideUnitNameLabelFromPlayer',
         'entity': to_dict(entity),
@@ -534,17 +534,17 @@ def hide_unit_name_label_from_player(entity, player, comment=None, disabled=Fals
 
 
 @action
-def set_player_attribute(attribute, entity, value: Number, comment=None, disabled=False, run_on_client=False):
+def set_player_attribute(attribute, player, value: Number, comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'setPlayerAttribute',
         'attribute': to_dict(attribute),
-        'entity': to_dict(entity),
+        'entity': to_dict(player),
         'value': to_dict(value),
     }
 
 
 @action
-def update_ui_text_for_player(target, value: String, entity, comment=None, disabled=False, run_on_client=False):
+def update_ui_target_for_player(target, value: String, entity, comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'updateUiTextForPlayer',
         'target': to_dict(target),
@@ -554,7 +554,7 @@ def update_ui_text_for_player(target, value: String, entity, comment=None, disab
 
 
 @action
-def show_unit_name_label(entity, comment=None, disabled=False, run_on_client=False):
+def show_name_label_of_unit_to_hostile_players(entity, comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'showUnitNameLabel',
         'entity': to_dict(entity),
@@ -570,10 +570,10 @@ def close_shop_for_player(player, comment=None, disabled=False, run_on_client=Fa
 
 
 @action
-def attach_debris_to_unit(entity, unit, comment=None, disabled=False, run_on_client=False):
+def attach_debris_to_unit(debris, unit, comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'attachDebrisToUnit',
-        'entity': to_dict(entity),
+        'entity': to_dict(debris),
         'unit': to_dict(unit),
     }
 
@@ -588,23 +588,23 @@ def repeat(count: Number, actions=[], comment=None, disabled=False, run_on_clien
 
 
 @action
-def stop_music(comment=None, disabled=False, run_on_client=False):
+def stop_music_for_everyone(comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'stopMusic',
     }
 
 
 @action
-def emit_particle_once_at_position(particleType, position, comment=None, disabled=False, run_on_client=False):
+def emit_particle_once_at_position(particle_type, position, comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'emitParticleOnceAtPosition',
-        'particleType': to_dict(particleType),
+        'particleType': to_dict(particle_type),
         'position': to_dict(position),
     }
 
 
 @action
-def set_velocity_of_entity_xy(velocity_x: Number, velocity_y: Number, entity, comment=None, disabled=False, run_on_client=False):
+def set_velocity_of_entity(velocity_x: Number, velocity_y: Number, entity, comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'setVelocityOfEntityXY',
         'velocity': {
@@ -616,34 +616,34 @@ def set_velocity_of_entity_xy(velocity_x: Number, velocity_y: Number, entity, co
 
 
 @action
-def show_unit_name_label_to_player(entity, player, comment=None, disabled=False, run_on_client=False):
+def show_name_label_of_unit_to_player(unit, player, comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'showUnitNameLabelToPlayer',
-        'entity': to_dict(entity),
+        'entity': to_dict(unit),
         'player': to_dict(player),
     }
 
 
 @action
-def spawn_item(itemType, position, comment=None, disabled=False, run_on_client=False):
+def create_item_at_position(item_type, position, comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'spawnItem',
-        'itemType': to_dict(itemType),
+        'itemType': to_dict(item_type),
         'position': to_dict(position),
     }
 
 
 @action
-def create_item_with_max_quantity_at_position(itemType, position, comment=None, disabled=False, run_on_client=False):
+def create_item_with_max_quantity_at_position(item_type, position, comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'createItemWithMaxQuantityAtPosition',
-        'itemType': to_dict(itemType),
+        'itemType': to_dict(item_type),
         'position': to_dict(position),
     }
 
 
 @action
-def show_menu(player, comment=None, disabled=False, run_on_client=False):
+def show_menu_to_player(player, comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'showMenu',
         'player': to_dict(player),
@@ -658,10 +658,10 @@ def start_accepting_players(comment=None, disabled=False, run_on_client=False):
 
 
 @action
-def for_all_entities(entityGroup, actions=[], comment=None, disabled=False, run_on_client=False):
+def for_all_entities_in(entity_group, actions=[], comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'forAllEntities',
-        'entityGroup': to_dict(entityGroup),
+        'entityGroup': to_dict(entity_group),
         'actions': actions,
     }
 
@@ -686,10 +686,10 @@ def set_entity_attribute(attribute, entity, value: Number, comment=None, disable
 
 
 @action
-def for_all_item_types(itemTypeGroup, actions=[], comment=None, disabled=False, run_on_client=False):
+def for_all_item_types_in(item_type_group, actions=[], comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'forAllItemTypes',
-        'itemTypeGroup': to_dict(itemTypeGroup),
+        'itemTypeGroup': to_dict(item_type_group),
         'actions': actions,
     }
 
@@ -724,19 +724,19 @@ def update_ui_text_for_everyone(target, value: String, comment=None, disabled=Fa
 
 
 @action
-def for_all_units(unitGroup, actions=[], comment=None, disabled=False, run_on_client=False):
+def for_all_units_in(unit_group, actions=[], comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'forAllUnits',
-        'unitGroup': to_dict(unitGroup),
+        'unitGroup': to_dict(unit_group),
         'actions': actions,
     }
 
 
 @action
-def for_all_projectiles(projectileGroup, actions=[], comment=None, disabled=False, run_on_client=False):
+def for_all_projectiles_in(projectile_group, actions=[], comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'forAllProjectiles',
-        'projectileGroup': to_dict(projectileGroup),
+        'projectileGroup': to_dict(projectile_group),
         'actions': actions,
     }
 
@@ -750,7 +750,7 @@ def stop_music_for_player(player, comment=None, disabled=False, run_on_client=Fa
 
 
 @action
-def position_camera(player, position, comment=None, disabled=False, run_on_client=False):
+def make_camera_of_player_look_at_position(player, position, comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'positionCamera',
         'player': to_dict(player),
@@ -759,10 +759,10 @@ def position_camera(player, position, comment=None, disabled=False, run_on_clien
 
 
 @action
-def create_projectile_at_position(projectileType, position, force: Number, angle: Number, comment=None, disabled=False, run_on_client=False):
+def create_projectile_at_position_and_apply_force_with_angle(projectile_type, position, force: Number, angle: Number, comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'createProjectileAtPosition',
-        'projectileType': to_dict(projectileType),
+        'projectileType': to_dict(projectile_type),
         'position': to_dict(position),
         'force': to_dict(force),
         'angle': to_dict(angle),
@@ -770,7 +770,7 @@ def create_projectile_at_position(projectileType, position, force: Number, angle
 
 
 @action
-def show_menu_and_select_current_server(player, comment=None, disabled=False, run_on_client=False):
+def show_menu_to_player_and_select_current_server(player, comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'showMenuAndSelectCurrentServer',
         'player': to_dict(player),
@@ -778,7 +778,7 @@ def show_menu_and_select_current_server(player, comment=None, disabled=False, ru
 
 
 @action
-def set_fading_text_of_unit(unit, text: String, color: String, comment=None, disabled=False, run_on_client=False):
+def set_fading_text_of_unit(text: String, unit, color: String, comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'setFadingTextOfUnit',
         'unit': to_dict(unit),
@@ -788,7 +788,7 @@ def set_fading_text_of_unit(unit, text: String, color: String, comment=None, dis
 
 
 @action
-def change_scale_of_entity_body(entity, scale: Number, comment=None, disabled=False, run_on_client=False):
+def change_scale_of_entity_body(scale: Number, entity, comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'changeScaleOfEntityBody',
         'entity': to_dict(entity),
@@ -797,16 +797,16 @@ def change_scale_of_entity_body(entity, scale: Number, comment=None, disabled=Fa
 
 
 @action
-def for_all_regions(regionGroup, actions=[], comment=None, disabled=False, run_on_client=False):
+def for_all_regions_in(region_group, actions=[], comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'forAllRegions',
-        'regionGroup': to_dict(regionGroup),
+        'regionGroup': to_dict(region_group),
         'actions': actions,
     }
 
 
 @action
-def rotate_entity_to_radians_lt(entity, radians: Number, comment=None, disabled=False, run_on_client=False):
+def rotate_entity_loss_tolerant_to_radians(entity, radians: Number, comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'rotateEntityToRadiansLT',
         'entity': to_dict(entity),
@@ -815,30 +815,30 @@ def rotate_entity_to_radians_lt(entity, radians: Number, comment=None, disabled=
 
 
 @action
-def set_player_attribute_max(attributeType, player, number: Number, comment=None, disabled=False, run_on_client=False):
+def set_player_attribute_max(attribute_type, player, number: Number, comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'setPlayerAttributeMax',
-        'attributeType': to_dict(attributeType),
+        'attributeType': to_dict(attribute_type),
         'player': to_dict(player),
         'number': to_dict(number),
     }
 
 
 @action
-def set_player_attribute_regeneration_rate(attributeType, player, number: Number, comment=None, disabled=False, run_on_client=False):
+def set_player_attribute_regeneration_rate(attribute_type, player, number: Number, comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'setPlayerAttributeRegenerationRate',
-        'attributeType': to_dict(attributeType),
+        'attributeType': to_dict(attribute_type),
         'player': to_dict(player),
         'number': to_dict(number),
     }
 
 
 @action
-def for_all_unit_types(unitTypeGroup, actions=[], comment=None, disabled=False, run_on_client=False):
+def for_all_unit_types_in(unit_type_group, actions=[], comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'forAllUnitTypes',
-        'unitTypeGroup': to_dict(unitTypeGroup),
+        'unitTypeGroup': to_dict(unit_type_group),
         'actions': actions,
     }
 
@@ -861,25 +861,25 @@ def kick_player(entity, comment=None, disabled=False, run_on_client=False):
 
 
 @action
-def for_all_players(playerGroup, actions=[], comment=None, disabled=False, run_on_client=False):
+def for_all_players_in(player_group, actions=[], comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'forAllPlayers',
-        'playerGroup': to_dict(playerGroup),
+        'playerGroup': to_dict(player_group),
         'actions': actions,
     }
 
 
 @action
-def remove_unit_from_unit_group(unit, unitGroup, comment=None, disabled=False, run_on_client=False):
+def remove_unit_from_unit_group(unit, unit_group, comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'removeUnitFromUnitGroup',
         'unit': to_dict(unit),
-        'unitGroup': to_dict(unitGroup),
+        'unitGroup': to_dict(unit_group),
     }
 
 
 @action
-def flip_entity_sprite(entity, flip, comment=None, disabled=False, run_on_client=False):
+def flip_sprite_of_entity(flip, entity, comment=None, disabled=False, run_on_client=False):
     '''Flip the sprite of an entity
 
     Args:
@@ -902,7 +902,7 @@ def make_unit_invisible_to_neutral_players(entity, comment=None, disabled=False,
 
 
 @action
-def save_unit_data(unit, comment=None, disabled=False, run_on_client=False):
+def save_data_of_unit(unit, comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'saveUnitData',
         'unit': to_dict(unit),
@@ -919,25 +919,25 @@ def apply_torque_on_entity(torque: Number, entity, comment=None, disabled=False,
 
 
 @action
-def give_new_item_to_unit(itemType, unit, comment=None, disabled=False, run_on_client=False):
+def give_new_item_to_unit(item_type, unit, comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'giveNewItemToUnit',
-        'itemType': to_dict(itemType),
+        'itemType': to_dict(item_type),
         'unit': to_dict(unit),
     }
 
 
 @action
-def start_using_item(entity, comment=None, disabled=False, run_on_client=False):
+def use_item_continuously_until_stopped(item, comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'startUsingItem',
-        'entity': to_dict(entity),
+        'entity': to_dict(item),
         'hasFixedCSP': None,
     }
 
 
 @action
-def move_entity(entity, position, comment=None, disabled=False, run_on_client=False):
+def move_entity_to_position(entity, position, comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'moveEntity',
         'entity': to_dict(entity),
@@ -957,7 +957,7 @@ def for_range(variable, start: Number, stop: Number, actions=[], comment=None, d
 
 
 @action
-def show_menu_and_select_best_server(player, comment=None, disabled=False, run_on_client=False):
+def show_menu_to_player_and_select_best_server(player, comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'showMenuAndSelectBestServer',
         'player': to_dict(player),
@@ -965,7 +965,7 @@ def show_menu_and_select_best_server(player, comment=None, disabled=False, run_o
 
 
 @action
-def apply_force_on_entity_xyrelative(force_x: Number, force_y: Number, entity, comment=None, disabled=False, run_on_client=False):
+def apply_force_on_entity_relative_to_facing_angle(force_x: Number, force_y: Number, entity, comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'applyForceOnEntityXYRelative',
         'force': {
@@ -977,7 +977,7 @@ def apply_force_on_entity_xyrelative(force_x: Number, force_y: Number, entity, c
 
 
 @action
-def apply_force_on_entity_xylt(force_x: Number, force_y: Number, entity, comment=None, disabled=False, run_on_client=False):
+def apply_force_loss_tolerant_on_entity(force_x: Number, force_y: Number, entity, comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'applyForceOnEntityXYLT',
         'force': {
@@ -989,11 +989,11 @@ def apply_force_on_entity_xylt(force_x: Number, force_y: Number, entity, comment
 
 
 @action
-def attach_entity_to_entity(entity, targetingEntity, comment=None, disabled=False, run_on_client=False):
+def attach_entity_to_entity(entity, targeting_entity, comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'attachEntityToEntity',
         'entity': to_dict(entity),
-        'targetingEntity': to_dict(targetingEntity),
+        'targetingEntity': to_dict(targeting_entity),
     }
 
 
@@ -1006,19 +1006,19 @@ def ban_player_from_chat(player, comment=None, disabled=False, run_on_client=Fal
 
 
 @action
-def change_unit_type(entity, unitType, comment=None, disabled=False, run_on_client=False):
+def change_unit_type_of_entity(unit_type, entity, comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'changeUnitType',
         'entity': to_dict(entity),
-        'unitType': to_dict(unitType),
+        'unitType': to_dict(unit_type),
     }
 
 
 @action
-def for_all_debris(debrisGroup, actions=[], comment=None, disabled=False, run_on_client=False):
+def for_all_debris_in(debris_group, actions=[], comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'forAllDebris',
-        'debrisGroup': to_dict(debrisGroup),
+        'debrisGroup': to_dict(debris_group),
         'actions': actions,
     }
 
@@ -1060,16 +1060,16 @@ def make_unit_select_item_at_slot(unit, slotIndex: Number, comment=None, disable
 
 
 @action
-def stop_using_item(entity, comment=None, disabled=False, run_on_client=False):
+def stop_using_item(item, comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'stopUsingItem',
-        'entity': to_dict(entity),
+        'entity': to_dict(item),
         'hasFixedCSP': None,
     }
 
 
 @action
-def make_unit_visible(entity, comment=None, disabled=False, run_on_client=False):
+def make_unit_visible_to_hostile_players(entity, comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'makeUnitVisible',
         'entity': to_dict(entity),
@@ -1077,7 +1077,7 @@ def make_unit_visible(entity, comment=None, disabled=False, run_on_client=False)
 
 
 @action
-def make_unit_invisible(entity, comment=None, disabled=False, run_on_client=False):
+def make_unit_invisible_to_hostile_players(entity, comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'makeUnitInvisible',
         'entity': to_dict(entity),
@@ -1092,7 +1092,7 @@ def break_loop(comment=None, disabled=False, run_on_client=False):
 
 
 @ action
-def change_scale_of_entity_sprite(entity, scale: Number, comment=None, disabled=False, run_on_client=False):
+def change_scale_of_sprite_for_entity(scale: Number, entity, comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'changeScaleOfEntitySprite',
         'entity': to_dict(entity),
@@ -1101,7 +1101,7 @@ def change_scale_of_entity_sprite(entity, scale: Number, comment=None, disabled=
 
 
 @ action
-def set_player_name(player, name: String, comment=None, disabled=False, run_on_client=False):
+def set_name_of_player(name: String, player, comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'setPlayerName',
         'player': to_dict(player),
@@ -1110,7 +1110,7 @@ def set_player_name(player, name: String, comment=None, disabled=False, run_on_c
 
 
 @ action
-def make_unit_pickup_item_at_slot(unit, item, slotIndex: Number, comment=None, disabled=False, run_on_client=False):
+def make_unit_pickup_item_at_inventory_slot(unit, item, slotIndex: Number, comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'makeUnitPickupItemAtSlot',
         'unit': to_dict(unit),
@@ -1120,7 +1120,7 @@ def make_unit_pickup_item_at_slot(unit, item, slotIndex: Number, comment=None, d
 
 
 @ action
-def drop_item_in_inventory_slot(unit, slotIndex: Number, comment=None, disabled=False, run_on_client=False):
+def make_unit_drop_item_at_inventory_slot(unit, slotIndex: Number, comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'dropItemInInventorySlot',
         'unit': to_dict(unit),
@@ -1137,7 +1137,7 @@ def unban_player_from_chat(player, comment=None, disabled=False, run_on_client=F
 
 
 @ action
-def change_description_of_item(item, string: String, comment=None, disabled=False, run_on_client=False):
+def change_description_of_item(string: String, item, comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'changeDescriptionOfItem',
         'item': to_dict(item),
@@ -1155,10 +1155,10 @@ def send_chat_message_to_player(message: String, player, comment=None, disabled=
 
 
 @action
-def add_chat_filter(word, comment=None, disabled=False, run_on_client=False):
+def add_words_to_chat_filter(words, comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'addChatFilter',
-        'words': to_dict(word),
+        'words': to_dict(words),
     }
 
 
@@ -1170,7 +1170,7 @@ def play_ad_for_everyone(comment=None, disabled=False, run_on_client=False):
 
 
 @action
-def send_coins_to_player(coins, player, comment=None, disabled=False, run_on_client=False):
+def send_coins_to_player_with_player_paying_fee(coins, player, comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'sendCoinsToPlayer',
         'coins': to_dict(coins),
@@ -1178,8 +1178,17 @@ def send_coins_to_player(coins, player, comment=None, disabled=False, run_on_cli
     }
 
 
+@action
+def send_coins_to_player_with_owner_paying_fee(coins, player, comment=None, disabled=False, run_on_client=False):
+    return {
+        'type': 'sendCoinsToPlayer2',
+        'coins': to_dict(coins),
+        'player': to_dict(player),
+    }
+
+
 @ action
-def hide_ui_text_for_player(target, entity, comment=None, disabled=False, run_on_client=False):
+def hide_ui_target_for_player(target, entity, comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'hideUiTextForPlayer',
         'target': to_dict(target),
@@ -1188,7 +1197,7 @@ def hide_ui_text_for_player(target, entity, comment=None, disabled=False, run_on
 
 
 @ action
-def show_ui_text_for_player(target, entity, comment=None, disabled=False, run_on_client=False):
+def show_ui_target_for_player(target, entity, comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'showUiTextForPlayer',
         'target': to_dict(target),
@@ -1197,15 +1206,15 @@ def show_ui_text_for_player(target, entity, comment=None, disabled=False, run_on
 
 
 @ action
-def reset_debris_position(entity, comment=None, disabled=False, run_on_client=False):
+def reset_position_of_debris(debris, comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'resetDebrisPosition',
-        'entity': to_dict(entity),
+        'entity': to_dict(debris),
     }
 
 
 @ action
-def play_music(music, comment=None, disabled=False, run_on_client=False):
+def play_music_for_everyone(music, comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'playMusic',
         'music': to_dict(music),
@@ -1213,11 +1222,11 @@ def play_music(music, comment=None, disabled=False, run_on_client=False):
 
 
 @ action
-def assign_player_type(entity, playerType, comment=None, disabled=False, run_on_client=False):
+def assign_player_to_player_type(entity, player_type, comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'assignPlayerType',
         'entity': to_dict(entity),
-        'playerType': to_dict(playerType),
+        'playerType': to_dict(player_type),
     }
 
 
@@ -1256,17 +1265,17 @@ def make_unit_pickup_item(unit, item, comment=None, disabled=False, run_on_clien
 
 
 @ action
-def give_new_item_with_quantity_to_unit(itemType, number: Number, unit, comment=None, disabled=False, run_on_client=False):
+def give_new_item_with_quantity_to_unit(item_type, number: Number, unit, comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'giveNewItemWithQuantityToUnit',
-        'itemType': to_dict(itemType),
+        'itemType': to_dict(item_type),
         'number': to_dict(number),
         'unit': to_dict(unit),
     }
 
 
 @ action
-def drop_all_items(entity, comment=None, disabled=False, run_on_client=False):
+def make_unit_drop_all_items(entity, comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'dropAllItems',
         'entity': to_dict(entity),
@@ -1289,7 +1298,7 @@ def stop_accepting_players(comment=None, disabled=False, run_on_client=False):
 
 
 @ action
-def set_entity_velocity_at_angle(entity, speed: Number, angle: Number, comment=None, disabled=False, run_on_client=False):
+def set_entity_velocity_with_speed_at_angle(entity, speed: Number, angle: Number, comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'setEntityVelocityAtAngle',
         'entity': to_dict(entity),
@@ -1309,26 +1318,26 @@ def set_entity_attribute_max(attribute, entity, value: Number, comment=None, dis
 
 
 @ action
-def set_player_attribute_min(attributeType, player, number: Number, comment=None, disabled=False, run_on_client=False):
+def set_player_attribute_min(attribute_type, player, number: Number, comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'setPlayerAttributeMin',
-        'attributeType': to_dict(attributeType),
+        'attributeType': to_dict(attribute_type),
         'player': to_dict(player),
         'number': to_dict(number),
     }
 
 
 @ action
-def make_player_trade_with_player(playerA, playerB, comment=None, disabled=False, run_on_client=False):
+def make_player_trade_with_player(player_a, player_b, comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'makePlayerTradeWithPlayer',
-        'playerA': to_dict(playerA),
-        'playerB': to_dict(playerB),
+        'playerA': to_dict(player_a),
+        'playerB': to_dict(player_b),
     }
 
 
 @ action
-def update_ui_text_for_time_for_player(target, value: String, player, time: Number, comment=None, disabled=False, run_on_client=False):
+def update_ui_target_for_player_for_miliseconds(target, value: String, player, time: Number, comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'updateUiTextForTimeForPlayer',
         'target': to_dict(target),
@@ -1339,7 +1348,7 @@ def update_ui_text_for_time_for_player(target, value: String, player, time: Numb
 
 
 @ action
-def ai_move_to_position(unit, position, comment=None, disabled=False, run_on_client=False):
+def command_ai_unit_to_move_to_position(unit, position, comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'aiMoveToPosition',
         'unit': to_dict(unit),
@@ -1348,16 +1357,16 @@ def ai_move_to_position(unit, position, comment=None, disabled=False, run_on_cli
 
 
 @ action
-def ai_attack_unit(unit, targetUnit, comment=None, disabled=False, run_on_client=False):
+def command_ai_to_attack_unit(unit, target_unit, comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'aiAttackUnit',
         'unit': to_dict(unit),
-        'targetUnit': to_dict(targetUnit),
+        'targetUnit': to_dict(target_unit),
     }
 
 
 @ action
-def change_sensor_radius(sensor, radius: Number, comment=None, disabled=False, run_on_client=False):
+def change_radius_of_sensor(radius: Number, sensor, comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'changeSensorRadius',
         'sensor': to_dict(sensor),
@@ -1366,7 +1375,7 @@ def change_sensor_radius(sensor, radius: Number, comment=None, disabled=False, r
 
 
 @ action
-def load_player_data_and_apply_it(player, unit, comment=None, disabled=False, run_on_client=False):
+def load_player_data_and_apply_it_to(player, unit, comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'loadPlayerDataAndApplyIt',
         'player': to_dict(player),
@@ -1375,7 +1384,7 @@ def load_player_data_and_apply_it(player, unit, comment=None, disabled=False, ru
 
 
 @ action
-def create_floating_text(text: String, position, color: String, comment=None, disabled=False, run_on_client=False):
+def create_floating_text_at_position_with_color(text: String, position, color: String, comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'createFloatingText',
         'text': to_dict(text),
@@ -1401,7 +1410,7 @@ def set_last_attacking_unit(unit, comment=None, disabled=False, run_on_client=Fa
 
 
 @ action
-def set_item_fire_rate(number: Number, item, comment=None, disabled=False, run_on_client=False):
+def set_fire_rate_of_item(number: Number, item, comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'setItemFireRate',
         'number': to_dict(number),
@@ -1410,7 +1419,7 @@ def set_item_fire_rate(number: Number, item, comment=None, disabled=False, run_o
 
 
 @ action
-def apply_impulse_on_entity_xy(impulse_x: Number, impulse_y: Number, entity, comment=None, disabled=False, run_on_client=False):
+def apply_impulse_on_entity(impulse_x: Number, impulse_y: Number, entity, comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'applyImpulseOnEntityXY',
         'impulse': {
@@ -1440,16 +1449,16 @@ def stop_sound_for_player(sound, player, comment=None, disabled=False, run_on_cl
 
 
 @ action
-def show_dismissible_input_modal_to_player(player, inputLabel: String, comment=None, disabled=False, run_on_client=False):
+def show_dismissible_input_modal_asking_question_to_player(question: String, player, comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'showDismissibleInputModalToPlayer',
         'player': to_dict(player),
-        'inputLabel': to_dict(inputLabel),
+        'inputLabel': to_dict(question),
     }
 
 
 @ action
-def set_item_name(name: String, item, comment=None, disabled=False, run_on_client=False):
+def set_name_of_item(name: String, item, comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'setItemName',
         'name': to_dict(name),
@@ -1458,7 +1467,7 @@ def set_item_name(name: String, item, comment=None, disabled=False, run_on_clien
 
 
 @ action
-def change_item_inventory_image(url: String, item, comment=None, disabled=False, run_on_client=False):
+def set_inventory_image_of_item(url: String, item, comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'changeItemInventoryImage',
         'url': to_dict(url),
@@ -1467,7 +1476,7 @@ def change_item_inventory_image(url: String, item, comment=None, disabled=False,
 
 
 @ action
-def add_attribute_buff_to_unit(entity, value: Number, attribute, time: Number, comment=None, disabled=False, run_on_client=False):
+def give_attribute_buff_to_entity_for_milliseconds(attribute, value: Number, entity, time: Number, comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'addAttributeBuffToUnit',
         'entity': to_dict(entity),
@@ -1478,7 +1487,7 @@ def add_attribute_buff_to_unit(entity, value: Number, attribute, time: Number, c
 
 
 @ action
-def add_percentage_attribute_buff_to_unit(entity, value: Number, attribute, time: Number, comment=None, disabled=False, run_on_client=False):
+def give_percentage_attribute_buff_to_entity_for_milliseconds(value: Number, attribute, entity, time: Number, comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'addPercentageAttributeBuffToUnit',
         'entity': to_dict(entity),
@@ -1513,7 +1522,7 @@ def set_last_attacking_item(item, comment=None, disabled=False, run_on_client=Fa
 
 
 @ action
-def mute_player_microphone(player, comment=None, disabled=False, run_on_client=False):
+def mute_microphone_of_player(player, comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'mutePlayerMicrophone',
         'player': to_dict(player),
@@ -1521,7 +1530,7 @@ def mute_player_microphone(player, comment=None, disabled=False, run_on_client=F
 
 
 @ action
-def unmute_player_microphone(player, comment=None, disabled=False, run_on_client=False):
+def unmute_microphone_of_player(player, comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'unmutePlayerMicrophone',
         'player': to_dict(player),
@@ -1529,17 +1538,17 @@ def unmute_player_microphone(player, comment=None, disabled=False, run_on_client
 
 
 @ action
-def send_post_request(string: String, url: String, varName, comment=None, disabled=False, run_on_client=False):
+def send_post_request_and_save_response_in_variable(url: String, value: String, var, comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'sendPostRequest',
-        'string': to_dict(string),
+        'string': to_dict(value),
         'url': to_dict(url),
-        'varName': to_dict(varName),
+        'varName': to_dict(var),
     }
 
 
 @ action
-def load_unit_data_from_string(string: String, unit, comment=None, disabled=False, run_on_client=False):
+def load_data_from_string_and_apply_to_unit(string: String, unit, comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'loadUnitDataFromString',
         'string': to_dict(string),
@@ -1548,7 +1557,7 @@ def load_unit_data_from_string(string: String, unit, comment=None, disabled=Fals
 
 
 @ action
-def load_player_data_from_string(string: String, player, comment=None, disabled=False, run_on_client=False):
+def load_data_from_string_and_apply_to_player(string: String, player, comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'loadPlayerDataFromString',
         'string': to_dict(string),
@@ -1557,7 +1566,7 @@ def load_player_data_from_string(string: String, player, comment=None, disabled=
 
 
 @ action
-def remove_all_attribute_buffs(unit, comment=None, disabled=False, run_on_client=False):
+def remove_all_attribute_buffs_from_unit(unit, comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'removeAllAttributeBuffs',
         'unit': to_dict(unit),
@@ -1565,11 +1574,11 @@ def remove_all_attribute_buffs(unit, comment=None, disabled=False, run_on_client
 
 
 @ action
-def change_inventory_slot_color(item, string: String, comment=None, disabled=False, run_on_client=False):
+def change_color_of_inventory_slot_for_item(color: String, item, comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'changeInventorySlotColor',
         'item': to_dict(item),
-        'string': to_dict(string),
+        'string': to_dict(color),
     }
 
 
@@ -1583,7 +1592,7 @@ def set_owner_unit_of_projectile(unit, projectile, comment=None, disabled=False,
 
 
 @ action
-def enable_ai(unit, comment=None, disabled=False, run_on_client=False):
+def enable_ai_for_unit(unit, comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'enableAI',
         'unit': to_dict(unit),
@@ -1591,7 +1600,7 @@ def enable_ai(unit, comment=None, disabled=False, run_on_client=False):
 
 
 @ action
-def disable_ai(unit, comment=None, disabled=False, run_on_client=False):
+def disable_ai_for_unit(unit, comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'disableAI',
         'unit': to_dict(unit),
@@ -1599,7 +1608,7 @@ def disable_ai(unit, comment=None, disabled=False, run_on_client=False):
 
 
 @ action
-def ai_go_idle(unit, comment=None, disabled=False, run_on_client=False):
+def command_ai_to_idle(unit, comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'aiGoIdle',
         'unit': to_dict(unit),

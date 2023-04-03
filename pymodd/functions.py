@@ -504,7 +504,7 @@ class XyCoordinate(Position):
         }
 
 
-class MouseCursorPosition(Position):
+class PositionOfMouseCursorOfPlayer(Position):
     def __init__(self, player):
         self.function = 'getMouseCursorPosition'
         self.options = {
@@ -528,7 +528,7 @@ class EntityLastRaycastCollisionPosition(Position):
         }
 
 
-class EntityPosition(Position):
+class PositionOfEntity(Position):
     def __init__(self, entity):
         self.function = 'getEntityPosition'
         self.options = {
@@ -633,7 +633,7 @@ class UnitsFacingAngle(Number):
         }
 
 
-class MapHeight(Number):
+class HeightOfMap(Number):
     def __init__(self):
         self.function = 'getMapHeight'
         self.options = {}
@@ -664,7 +664,7 @@ class Cos(Number):
         }
 
 
-class EntityHeight(Number):
+class HeightOfEntity(Number):
     def __init__(self, entity):
         self.function = 'entityHeight'
         self.options = {
@@ -672,7 +672,7 @@ class EntityHeight(Number):
         }
 
 
-class PlayerAttributeMax(Number):
+class AttributeMaxOfPlayer(Number):
     def __init__(self, attribute, entity):
         self.function = 'playerAttributeMax'
         self.options = {
@@ -690,13 +690,13 @@ class PlayerAttribute(Number):
         }
 
 
-class MapWidth(Number):
+class WidthOfMap(Number):
     def __init__(self):
         self.function = 'getMapWidth'
         self.options = {}
 
 
-class EntityWidth(Number):
+class WidthOfEntity(Number):
     def __init__(self, entity):
         self.function = 'entityWidth'
         self.options = {
@@ -704,7 +704,7 @@ class EntityWidth(Number):
         }
 
 
-class PlayerCount(Number):
+class NumberOfPlayers(Number):
     def __init__(self):
         self.function = 'getPlayerCount'
         self.options = {}
@@ -765,7 +765,7 @@ class WidthOfRegion(Number):
         }
 
 
-class EntityAttributeMin(Number):
+class AttributeMinOfEntity(Number):
     def __init__(self, attribute, entity):
         self.function = 'entityAttributeMin'
         self.options = {
@@ -791,7 +791,7 @@ class QuantityOfUnitTypeInUnitTypeGroup(Number):
         }
 
 
-class PositionY(Number):
+class YCoordinateOfPosition(Number):
     def __init__(self, position):
         self.function = 'getPositionY'
         self.options = {
@@ -808,7 +808,7 @@ class DistanceBetweenPositions(Number):
         }
 
 
-class EntityAttributeMax(Number):
+class AttributeMaxOfEntity(Number):
     def __init__(self, attribute, entity):
         self.function = 'entityAttributeMax'
         self.options = {
@@ -817,7 +817,7 @@ class EntityAttributeMax(Number):
         }
 
 
-class PlayerAttributeMin(Number):
+class AttributeMinOfPlayer(Number):
     def __init__(self, attribute, entity):
         self.function = 'playerAttributeMin'
         self.options = {
@@ -842,7 +842,7 @@ class XCoordinateOfRegion(Number):
         }
 
 
-class EntityVelocityY(Number):
+class YVelocityOfEntity(Number):
     def __init__(self, entity):
         self.function = 'getEntityVelocityY'
         self.options = {
@@ -850,7 +850,7 @@ class EntityVelocityY(Number):
         }
 
 
-class PositionX(Number):
+class XCoordinateOfPosition(Number):
     def __init__(self, position):
         self.function = 'getPositionX'
         self.options = {
@@ -866,7 +866,7 @@ class LastPlayedTimeOfPlayer(Number):
         }
 
 
-class Max(Number):
+class MaxBetweenTwoNumbers(Number):
     def __init__(self, num_a, num_b):
         self.function = 'getMax'
         self.options = {
@@ -875,7 +875,7 @@ class Max(Number):
         }
 
 
-class RotateSpeed(Number):
+class RotationSpeedOfUnitType(Number):
     def __init__(self, unit_type):
         self.function = 'getRotateSpeed'
         self.options = {
@@ -899,7 +899,7 @@ class HeightOfRegion(Number):
         }
 
 
-class ItemMaxQuantity(Number):
+class MaxQuantityOfItem(Number):
     def __init__(self, item):
         self.function = 'getItemMaxQuantity'
         self.options = {
@@ -924,13 +924,13 @@ class EntityAttribute(Number):
         }
 
 
-class CurrentTimeStamp(Number):
+class CurrentUnixTimeStamp(Number):
     def __init__(self):
         self.function = 'currentTimeStamp'
         self.options = {}
 
 
-class EntityVelocityX(Number):
+class XVelocityOfEntity(Number):
     def __init__(self, entity):
         self.function = 'getEntityVelocityX'
         self.options = {
@@ -1086,7 +1086,7 @@ class EntityTypeOfEntity(String):
         }
 
 
-class PlayerCustomInput(String):
+class LastCustomInputOfPlayer(String):
     def __init__(self, player):
         self.function = 'playerCustomInput'
         self.options = {
@@ -1103,7 +1103,7 @@ class Concat(String):
         }
 
 
-class PlayerName(String):
+class NameOfPlayer(String):
     def __init__(self, entity):
         self.function = 'getPlayerName'
         self.options = {
@@ -1111,7 +1111,7 @@ class PlayerName(String):
         }
 
 
-class UnitTypeName(String):
+class NameOfUnitType(String):
     def __init__(self, unit_type):
         self.function = 'getUnitTypeName'
         self.options = {
@@ -1127,7 +1127,7 @@ class NameOfRegion(String):
         }
 
 
-class ItemTypeName(String):
+class NameOfItemType(String):
     def __init__(self, item_type):
         self.function = 'getItemTypeName'
         self.options = {
@@ -1162,7 +1162,7 @@ class ToLowerCase(String):
 
 
 class ReplaceValuesInString(String):
-    def __init__(self, match_string, source_string, new_string):
+    def __init__(self, source_string, match_string, new_string):
         self.function = 'replaceValuesInString'
         self.options = {
             'matchString': to_dict(match_string),
@@ -1171,15 +1171,16 @@ class ReplaceValuesInString(String):
         }
 
 
-class TimeString(String):
+class UnixTimeToFormattedString(String):
     def __init__(self, seconds):
+        """formats to (hh::mm:ss)"""
         self.function = 'getTimeString'
         self.options = {
             'seconds': to_dict(seconds),
         }
 
 
-class ItemDescription(String):
+class DescriptionOfItem(String):
     def __init__(self, item):
         self.function = 'getItemDescription'
         self.options = {
@@ -1187,7 +1188,7 @@ class ItemDescription(String):
         }
 
 
-class UnitData(String):
+class DataOfUnit(String):
     def __init__(self, unit):
         self.function = 'getUnitData'
         self.options = {
@@ -1195,7 +1196,7 @@ class UnitData(String):
         }
 
 
-class PlayerData(String):
+class DataOfPlayer(String):
     def __init__(self, player):
         self.function = 'getPlayerData'
         self.options = {
@@ -1203,7 +1204,7 @@ class PlayerData(String):
         }
 
 
-class UnitId(String):
+class IdOfUnit(String):
     def __init__(self, unit):
         self.function = 'getUnitId'
         self.options = {
@@ -1211,7 +1212,7 @@ class UnitId(String):
         }
 
 
-class PlayerId(String):
+class IdOfPlayer(String):
     def __init__(self, player):
         self.function = 'getPlayerId'
         self.options = {
@@ -1256,7 +1257,7 @@ class RemoveStringArrayElement(String):
         }
 
 
-class EntityName(String):
+class NameOfEntity(String):
     def __init__(self, entity):
         self.function = 'entityName'
         self.options = {
@@ -1293,7 +1294,7 @@ class IsPlayerLoggedIn(Boolean):
         }
 
 
-class PlayersAreFriendly(Boolean):
+class AreBothPlayersFriendly(Boolean):
     def __init__(self, player_a, player_b):
         self.function = 'playersAreFriendly'
         self.options = {
@@ -1302,7 +1303,7 @@ class PlayersAreFriendly(Boolean):
         }
 
 
-class PlayerIsControlledByHuman(Boolean):
+class IsPlayerControlledByHuman(Boolean):
     def __init__(self, player):
         self.function = 'playerIsControlledByHuman'
         self.options = {
@@ -1310,7 +1311,7 @@ class PlayerIsControlledByHuman(Boolean):
         }
 
 
-class PlayersAreHostile(Boolean):
+class AreBothPlayersHostile(Boolean):
     def __init__(self, player_a, player_b):
         self.function = 'playersAreHostile'
         self.options = {
@@ -1328,7 +1329,7 @@ class RegionOverlapsWithRegion(Boolean):
         }
 
 
-class PlayersAreNeutral(Boolean):
+class AreBothPlayersNeutral(Boolean):
     def __init__(self, player_a, player_b):
         self.function = 'playersAreNeutral'
         self.options = {
@@ -1397,7 +1398,7 @@ class IsAIEnabled(Boolean):
         }
 
 
-class IsBotPlayer(Boolean):
+class IsPlayerABot(Boolean):
     def __init__(self, player):
         self.function = 'isBotPlayer'
         self.options = {
@@ -1405,7 +1406,7 @@ class IsBotPlayer(Boolean):
         }
 
 
-class IsComputerPlayer(Boolean):
+class IsPlayerAComputer(Boolean):
     def __init__(self, player_is_a_computer):
         self.function = 'isComputerPlayer'
         self.options = {
@@ -1586,7 +1587,7 @@ class UnitTypeOfUnit(UnitType):
         }
 
 
-class LastPurchasedUnitTypetId(UnitType):
+class IdOfLastPurchasedUnitTypet(UnitType):
     def __init__(self):
         self.function = 'lastPurchasedUnitTypetId'
         self.options = {}
@@ -1722,19 +1723,19 @@ class EntityGroup(Group):
     pass
 
 
-class EntitiesCollidingWithLastRaycast(EntityGroup):
+class AllEntitiesCollidingWithLastRaycast(EntityGroup):
     def __init__(self):
         self.function = 'entitiesCollidingWithLastRaycast'
         self.options = {}
 
 
-class AllEntities(EntityGroup):
+class AllEntitesInTheGame(EntityGroup):
     def __init__(self):
         self.function = 'allEntities'
         self.options = {}
 
 
-class EntitiesInRegion(EntityGroup):
+class AllEntitiesInRegion(EntityGroup):
     def __init__(self, region):
         self.function = 'entitiesInRegion'
         self.options = {
@@ -1742,8 +1743,8 @@ class EntitiesInRegion(EntityGroup):
         }
 
 
-class EntitiesInRegionInFrontOfEntityAtDistance(EntityGroup):
-    def __init__(self, width: Number, height: Number, entity, distance: Number):
+class AllEntitiesInFrontOfEntityInDynamicRegionAtDistance(EntityGroup):
+    def __init__(self, entity, width: Number, height: Number, distance: Number):
         self.function = 'entitiesInRegionInFrontOfEntityAtDistance'
         self.options = {
             'width': to_dict(width),
@@ -1753,7 +1754,7 @@ class EntitiesInRegionInFrontOfEntityAtDistance(EntityGroup):
         }
 
 
-class EntitiesBetweenTwoPositions(EntityGroup):
+class AllEntitiesBetweenTwoPositions(EntityGroup):
     def __init__(self, position_a, position_b):
         self.function = 'entitiesBetweenTwoPositions'
         self.options = {
@@ -1787,7 +1788,7 @@ class AllUnitsAttachedToUnit(UnitGroup):
         }
 
 
-class AllUnits(UnitGroup):
+class AllUnitsInTheGame(UnitGroup):
     def __init__(self):
         self.function = 'allUnits'
         self.options = {}
@@ -1834,7 +1835,7 @@ class AllProjectilesAttachedToUnit(ProjectileGroup):
         }
 
 
-class AllProjectiles(ProjectileGroup):
+class AllProjectilesInTheGame(ProjectileGroup):
     def __init__(self):
         self.function = 'allProjectiles'
         self.options = {}
@@ -1855,7 +1856,7 @@ class AllItemsDroppedOnGround(ItemGroup):
         self.options = {}
 
 
-class AllItems(ItemGroup):
+class AllItemsInTheGame(ItemGroup):
     def __init__(self):
         self.function = 'allItems'
         self.options = {}
@@ -1964,7 +1965,7 @@ class RegionGroup(Group):
     pass
 
 
-class AllRegions(RegionGroup):
+class AllRegionsInTheGame(RegionGroup):
     def __init__(self):
         self.function = 'allRegions'
         self.options = {}
