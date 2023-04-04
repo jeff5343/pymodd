@@ -25,7 +25,7 @@ impl ScriptsFile {
             "from pymodd.actions import *\n\
             from pymodd.functions import *\n\
             from pymodd.script import Script, Trigger, UiTarget, Flip\n\n\
-            from game_variables import *\n\n\n"
+            from .game_variables import *\n\n\n"
         );
         content.add(&build_directory_content(
             &game_data.root_directory,
