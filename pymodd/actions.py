@@ -7,7 +7,7 @@ from .script import Base, to_dict
 
 def action(func):
     @functools.wraps(func)
-    def wrapper_action(args, **kwargs):
+    def wrapper_action(*args, **kwargs):
         action_dictionary = (func(*args))
         action_dictionary.update(
             parse_optional_arguments_into_dictionary(
