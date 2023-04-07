@@ -154,7 +154,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "pymodd_generator"
+name = "pymodd_helper"
 version = "0.1.0"
 dependencies = [
  "crossterm",

@@ -2,11 +2,11 @@ import os
 import runpy
 from argparse import ArgumentParser
 
-from pymodd import _pymodd_generator
+from pymodd import _pymodd_helper
 
 
 def generate_project(args):
-    _pymodd_generator.generate_project_from_json_file_path(args.json_file_path)
+    _pymodd_helper.generate_project_from_json_file_path(args.json_file_path)
 
 
 def build(_args):

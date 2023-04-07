@@ -30,5 +30,5 @@ changelog = "https://github.com/jeff5343/pymodd/releases"
 pymodd = "pymodd.console_scripts.pymodd_command:main_cli"
 
 [tool.maturin]
-module-name = "pymodd._pymodd_generator"
+module-name = "pymodd._pymodd_helper"
 bindings = 'pyo3'

@@ -47,6 +47,7 @@ fn log_error(message: &str) {
 
 #[pymodule]
 fn _pymodd_generator(_py: Python, m: &PyModule) -> PyResult<()> {
+fn _pymodd_helper(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(generate_project_from_json_file_path, m)?)?;
     Ok(())
 }

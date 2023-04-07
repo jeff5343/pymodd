@@ -54,14 +54,14 @@ impl ProjectGenerator {
             // unwrap is fine as all files have the project directory as parent
             let parent = file.path.parent().unwrap();
             if !parent.exists() {
-                fs::create_dir_all(parent).map_err(|_| "error creating project directories!")?;
+                fs::create_dir_all(parent).map_err(|_| "error creating a pymodd project directories!")?;
             }
             write!(
-                fs::File::create(&file.path).map_err(|_| "error creating project file!")?,
+                fs::File::create(&file.path).map_err(|_| "error creating a pymodd project file!")?,
                 "{}",
                 file.content
             )
-            .map_err(|_| "error writing to project file!")?;
+            .map_err(|_| "error writing to a pymodd project file!")?;
             generation_logger(file);
         }
         Ok(())
