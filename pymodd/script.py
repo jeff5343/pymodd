@@ -139,58 +139,6 @@ def key_from_name(name):
     return snakecase(name)
 
 
-def write_game_to_output(game):
-    print(f'\nWriting json files for {game.name}...')
-
-    base_output_path = f'{snakecase(game.name)}/output/'
-    write_scripts_to_output(f'{base_output_path}/game_scripts', game.scripts)
-    write_entity_scripts_to_output(
-        f'{base_output_path}/entity_scripts', game.entity_scripts)
-    write_game_json(base_output_path, game)
-
-    print('\nFinished writing.\n')
-
-
-def write_game_json(path, game):
-    file_name = f'{game.name}.json'
-    with open(f'{path}/{file_name}', 'w') as output:
-        output.write(json.dumps(game.to_dict(), indent=4))
-    print(f'\n{file_name} successfuly created')
-
-
-def write_entity_scripts_to_output(path, entity_scripts):
-    print('\nWriting entity scripts...')
-    for entity in entity_scripts:
-        entity_name = snakecase(entity.__class__.__name__)
-        print(f'\n  entity type: {entity_name}')
-        write_scripts_to_output(f'{path}/{entity_name}', entity.scripts)
-
-
-def write_scripts_to_output(path, scripts):
-    for script in scripts:
-        write_to_output(path, script)
-
-
-def write_to_output(path, obj):
-    depth = path.count('/')
-    if not os.path.exists(f'{path}/'):
-        os.makedirs(f'{path}/')
-    # create scripts inside folders
-    if isinstance(obj, Folder):
-        folder_name = snakecase(obj.name)
-        print(f"{'  ' * depth} {folder_name}/")
-        write_scripts_to_output(f'{path}/{folder_name}', obj.scripts)
-        return
-
-    file_name = f'{obj.__class__.__name__}'
-    # use script name
-    if isinstance(obj, Script):
-        file_name = f'{snakecase(obj.name)}'
-    with open(f'{path}/{file_name}.json', 'w') as output:
-        output.write(json.dumps(obj.to_dict(), indent=4))
-        print(f"{'  ' * depth} - {file_name}")
-
-
 def to_dict(obj):
     if isinstance(obj, Base):
         return obj.to_dict()

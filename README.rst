@@ -18,7 +18,7 @@ Features
 
 - edit global and entity scripts
 - organize folders and scripts with a mapping file
-- a command to generate a pymodd project
+- a command to generate and compile a pymodd project
 
 Installing
 ----------
@@ -43,13 +43,13 @@ Export your modd game json file from the website and then generate a pymodd proj
 
 .. code:: sh
 
-    generate-game [GAME_JSON_FILE_PATH]
+    pymodd generate-project [GAME_JSON_FILE_PATH]
 
 
 Quick Script Example
 --------------------
 
-view examples/sample_scripts.py in the github repo for the full example
+view the ``examples/froge directory`` for a generated pymodd project
 
 .. code:: py
 

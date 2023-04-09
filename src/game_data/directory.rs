@@ -1,7 +1,9 @@
 use heck::ToPascalCase;
 use serde_json::{map::Values, Map, Value};
 
-use crate::project_generator::utils::{is_valid_class_name, to_pymodd_maps::TRIGGERS_TO_PYMODD_ENUM};
+use crate::project_generator::utils::{
+    is_valid_class_name, to_pymodd_maps::TRIGGERS_TO_PYMODD_ENUM,
+};
 
 use super::actions::{self, Action};
 

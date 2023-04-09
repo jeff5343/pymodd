@@ -198,7 +198,7 @@ impl Argument {
                     }
                 }
                 Value::Array(list_data) => {
-                    if list_data_contains_operator(&list_data) {
+                    if list_data_contains_an_operator(&list_data) {
                         // Convert conditions represented as a list by modd.io into a function
                         ArgumentValue::Function(Function::parse_condition_function(&list_data))
                     } else {
@@ -238,7 +238,7 @@ fn variable_id_from_get_unit_variable_function_data(
         .to_owned()
 }
 
-fn list_data_contains_operator(list_data: &Vec<Value>) -> bool {
+fn list_data_contains_an_operator(list_data: &Vec<Value>) -> bool {
     list_data.len() == 3
         && list_data.iter().any(|value| {
             value

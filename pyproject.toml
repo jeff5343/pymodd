@@ -27,8 +27,8 @@ repository = "https://github.com/jeff5343/pymodd"
 changelog = "https://github.com/jeff5343/pymodd/releases"
 
 [project.scripts]
-generate-game = "pymodd.console_scripts.generate_project:main"
+pymodd = "pymodd.console_scripts.pymodd_command:main_cli"
 
 [tool.maturin]
-module-name = "pymodd._pymodd_generator"
+module-name = "pymodd._pymodd_helper"
 bindings = 'pyo3'

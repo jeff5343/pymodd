@@ -26,27 +26,54 @@ fn generate_project_from_json_file_path(json_file_path: String) {
         Ok(data) => data,
     };
 
-    println!(
-        "\nGenerating pymodd project, {}...",
-        game_data.pymodd_project_name().underlined()
-    );
-    ProjectGenerator::generate(game_data, |file| {
+    log_cli_start_message("Generating", &game_data.pymodd_project_name());
+    match ProjectGenerator::generate(game_data, |file| {
         log_success(&format!("{} written", file.path.to_str().unwrap()))
-    })
-    .unwrap_or_else(|err_msg| log_error(err_msg));
-    println!("\n{} completed generation!\n", "successfully".dark_green());
+    }) {
+        Err(err_msg) => {
+            log_error(err_msg);
+            log_cli_end_message("generation", false);
+        }
+        Ok(_) => log_cli_end_message("generation", true),
+    }
 }
 
-fn log_success(message: &str) {
+#[pyfunction]
+pub fn log_success(message: &str) {
     println!(" {} {}", "-".dark_green(), message);
 }
 
-fn log_error(message: &str) {
+#[pyfunction]
+pub fn log_error(message: &str) {
     println!(" {} {}", "x".dark_red(), message.red().underlined());
 }
 
+#[pyfunction]
+pub fn log_cli_start_message(action: &str, pymodd_project_name: &str) {
+    println!(
+        "\n{action} pymodd project, {}...",
+        pymodd_project_name.underlined()
+    );
+}
+
+#[pyfunction]
+pub fn log_cli_end_message(completed_action: &str, ended_successfully: bool) {
+    println!(
+        "\n{} completed {completed_action}!\n",
+        match ended_successfully {
+            true => "successfully",
+            false => "unsuccessfully",
+        }
+        .dark_green()
+    );
+}
+
 #[pymodule]
-fn _pymodd_generator(_py: Python, m: &PyModule) -> PyResult<()> {
+fn _pymodd_helper(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(generate_project_from_json_file_path, m)?)?;
+    m.add_function(wrap_pyfunction!(log_success, m)?)?;
+    m.add_function(wrap_pyfunction!(log_error, m)?)?;
+    m.add_function(wrap_pyfunction!(log_cli_start_message, m)?)?;
+    m.add_function(wrap_pyfunction!(log_cli_end_message, m)?)?;
     Ok(())
 }

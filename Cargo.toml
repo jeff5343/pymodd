@@ -1,15 +1,17 @@
 [package]
-name = "pymodd_generator"
+name = "pymodd_helper"
 version = "0.1.0"
 edition = "2021"
 
 [lib]
-name = "_pymodd_generator"
+name = "_pymodd_helper"
 crate-type = ["cdylib"]
 
 [dependencies]
 pyo3 = { version = "0.17.3", features = ["extension-module"] }
 lazy_static = "1.4.0"
-serde_json = "1.0"
+serde = "1.0.159"
+serde_json = { version = "1.0", features = ["unbounded_depth"] }
+serde_stacker = "0.1.8"
 heck = "0.4.0"
 crossterm = "0.26.0"
