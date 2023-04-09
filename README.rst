@@ -18,7 +18,7 @@ Features
 
 - edit global and entity scripts
 - organize folders and scripts with a mapping file
-- a command to generate a pymodd project
+- a command to generate and compile a pymodd project
 
 Installing
 ----------
