@@ -4,10 +4,7 @@ use heck::ToPascalCase;
 
 use crate::game_data::{directory::Directory, entity_types::CategoriesToEntityTypes, GameData};
 
-use super::{
-    utils::{iterators::directory_iterator::DirectoryIterItem, surround_string_with_quotes},
-    STORED_GAME_JSON_FILE_PATH,
-};
+use super::utils::{iterators::directory_iterator::DirectoryIterItem, surround_string_with_quotes};
 
 pub struct MappingFile {}
 
@@ -15,9 +12,9 @@ impl MappingFile {
     pub fn build_content(game_data: &GameData) -> String {
         let game_class_name = game_data.name.to_pascal_case().to_string();
         let mut content = format!(
-            "from pymodd.script import Game, Folder, write_game_to_output, write_to_output\n\n\
-            from .scripts import *\n\
-            from .entity_scripts import * \n\n\n\
+            "from pymodd.script import Game, Folder\n\n\
+            from scripts import *\n\
+            from entity_scripts import * \n\n\n\
             class {game_class_name}(Game):\n\
                 \tdef _build(self):\n\
                     \t\tself.entity_scripts = [{}]\n\
@@ -34,11 +31,14 @@ impl MappingFile {
         content.add(
             &format!(
                 "\t\t\t\n\
-                \t\t]\n\n\
-                # run `pymodd build` within this project directory to generate the game's json files\n\
-                write_game_to_output({game_class_name}('{STORED_GAME_JSON_FILE_PATH}'))\n\
-                # uncomment the following to quickly generate the json file for a script\n\
-                # write_to_output('output/', SCRIPT_OBJECT())"
+                \t\t]\n\n\n\
+                # run `pymodd compile` within this project directory to generate this game's json files\n\
+                # example:\n\
+                \"\"\"\n\
+                $ cd {}\n\
+                $ pymodd compile\n\
+                \"\"\"\n",
+                game_data.pymodd_project_name()
             )
             .as_str(),
         )
@@ -136,9 +136,9 @@ mod tests {
                 }
             }
         }"#.to_string()).unwrap()), 
-        "from pymodd.script import Game, Folder, write_game_to_output, write_to_output\n\n\
-        from .scripts import *\n\
-        from .entity_scripts import * \n\n\n\
+        "from pymodd.script import Game, Folder\n\n\
+        from scripts import *\n\
+        from entity_scripts import * \n\n\n\
         class TestGame(Game):\n\
             \tdef _build(self):\n\
                 \t\tself.entity_scripts = [Bob()]\n\
@@ -148,10 +148,12 @@ mod tests {
                         \t\t\t\tChangeState(),\n\
                     \t\t\t]),\n\
                     \t\t\t\n\
-                \t\t]\n\n\
-        # run `pymodd build` within this project directory to generate the game's json files\n\
-        write_game_to_output(TestGame('utils/game.json'))\n\
-        # uncomment the following to quickly generate the json file for a script\n\
-        # write_to_output('output/', SCRIPT_OBJECT())");
+                \t\t]\n\n\n\
+        # run `pymodd compile` within this project directory to generate this game's json files\n\
+        # example:\n\
+        \"\"\"\n\
+        $ cd test_game\n\
+        $ pymodd compile\n\
+        \"\"\"\n");
     }
 }

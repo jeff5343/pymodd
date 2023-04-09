@@ -1,4 +1,5 @@
 import os
+import sys
 import json
 import runpy
 from argparse import ArgumentParser
@@ -19,8 +20,8 @@ def compile_project(_args):
     project_directory_name = os.getcwd().split(os.sep)[-1]
     _pymodd_helper.log_cli_start_message("Compiling", project_directory_name)
 
-    mapping_file_data = runpy.run_module(
-        mod_name=f'{project_directory_name}.mapping')
+    sys.path.append(os.path.abspath(f'../{project_directory_name}/'))
+    mapping_file_data = runpy.run_path(f'mapping.py')
     game_classes = find_game_classes_in_file_data(mapping_file_data)
     if len(game_classes) == 0:
         _pymodd_helper.log_error(

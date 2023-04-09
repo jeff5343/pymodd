@@ -139,20 +139,6 @@ def key_from_name(name):
     return snakecase(name)
 
 
-def write_game_to_output(game):
-    base_output_path = f'{snakecase(game.name)}/output/'
-    if not os.path.exists(base_output_path):
-        os.makedirs(base_output_path)
-    write_game_json(base_output_path, game)
-
-
-def write_game_json(path, game):
-    file_name = f'{game.name}.json'
-    with open(f'{path}/{file_name}', 'w') as output:
-        output.write(json.dumps(game.to_dict(), indent=4))
-    print(f'\n{file_name} successfuly created')
-
-
 def to_dict(obj):
     if isinstance(obj, Base):
         return obj.to_dict()
