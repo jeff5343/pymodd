@@ -18,8 +18,10 @@ impl EntityScriptsFile {
             from pymodd.script import EntityScripts, Folder, Script, Trigger, UiTarget, Flip\n\n\
             from game_variables import *\n\n\n"
         );
-        let scripts_class_content_builder =
-            ScriptsContentBuilder::new(&game_data.categories_to_variables);
+        let scripts_class_content_builder = ScriptsContentBuilder::new(
+            &game_data.categories_to_variables,
+            &game_data.root_directory,
+        );
 
         game_data
             .categories_to_entity_types

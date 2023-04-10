@@ -7,7 +7,6 @@ from game_variables import *
 
 class Initialize(Script):
 	def _build(self):
-		self.key = 'initialize'
 		self.triggers = [Trigger.GAME_START]
 		self.actions = [
 			assign_player_to_player_type(Variables.AI, PlayerTypes.AI),
@@ -17,7 +16,6 @@ class Initialize(Script):
 
 class PlayerJoins(Script):
 	def _build(self):
-		self.key = 'playerJoinsGame'
 		self.triggers = [Trigger.PLAYER_JOINS_GAME]
 		self.actions = [
 			create_unit_for_player_at_position_with_rotation(UnitTypes.POOPER, LastTriggeringPlayer(), RandomPositionInRegion(EntireMapRegion()), 0),
@@ -29,7 +27,6 @@ class PlayerJoins(Script):
 
 class PlayerLeaves(Script):
 	def _build(self):
-		self.key = 'playerLeavesGame'
 		self.triggers = [Trigger.PLAYER_LEAVES_GAME]
 		self.actions = [
 			for_all_units_in(AllUnitsOwnedByPlayer(LastTriggeringPlayer()), [
@@ -42,7 +39,6 @@ class PlayerLeaves(Script):
 
 class EverySecond(Script):
 	def _build(self):
-		self.key = 'P8MwXcSxq7'
 		self.triggers = [Trigger.EVERY_SECOND]
 		self.actions = [
 			if_else((NumberOfUnitsOfUnitType(UnitTypes.FROG) < 5), [
@@ -70,7 +66,6 @@ class EverySecond(Script):
 
 class WhenAUnitsAttributeBecomes0OrLess(Script):
 	def _build(self):
-		self.key = 'CE0PBg1VWG'
 		self.triggers = [Trigger.UNIT_ATTRIBUTE_BECOMES_ZERO]
 		self.actions = [
 			if_else((AttributeTypeOfAttribute(TriggeringAttribute()) == AttributeTypes.HEALTH), [
@@ -146,7 +141,6 @@ class WhenAUnitsAttributeBecomes0OrLess(Script):
 
 class OpenShop(Script):
 	def _build(self):
-		self.key = '5BUXtByxVf'
 		self.triggers = []
 		self.actions = [
 			open_shop_for_player(Shops.FROGE_SHOP, OwnerOfEntity(LastCastingUnit())),
