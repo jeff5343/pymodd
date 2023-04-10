@@ -68,7 +68,7 @@ class WhenAUnitsAttributeBecomes0OrLess(Script):
 	def _build(self):
 		self.triggers = [Trigger.UNIT_ATTRIBUTE_BECOMES_ZERO]
 		self.actions = [
-			if_else((AttributeTypeOfAttribute(TriggeringAttribute()) == AttributeTypes.HEALTH), [
+			if_else((AttributeTypeOfAttribute(LastTriggeringAttribute()) == AttributeTypes.HEALTH), [
 				if_else((PlayerTypeOfPlayer(OwnerOfEntity(LastTriggeringUnit())) == PlayerTypes.PLAYER), [
 					set_entity_attribute(AttributeTypes.HEALTH, LastTriggeringUnit(), AttributeMaxOfEntity(AttributeTypes.HEALTH, LastTriggeringUnit())),
 					set_entity_variable(EntityVariables.TARGET_UNIT, LastTriggeringUnit(), Undefined()),
@@ -88,7 +88,7 @@ class WhenAUnitsAttributeBecomes0OrLess(Script):
 				]),
 				
 			], [
-				if_else((AttributeTypeOfAttribute(TriggeringAttribute()) == AttributeTypes.MOVE), [
+				if_else((AttributeTypeOfAttribute(LastTriggeringAttribute()) == AttributeTypes.MOVE), [
 					set_entity_variable(EntityVariables.TARGET_UNIT, LastTriggeringUnit(), Undefined()),
 					for_all_entities_in(AllEntitiesInRegion(DynamicRegion(XCoordinateOfPosition(PositionOfEntity(LastTriggeringUnit())) - (ValueOfEntityVariable(EntityVariables.SENSOR_RADIUS, LastTriggeringUnit()) / 2), YCoordinateOfPosition(PositionOfEntity(LastTriggeringUnit())) - (ValueOfEntityVariable(EntityVariables.SENSOR_RADIUS, LastTriggeringUnit()) / 2), ValueOfEntityVariable(EntityVariables.SENSOR_RADIUS, LastTriggeringUnit()), ValueOfEntityVariable(EntityVariables.SENSOR_RADIUS, LastTriggeringUnit()))), [
 						if_else((PlayerTypeOfPlayer(OwnerOfEntity(SelectedEntity())) == PlayerTypes.PLAYER), [

@@ -377,7 +377,7 @@ mod tests {
                 .as_array()
                 .unwrap()
             )),
-            "use_item_continuously_until_stopped(TriggeringItem(), comment='hi!', disabled=True, run_on_client=True),\n"
+            "use_item_continuously_until_stopped(LastTriggeringItem(), comment='hi!', disabled=True, run_on_client=True),\n"
         )
     }
 

@@ -365,7 +365,7 @@ class SelectedItem(Item):
         self.options = {}
 
 
-class TriggeringItem(Item):
+class LastTriggeringItem(Item):
     def __init__(self):
         self.function = 'getTriggeringItem'
         self.options = {}
@@ -553,7 +553,7 @@ class Attribute(Function):
     pass
 
 
-class TriggeringAttribute(Attribute):
+class LastTriggeringAttribute(Attribute):
     def __init__(self):
         self.function = 'getTriggeringAttribute'
         self.options = {}
@@ -576,7 +576,7 @@ class SensorOfUnit(Sensor):
         }
 
 
-class TriggeringSensor(Sensor):
+class LastTriggeringSensor(Sensor):
     def __init__(self):
         self.function = 'getTriggeringSensor'
         self.options = {}
