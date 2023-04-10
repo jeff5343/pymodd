@@ -223,6 +223,10 @@ class Trigger(Enum):
     AD_PLAY_FAILED = 'adPlayFailed'
     AD_PLAY_BLOCKED = 'adPlayBlocked'
 
+    SEND_COINS_SUCCESS = 'sendCoinsSuccess'
+    COIN_SEND_FAILURE_DUE_TO_DAILY_LIMIT = 'coinSendFailureDueToDailyLimit'
+    COIN_SEND_FAILURE_DUE_TO_INSUFFICIENT_COINS = 'coinSendFailureDueToInsufficientCoins'
+
 
 class UiTarget(Enum):
     TOP = 'top'
