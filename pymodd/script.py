@@ -1,5 +1,6 @@
 import json
-import os
+import random
+import string
 from enum import Enum
 
 from caseconverter import camelcase, snakecase
@@ -95,7 +96,7 @@ class Folder(File):
     def __init__(self, name, scripts: list):
         super().__init__()
         self.name = name
-        self.key = key_from_name(self.name)
+        self.key = generate_random_key()
         self.scripts = scripts
         # set position of scripts inside the folder
         for i, script in enumerate(scripts):
@@ -112,10 +113,17 @@ class Folder(File):
 
 
 class Script(File):
+    _class_to_key = {}
+
+    def __new__(cls, *args, **kwargs):
+        if cls._class_to_key.get(cls, None) is None:
+            cls._class_to_key[cls] = generate_random_key()
+        return super(Script, cls).__new__(cls, *args, **kwargs)
+
     def __init__(self):
         super().__init__()
         self.name = snakecase(self.__class__.__name__).replace('_', ' ')
-        self.key = key_from_name(self.name)
+        self.key = Script._class_to_key[self.__class__]
         self.triggers = []
         self.actions = []
 
@@ -135,8 +143,8 @@ class Script(File):
         }
 
 
-def key_from_name(name):
-    return snakecase(name)
+def generate_random_key():
+    return ''.join(random.choices(string.ascii_letters + string.digits, k=10))
 
 
 def to_dict(obj):
@@ -214,6 +222,10 @@ class Trigger(Enum):
     AD_PLAY_SKIPPED = 'adPlaySkipped'
     AD_PLAY_FAILED = 'adPlayFailed'
     AD_PLAY_BLOCKED = 'adPlayBlocked'
+
+    SEND_COINS_SUCCESS = 'sendCoinsSuccess'
+    COIN_SEND_FAILURE_DUE_TO_DAILY_LIMIT = 'coinSendFailureDueToDailyLimit'
+    COIN_SEND_FAILURE_DUE_TO_INSUFFICIENT_COINS = 'coinSendFailureDueToInsufficientCoins'
 
 
 class UiTarget(Enum):

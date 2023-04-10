@@ -29,7 +29,10 @@ impl ScriptsFile {
         );
         content.add(&build_directory_content(
             &game_data.root_directory,
-            &ScriptsContentBuilder::new(&game_data.categories_to_variables),
+            &ScriptsContentBuilder::new(
+                &game_data.categories_to_variables,
+                &game_data.root_directory,
+            ),
         ))
     }
 }
@@ -62,21 +65,25 @@ pub fn build_directory_content(
 
 pub struct ScriptsContentBuilder<'a> {
     categories_to_variables: &'a CategoriesToVariables,
+    root_directory: &'a Directory,
 }
 
 impl<'a> ScriptsContentBuilder<'a> {
-    pub fn new(categories_to_variables: &'a CategoriesToVariables) -> ScriptsContentBuilder<'a> {
+    pub fn new(
+        categories_to_variables: &'a CategoriesToVariables,
+        root_directory: &'a Directory,
+    ) -> ScriptsContentBuilder<'a> {
         ScriptsContentBuilder {
             categories_to_variables,
+            root_directory,
         }
     }
 
     pub fn build_script_content(&self, script: &Script) -> String {
-        let (class_name, script_key): (String, &str) = (script.pymodd_class_name(), &script.key);
+        let class_name = script.pymodd_class_name();
         format!(
             "class {class_name}(Script):\n\
             \tdef _build(self):\n\
-                \t\tself.key = '{script_key}'\n\
                 \t\tself.triggers = [{}]\n\
                 \t\tself.actions = [\n\
                 {}\
@@ -202,6 +209,16 @@ impl<'a> ScriptsContentBuilder<'a> {
             | ArgumentValueIterItem::Calculation(operation) => {
                 self.build_operation_content(&operation)
             }
+            ArgumentValueIterItem::ScriptKey(key) => {
+                let item_with_key = self.root_directory.find_item_with_key(&key);
+                if item_with_key.is_some() {
+                    if let DirectoryIterItem::Script(script) = item_with_key.unwrap() {
+                        // run_script action accepts Script objects, not keys
+                        return format!("{}()", script.pymodd_class_name());
+                    }
+                }
+                String::from("None")
+            }
             ArgumentValueIterItem::FunctionEnd => String::from(")"),
         }
     }
@@ -275,7 +292,7 @@ mod tests {
 
     use crate::game_data::{
         actions::parse_actions,
-        directory::Script,
+        directory::{Directory, DirectoryItem, Script},
         variable_categories::{CategoriesToVariables, Variable},
     };
 
@@ -284,17 +301,19 @@ mod tests {
     #[test]
     fn script_content() {
         assert_eq!(
-            ScriptsContentBuilder::new(&CategoriesToVariables::new(HashMap::new()))
-                .build_script_content(&Script::new(
-                    "initialize",
-                    "WI31HDK",
-                    vec!["gameStart"],
-                    Vec::new()
-                )),
+            ScriptsContentBuilder::new(
+                &CategoriesToVariables::new(HashMap::new()),
+                &Directory::new("root", "null", Vec::new())
+            )
+            .build_script_content(&Script::new(
+                "initialize",
+                "WI31HDK",
+                vec!["gameStart"],
+                Vec::new()
+            )),
             String::from(format!(
                 "class Initialize(Script):\n\
                     \tdef _build(self):\n\
-                        \t\tself.key = 'WI31HDK'\n\
                         \t\tself.triggers = [Trigger.GAME_START]\n\
                         \t\tself.actions = [\n\
                         \t\t\t\n\
@@ -306,10 +325,13 @@ mod tests {
     #[test]
     fn parse_action_with_variable_into_pymodd() {
         assert_eq!(
-            ScriptsContentBuilder::new(&CategoriesToVariables::new(HashMap::from([(
-                "shops",
-                vec![Variable::new("OJbEQyc7is", "WEAPONS", None)]
-            )])))
+            ScriptsContentBuilder::new(
+                &CategoriesToVariables::new(HashMap::from([(
+                    "shops",
+                    vec![Variable::new("OJbEQyc7is", "WEAPONS", None)]
+                )])),
+                &Directory::new("root", "null", Vec::new())
+            )
             .build_actions_content(&parse_actions(
                 &json!([
                     {
@@ -336,40 +358,48 @@ mod tests {
     #[test]
     fn parse_action_with_optional_arguments_into_pymodd() {
         assert_eq!(
-            ScriptsContentBuilder::new(&CategoriesToVariables::new(HashMap::new()))
-                .build_actions_content(&parse_actions(
-                    &json!([
-                        {
-                            "type": "runScript",
-                            "scriptName": "fjw24WdJ",
-                            "comment": "hi!",
-                            "runOnClient": true,
-                            "disabled": true,
-                        }
-                    ])
-                    .as_array()
-                    .unwrap()
-                )),
-            "run_script('fjw24WdJ', comment='hi!', disabled=True, run_on_client=True),\n"
+            ScriptsContentBuilder::new(
+                &CategoriesToVariables::new(HashMap::new()),
+                &Directory::new("root", "null", Vec::new())
+            )
+            .build_actions_content(&parse_actions(
+                &json!([
+                    {
+                        "type": "startUsingItem",
+                        "entity": {
+                            "function": "getTriggeringItem"
+                        },
+                        "comment": "hi!",
+                        "runOnClient": true,
+                        "disabled": true,
+                    }
+                ])
+                .as_array()
+                .unwrap()
+            )),
+            "use_item_continuously_until_stopped(LastTriggeringItem(), comment='hi!', disabled=True, run_on_client=True),\n"
         )
     }
 
     #[test]
     fn parse_action_with_only_optional_arguments_into_pymodd() {
         assert_eq!(
-            ScriptsContentBuilder::new(&CategoriesToVariables::new(HashMap::new()))
-                .build_actions_content(&parse_actions(
-                    &json!([
-                        {
-                            "type": "return",
-                            "comment": "hi!",
-                            "runOnClient": true,
-                            "disabled": false,
-                        }
-                    ])
-                    .as_array()
-                    .unwrap()
-                )),
+            ScriptsContentBuilder::new(
+                &CategoriesToVariables::new(HashMap::new()),
+                &Directory::new("root", "null", Vec::new())
+            )
+            .build_actions_content(&parse_actions(
+                &json!([
+                    {
+                        "type": "return",
+                        "comment": "hi!",
+                        "runOnClient": true,
+                        "disabled": false,
+                    }
+                ])
+                .as_array()
+                .unwrap()
+            )),
             "return_loop(comment='hi!', run_on_client=True),\n"
         )
     }
@@ -377,18 +407,21 @@ mod tests {
     #[test]
     fn parse_action_with_constant_into_pymodd() {
         assert_eq!(
-            ScriptsContentBuilder::new(&CategoriesToVariables::new(HashMap::new()))
-                .build_actions_content(&parse_actions(
-                    &json!([
-                        {
-                            "type": "updateUiTextForEveryone",
-                            "target": "top",
-                            "value": "Hello!"
-                        }
-                    ])
-                    .as_array()
-                    .unwrap()
-                )),
+            ScriptsContentBuilder::new(
+                &CategoriesToVariables::new(HashMap::new()),
+                &Directory::new("root", "null", Vec::new())
+            )
+            .build_actions_content(&parse_actions(
+                &json!([
+                    {
+                        "type": "updateUiTextForEveryone",
+                        "target": "top",
+                        "value": "Hello!"
+                    }
+                ])
+                .as_array()
+                .unwrap()
+            )),
             "update_ui_text_for_everyone(UiTarget.TOP, 'Hello!'),\n"
         )
     }
@@ -396,17 +429,20 @@ mod tests {
     #[test]
     fn parse_comment_action_into_pymodd() {
         assert_eq!(
-            ScriptsContentBuilder::new(&CategoriesToVariables::new(HashMap::new()))
-                .build_actions_content(&parse_actions(
-                    &json!([
-                        {
-                            "type": "comment",
-                            "comment": "hey there",
-                        }
-                    ])
-                    .as_array()
-                    .unwrap()
-                )),
+            ScriptsContentBuilder::new(
+                &CategoriesToVariables::new(HashMap::new()),
+                &Directory::new("root", "null", Vec::new())
+            )
+            .build_actions_content(&parse_actions(
+                &json!([
+                    {
+                        "type": "comment",
+                        "comment": "hey there",
+                    }
+                ])
+                .as_array()
+                .unwrap()
+            )),
             "comment('hey there'),\n"
         );
     }
@@ -414,7 +450,10 @@ mod tests {
     #[test]
     fn parse_nested_calculations_into_pymodd() {
         assert_eq!(
-            ScriptsContentBuilder::new(&CategoriesToVariables::new(HashMap::new()))
+            ScriptsContentBuilder::new(
+                &CategoriesToVariables::new(HashMap::new()),
+                &Directory::new("root", "null", Vec::new())
+            )
                 .build_actions_content(&parse_actions(
                     &json!([
                         {
@@ -445,7 +484,10 @@ mod tests {
     #[test]
     fn parse_nested_concatenations_into_pymodd() {
         assert_eq!(
-            ScriptsContentBuilder::new(&CategoriesToVariables::new(HashMap::new()))
+            ScriptsContentBuilder::new(
+                &CategoriesToVariables::new(HashMap::new()),
+                &Directory::new("root", "null", Vec::new())
+            )
                 .build_actions_content(&parse_actions(
                     &json!([
                         {
@@ -476,46 +518,49 @@ mod tests {
     #[test]
     fn parse_nested_if_statements_into_pymodd() {
         assert_eq!(
-            ScriptsContentBuilder::new(&CategoriesToVariables::new(HashMap::new()))
-                .build_actions_content(&parse_actions(
-                    json!([
-                         {
-                            "type": "condition",
-                            "conditions": [
-                                { "operandType": "boolean", "operator": "==" },
-                                true,
-                                true
-                            ],
-                            "then": [
-                                {
-                                    "type": "condition",
-                                    "conditions": [
-                                        { "operandType": "boolean", "operator": "==" },
-                                        true,
-                                        true
-                                    ],
-                                    "then": [
-                                        {
-                                            "type": "condition",
-                                            "conditions": [
-                                                { "operandType": "boolean", "operator": "==" },
-                                                true,
-                                                true
-                                            ],
-                                            "then": [],
-                                            "else": []
-                                        }
-                                    ],
-                                    "else": []
-                                   }
-                              ],
-                              "else": []
-                         }
-                    ])
-                    .as_array()
-                    .unwrap(),
-                ))
-                .as_str(),
+            ScriptsContentBuilder::new(
+                &CategoriesToVariables::new(HashMap::new()),
+                &Directory::new("root", "null", Vec::new())
+            )
+            .build_actions_content(&parse_actions(
+                json!([
+                     {
+                        "type": "condition",
+                        "conditions": [
+                            { "operandType": "boolean", "operator": "==" },
+                            true,
+                            true
+                        ],
+                        "then": [
+                            {
+                                "type": "condition",
+                                "conditions": [
+                                    { "operandType": "boolean", "operator": "==" },
+                                    true,
+                                    true
+                                ],
+                                "then": [
+                                    {
+                                        "type": "condition",
+                                        "conditions": [
+                                            { "operandType": "boolean", "operator": "==" },
+                                            true,
+                                            true
+                                        ],
+                                        "then": [],
+                                        "else": []
+                                    }
+                                ],
+                                "else": []
+                               }
+                          ],
+                          "else": []
+                     }
+                ])
+                .as_array()
+                .unwrap(),
+            ))
+            .as_str(),
             "if_else((True == True), [\n\
                 \tif_else((True == True), [\n\
     		        \t\tif_else((True == True), [\n\
@@ -537,7 +582,10 @@ mod tests {
     #[test]
     fn parse_nested_conditions_into_pymodd() {
         assert_eq!(
-            ScriptsContentBuilder::new(&CategoriesToVariables::new(HashMap::new()))
+            ScriptsContentBuilder::new(
+                &CategoriesToVariables::new(HashMap::new()),
+                &Directory::new("root", "null", Vec::new())
+            )
                 .build_actions_content(&parse_actions(
                     json!([
                          {
@@ -569,5 +617,40 @@ mod tests {
                 \t\n\
             ]),\n"
         );
+    }
+
+    #[test]
+    fn parse_run_script_action_into_pymodd() {
+        assert_eq!(
+            ScriptsContentBuilder::new(
+                &CategoriesToVariables::new(HashMap::new()),
+                &Directory::new(
+                    "root",
+                    "null",
+                    vec![DirectoryItem::Directory(Directory::new(
+                        "utils",
+                        "n3DhW3",
+                        vec![DirectoryItem::Script(Script {
+                            name: String::from("spawn boss"),
+                            key: String::from("If2aW3B"),
+                            triggers: Vec::new(),
+                            actions: Vec::new()
+                        })]
+                    ))]
+                )
+            )
+            .build_actions_content(&parse_actions(
+                json!([
+                     {
+                        "type": "runScript",
+                        "scriptName": "If2aW3B"
+                     }
+                ])
+                .as_array()
+                .unwrap(),
+            ))
+            .as_str(),
+            "run_script(SpawnBoss()),\n"
+        )
     }
 }

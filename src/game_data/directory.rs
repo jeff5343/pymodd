@@ -2,7 +2,8 @@ use heck::ToPascalCase;
 use serde_json::{map::Values, Map, Value};
 
 use crate::project_generator::utils::{
-    is_valid_class_name, to_pymodd_maps::TRIGGERS_TO_PYMODD_ENUM,
+    is_valid_class_name, iterators::directory_iterator::DirectoryIterItem,
+    to_pymodd_maps::TRIGGERS_TO_PYMODD_ENUM,
 };
 
 use super::actions::{self, Action};
@@ -67,6 +68,14 @@ impl Directory {
 
     pub fn is_empty(&self) -> bool {
         self.children.is_empty()
+    }
+
+    pub fn find_item_with_key(&self, key: &str) -> Option<DirectoryIterItem> {
+        self.iter_flattened().find(|item| match item {
+            DirectoryIterItem::StartOfDirectory(dir) => dir.key == key,
+            DirectoryIterItem::Script(script) => script.key == key,
+            _ => false,
+        })
     }
 }
 
@@ -177,7 +186,7 @@ mod tests {
     use super::filter_out_children_of_parent;
 
     impl Directory {
-        fn new(name: &str, key: &str, children: Vec<DirectoryItem>) -> Directory {
+        pub fn new(name: &str, key: &str, children: Vec<DirectoryItem>) -> Directory {
             Directory {
                 name: name.to_string(),
                 key: key.to_string(),

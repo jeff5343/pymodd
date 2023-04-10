@@ -2,7 +2,7 @@ from __future__ import annotations
 import functools
 
 from .functions import Condition, Number, String
-from .script import Base, to_dict
+from .script import Script, to_dict
 
 
 def action(func):
@@ -378,10 +378,10 @@ def return_loop(comment=None, disabled=False, run_on_client=False):
 
 
 @action
-def run_script(script_name, comment=None, disabled=False, run_on_client=False):
+def run_script(script: Script, comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'runScript',
-        'scriptName': to_dict(script_name),
+        'scriptName': to_dict(script.key),
     }
 
 

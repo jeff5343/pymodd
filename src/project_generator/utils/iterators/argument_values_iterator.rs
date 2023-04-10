@@ -67,6 +67,7 @@ pub enum ArgumentValueIterItem<'a> {
     Condition(Operation),
     Concatenation(Operation),
     Calculation(Operation),
+    ScriptKey(String),
     FunctionEnd,
 }
 
@@ -82,7 +83,13 @@ impl<'a> ArgumentValueIterItem<'a> {
                 }
             }
             ArgumentValue::Constant(constant) => ArgumentValueIterItem::Constant(&constant),
-            ArgumentValue::Value(value) => ArgumentValueIterItem::Value(&value),
+            ArgumentValue::Value(value) => {
+                if value.is_string() && argument.name.as_str() == "scriptName" {
+                    ArgumentValueIterItem::ScriptKey(value.as_str().unwrap().to_string())
+                } else {
+                    ArgumentValueIterItem::Value(&value)
+                }
+            }
             ArgumentValue::Actions(actions) => ArgumentValueIterItem::Actions(&actions),
         }
     }
