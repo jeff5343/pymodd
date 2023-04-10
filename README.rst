@@ -55,7 +55,6 @@ view the ``examples/froge directory`` for a generated pymodd project
 
     class EverySecond(Script):
         def _build(self):
-            self.key = 'P8MwXcSxq7'
             self.triggers = [Trigger.EVERY_SECOND]
             self.actions = [
                 if_else((NumberOfUnitsOfUnitType(UnitTypes.FROG) < 5), [
