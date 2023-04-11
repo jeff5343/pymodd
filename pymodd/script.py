@@ -143,6 +143,29 @@ class Script(File):
         }
 
 
+def script(triggers=[], name=None):
+    """
+    Args:
+        triggers (list, optional): triggers for the script. Defaults to [].
+        name (str, optional): name to override the default name of the script. Defaults to the class name of the script.
+    """
+    def wrapper_script(cls):
+        class NewScript(Script):
+            def __init__(self):
+                super().__init__()
+                self.triggers = triggers
+                if name is not None:
+                    self.name = name
+                else:
+                    self.name = snakecase(cls.__name__).replace('_', ' ')
+
+            def _build(self):
+                cls._build(self)
+
+        return NewScript
+    return wrapper_script
+
+
 def generate_random_key():
     return ''.join(random.choices(string.ascii_letters + string.digits, k=10))
 
