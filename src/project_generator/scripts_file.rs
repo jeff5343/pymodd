@@ -24,7 +24,7 @@ impl ScriptsFile {
         let content = format!(
             "from pymodd.actions import *\n\
             from pymodd.functions import *\n\
-            from pymodd.script import Script, Trigger, UiTarget, Flip\n\n\
+            from pymodd.script import Trigger, UiTarget, Flip, script\n\n\
             from game_variables import *\n\n\n"
         );
         content.add(&build_directory_content(
@@ -82,9 +82,9 @@ impl<'a> ScriptsContentBuilder<'a> {
     pub fn build_script_content(&self, script: &Script) -> String {
         let class_name = script.pymodd_class_name();
         format!(
-            "class {class_name}(Script):\n\
+            "@script(triggers=[{}])\n\
+            class {class_name}():\n\
             \tdef _build(self):\n\
-                \t\tself.triggers = [{}]\n\
                 \t\tself.actions = [\n\
                 {}\
                 \t\t\t\n\
@@ -312,9 +312,9 @@ mod tests {
                 Vec::new()
             )),
             String::from(format!(
-                "class Initialize(Script):\n\
+                "@script(triggers=[Trigger.GAME_START])\n\
+                class Initialize():\n\
                     \tdef _build(self):\n\
-                        \t\tself.triggers = [Trigger.GAME_START]\n\
                         \t\tself.actions = [\n\
                         \t\t\t\n\
                         \t\t]\n",
