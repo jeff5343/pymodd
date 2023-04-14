@@ -1,6 +1,6 @@
 from pymodd.actions import *
 from pymodd.functions import *
-from pymodd.script import EntityScripts, Folder, Script, Trigger, UiTarget, Flip
+from pymodd.script import EntityScripts, Folder, Trigger, UiTarget, Flip, script
 
 from game_variables import *
 
@@ -14,17 +14,17 @@ class Pooper(EntityScripts):
 			
 		]
 
-	class UseItem(Script):
+	@script(triggers=[])
+	class UseItem():
 		def _build(self):
-			self.triggers = []
 			self.actions = [
 				use_item_continuously_until_stopped(ItemCurrentlyHeldByUnit(ThisEntity())),
 				
 			]
 
-	class StopUsingItem(Script):
+	@script(triggers=[])
+	class StopUsingItem():
 		def _build(self):
-			self.triggers = []
 			self.actions = [
 				stop_using_item(ItemCurrentlyHeldByUnit(ThisEntity())),
 				
@@ -39,9 +39,9 @@ class Frog(EntityScripts):
 			
 		]
 
-	class NewScript(Script):
+	@script(triggers=[])
+	class NewScript():
 		def _build(self):
-			self.triggers = []
 			self.actions = [
 				comment('wdwadawd'),
 				

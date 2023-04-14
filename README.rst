@@ -53,9 +53,9 @@ view the ``examples/froge directory`` for a generated pymodd project
 
 .. code:: py
 
-    class EverySecond(Script):
+    @script(triggers=[Trigger.EVERY_SECOND])
+    class EverySecond():
         def _build(self):
-            self.triggers = [Trigger.EVERY_SECOND]
             self.actions = [
                 if_else((NumberOfUnitsOfUnitType(UnitTypes.FROG) < 5), [
                     create_unit_for_player_at_position_with_rotation(UnitTypes.FROG, Variables.AI, RandomPositionInRegion(EntireMapRegion()), 0),
@@ -64,6 +64,7 @@ view the ``examples/froge directory`` for a generated pymodd project
                         if_else((Variables.BOSS_TIMER <= 0), [
                             create_unit_for_player_at_position_with_rotation(UnitTypes.FROG_BOSS, Variables.AI, RandomPositionInRegion(EntireMapRegion()), 0),
                             update_ui_target_for_player_for_miliseconds(UiTarget.CENTER, 'BOSS SPAWNED', Undefined(), 5000),
+                            set_variable(Variables.BOSS_TIMER, 200),
                         ], [
                         ]),
                         decrease_variable_by_number(Variables.BOSS_TIMER, 1),
