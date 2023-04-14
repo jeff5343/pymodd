@@ -49,6 +49,7 @@ class EverySecond():
 					if_else((Variables.BOSS_TIMER <= 0), [
 						create_unit_for_player_at_position_with_rotation(UnitTypes.FROG_BOSS, Variables.AI, RandomPositionInRegion(EntireMapRegion()), 0),
 						update_ui_target_for_player_for_miliseconds(UiTarget.CENTER, 'BOSS SPAWNED', Undefined(), 5000),
+						set_variable(Variables.BOSS_TIMER, 200),
 						
 					], [
 						
@@ -76,7 +77,6 @@ class WhenAUnitsAttributeBecomes0OrLess():
 					
 				], [
 					if_else((UnitTypeOfUnit(LastTriggeringUnit()) == UnitTypes.FROG_BOSS), [
-						set_variable(Variables.BOSS_TIMER, 200),
 						set_player_attribute(AttributeTypes.FROG_KILLS, OwnerOfEntity(LastAttackingUnit()), PlayerAttribute(AttributeTypes.FROG_KILLS, OwnerOfEntity(LastAttackingUnit())) + 7),
 						
 					], [
