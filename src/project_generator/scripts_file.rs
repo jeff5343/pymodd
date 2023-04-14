@@ -82,7 +82,7 @@ impl<'a> ScriptsContentBuilder<'a> {
     pub fn build_script_content(&self, script: &Script) -> String {
         let class_name = script.pymodd_class_name();
         format!(
-            "@script(triggers=[{}])\n\
+            "@script(triggers=[{}]{})\n\
             class {class_name}():\n\
             \tdef _build(self):\n\
                 \t\tself.actions = [\n\
@@ -90,6 +90,11 @@ impl<'a> ScriptsContentBuilder<'a> {
                 \t\t\t\n\
                 \t\t]\n",
             script.triggers_into_pymodd_enums().join(", "),
+            if !script.name.is_ascii() {
+                format!(", name={}", surround_string_with_quotes(&script.name))
+            } else {
+                String::new()
+            },
             self.build_actions_content(&script.actions)
                 .lines()
                 .map(|action| format!("{}{action}\n", "\t".repeat(3)))
@@ -314,6 +319,30 @@ mod tests {
             String::from(format!(
                 "@script(triggers=[Trigger.GAME_START])\n\
                 class Initialize():\n\
+                    \tdef _build(self):\n\
+                        \t\tself.actions = [\n\
+                        \t\t\t\n\
+                        \t\t]\n",
+            ))
+        );
+    }
+
+    #[test]
+    fn script_with_weird_name_content() {
+        assert_eq!(
+            ScriptsContentBuilder::new(
+                &CategoriesToVariables::new(HashMap::new()),
+                &Directory::new("root", "null", Vec::new())
+            )
+            .build_script_content(&Script::new(
+                "【 𝚒𝚗𝚒𝚝𝚒𝚊𝚕𝚒𝚣𝚎 イ】",
+                "WI31HDK",
+                vec!["gameStart"],
+                Vec::new()
+            )),
+            String::from(format!(
+                "@script(triggers=[Trigger.GAME_START], name='【 𝚒𝚗𝚒𝚝𝚒𝚊𝚕𝚒𝚣𝚎 イ】')\n\
+                class q():\n\
                     \tdef _build(self):\n\
                         \t\tself.actions = [\n\
                         \t\t\t\n\
