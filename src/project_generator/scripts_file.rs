@@ -105,50 +105,48 @@ impl<'a> ScriptsContentBuilder<'a> {
     fn build_actions_content(&self, actions: &Vec<Action>) -> String {
         actions
             .iter()
-            .map(|action| {
-                match action.name.as_str() {
-                    "comment" => {
-                        // pull out comment field for Comment action
-                        format!(
-                            "{}({}{}),\n",
-                            action.pymodd_class_name(),
-                            surround_string_with_quotes(
-                                action.comment.as_ref().unwrap_or(&String::from("None"))
-                            ),
-                            self.build_optional_arguments_contents(&action)
-                                .into_iter()
-                                .skip(1)
-                                .map(|arg| String::from(", ") + &arg)
-                                .collect::<String>(),
-                        )
-                    }
-                    _ => self.build_action_content(&action),
-                }
-            })
+            .map(|action| self.build_action_content(&action))
             .collect::<String>()
     }
 
     fn build_action_content(&self, action: &Action) -> String {
-        format!(
-            "{}({}",
-            action.pymodd_class_name(),
-            self.build_arguments_content(action.iter_flattened_argument_values())
-        )
-        .add(
-            &self
-                .build_optional_arguments_contents(&action)
-                .into_iter()
-                .enumerate()
-                .map(|(i, arg)| {
-                    if action.args.is_empty() && i == 0 {
-                        arg
-                    } else {
-                        String::from(", ") + &arg
-                    }
-                })
-                .collect::<String>(),
-        )
-        .add("),\n")
+        match action.name.as_str() {
+            "comment" => {
+                format!(
+                    "{}({}{}),\n",
+                    action.pymodd_class_name(),
+                    // set argument manually for comments
+                    surround_string_with_quotes(
+                        action.comment.as_ref().unwrap_or(&String::from("None"))
+                    ),
+                    self.build_optional_arguments_contents(&action)
+                        .into_iter()
+                        .skip(1) // skip over optional comment argument
+                        .map(|arg| String::from(", ") + &arg)
+                        .collect::<String>(),
+                )
+            }
+            _ => format!(
+                "{}({}",
+                action.pymodd_class_name(),
+                self.build_arguments_content(action.iter_flattened_argument_values())
+            )
+            .add(
+                &self
+                    .build_optional_arguments_contents(&action)
+                    .into_iter()
+                    .enumerate()
+                    .map(|(i, arg)| {
+                        if action.args.is_empty() && i == 0 {
+                            arg
+                        } else {
+                            String::from(", ") + &arg
+                        }
+                    })
+                    .collect::<String>(),
+            )
+            .add("),\n"),
+        }
     }
 
     fn build_arguments_content(&self, args_iter: ArgumentValuesIterator) -> String {
