@@ -8,7 +8,7 @@ from pymodd import _pymodd_helper
 from pymodd.script import Game, EntityScripts
 
 
-VARIABLE_TYPE_CLASSES = [
+VARIABLE_TYPE_CLASS_NAMES = [
     'UnitTypes', 'PlayerTypes', 'ItemTypes', 'ProjectileTypes', 'Regions', 'Variables',
     'EntityVariables', 'PlayerVariables', 'AnimationTypes', 'AttributeTypes', 'ItemTypeGroups',
     'UnitTypeGroups', 'States', 'Shops', 'Dialogues', 'Musics', 'Sounds'
@@ -32,7 +32,7 @@ def compile_project(_args):
 
     sys.path.append(os.path.abspath(f'../{project_directory_name}/'))
     mapping_file_data = runpy.run_path('mapping.py')
-    game_classes = find_game_classes_in_mapping_file_data(mapping_file_data)
+    game_classes = find_game_classes_in_file_data(mapping_file_data)
     if len(game_classes) == 0:
         _pymodd_helper.log_error(
             'no class subclassing Game was found in mapping.py, one is required')
@@ -43,9 +43,15 @@ def compile_project(_args):
         return
 
     game_variables_file_data = runpy.run_path('game_variables.py')
-    variable_type_classes = find_variable_type_classes_in_game_variables_file_data(
+    variable_classes = find_variable_classes_in_file_data(
         game_variables_file_data)
-    print(variable_type_classes)
+    class_to_variables = {}
+    for variable_class in variable_classes:
+        class_vars = [item for item in vars(
+            variable_class) if not item.startswith('_') and not callable(item)]
+        for class_var in class_vars:
+            class_to_variables[variable_class.__name__] = getattr(
+                variable_class, class_var)
 
     game = game_classes[0]('utils/game.json')
     compiled_json_output_path = f'output/{game.name}.json'
@@ -58,7 +64,7 @@ def compile_project(_args):
     _pymodd_helper.log_cli_end_message("compilation", True)
 
 
-def find_game_classes_in_mapping_file_data(file_data: dict):
+def find_game_classes_in_file_data(file_data: dict):
     return list(filter(
         lambda object_data:
         # is a class
@@ -72,10 +78,10 @@ def find_game_classes_in_mapping_file_data(file_data: dict):
         file_data.values()))
 
 
-def find_variable_type_classes_in_game_variables_file_data(file_data: dict):
+def find_variable_classes_in_file_data(file_data: dict):
     def is_class_data_of_variable_type(pair):
         key, _value = pair
-        return key in VARIABLE_TYPE_CLASSES
+        return key in VARIABLE_TYPE_CLASS_NAMES
     return list(dict(filter(
         is_class_data_of_variable_type,
         file_data.items())).values())
