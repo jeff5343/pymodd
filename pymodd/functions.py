@@ -1,3 +1,4 @@
+from enum import Enum
 from caseconverter import camelcase
 
 from .script import Base, to_dict
@@ -1452,11 +1453,30 @@ class UnitParticle(Particle):
 # ---------------------------------------------------------------------------- #
 
 
+class VariableType(Enum):
+    NUMBER = 'number'
+    STRING = 'string'
+    BOOLEAN = 'boolean'
+    ITEM = 'item'
+    UNIT = 'unit'
+    PLAYER = 'player'
+    PROJECTILE = 'projectile'
+    ITEM_TYPE = 'itemType'
+    UNIT_TYPE = 'unitType'
+    PLAYER_TYPE = 'playerType'
+    PROJECTILE_TYPE = 'projectileType'
+    ITEM_GROUP = 'itemGroup'
+    UNIT_GROUP = 'unitGroup'
+    PLAYER_GROUP = 'playerGroup'
+    ITEM_TYPE_GROUP = 'itemTypeGroup'
+    UNIT_TYPE_GROUP = 'unitTypeGroup'
+
+
 class Variable(Function):
-    def __init__(self, variable_name, variable_type=None):
+    def __init__(self, variable_name, variable_type: VariableType = None):
         self.function = 'getVariable'
         self.name = variable_name
-        self.type = variable_type
+        self.type = variable_type.value
         self.options = {
             'variableName': variable_name
         }
