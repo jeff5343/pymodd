@@ -95,7 +95,7 @@ def type_of_item(item):
     if (primitive := primitive_to_type.get(type(item))):
         return primitive
     if isinstance(item, Variable):
-        return camelcase(item.type)
+        return item.type.value
     if isinstance(item, Function):
         base_classes = item.__class__.mro()
         for i, base_class in enumerate(base_classes):
@@ -1453,7 +1453,7 @@ class UnitParticle(Particle):
 # ---------------------------------------------------------------------------- #
 
 
-class VariableType(Enum):
+class DataType(Enum):
     NUMBER = 'number'
     STRING = 'string'
     BOOLEAN = 'boolean'
@@ -1473,10 +1473,10 @@ class VariableType(Enum):
 
 
 class Variable(Function):
-    def __init__(self, variable_name, variable_type: VariableType = None):
+    def __init__(self, variable_name, data_type: DataType):
         self.function = 'getVariable'
         self.name = variable_name
-        self.type = variable_type.value
+        self.type = data_type
         self.options = {
             'variableName': variable_name
         }
@@ -1488,13 +1488,13 @@ class Variable(Function):
 
 
 class EntityVariable(Variable):
-    def __init__(self, variable_name, variable_type):
+    def __init__(self, variable_name, data_type):
         self.function = 'getEntityVariable'
-        self.type = variable_type
+        self.type = data_type
         self.options = {
             'variable': {
                 'text': f'{variable_name}',
-                'dataType': f'{variable_type}',
+                'dataType': f'{data_type}',
                 'entity': 'null',
                 'key': f'{variable_name}'
             }
@@ -1517,13 +1517,13 @@ class ValueOfEntityVariable(Variable):
 
 
 class PlayerVariable(Variable):
-    def __init__(self, variable_name, variable_type):
+    def __init__(self, variable_name, data_type):
         self.function = 'getPlayerVariable'
-        self.type = variable_type
+        self.type = data_type
         self.options = {
             'variable': {
                 'text': f'{variable_name}',
-                'dataType': f'{variable_type}',
+                'dataType': f'{data_type}',
                 'entity': 'null',
                 'key': f'{variable_name}'
             }

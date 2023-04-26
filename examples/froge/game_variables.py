@@ -28,16 +28,16 @@ class Regions:
 
 
 class Variables:
-	AI = Variable("AI", variable_type='player')
-	BOSS_TIMER = Variable("bossTimer", variable_type='number')
-	DWADAWD = Variable("dwadawd", variable_type='unitGroup')
-	TEMP_UNIT = Variable("tempUnit", variable_type='unit')
-	TIMER = Variable("timer", variable_type='number')
+	AI = Variable("AI", data_type='player')
+	BOSS_TIMER = Variable("bossTimer", data_type='number')
+	DWADAWD = Variable("dwadawd", data_type='unitGroup')
+	TEMP_UNIT = Variable("tempUnit", data_type='unit')
+	TIMER = Variable("timer", data_type='number')
 
 
 class EntityVariables:
-	SENSOR_RADIUS = EntityVariable("sensorRadius", variable_type='number')
-	TARGET_UNIT = EntityVariable("targetUnit", variable_type='unit')
+	SENSOR_RADIUS = EntityVariable("sensorRadius", data_type='number')
+	TARGET_UNIT = EntityVariable("targetUnit", data_type='unit')
 
 
 class PlayerVariables:
@@ -59,11 +59,11 @@ class AttributeTypes:
 
 
 class ItemTypeGroups:
-	RANDOMGROUP = Variable("randomgroup", variable_type='itemTypeGroup')
+	RANDOMGROUP = Variable("randomgroup", data_type='itemTypeGroup')
 
 
 class UnitTypeGroups:
-	UNITTYPEGROUP = Variable("unittypegroup", variable_type='unitTypeGroup')
+	UNITTYPEGROUP = Variable("unittypegroup", data_type='unitTypeGroup')
 
 
 class States:

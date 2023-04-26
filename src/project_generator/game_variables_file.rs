@@ -8,6 +8,8 @@ use crate::game_data::{
     GameData,
 };
 
+use super::utils::to_pymodd_maps::VARIABLE_DATA_TYPES_TO_PYMODD_ENUM;
+
 pub struct GameVariablesFile {}
 
 impl GameVariablesFile {
@@ -29,7 +31,7 @@ impl GameVariablesFile {
             });
 
         format!(
-            "from pymodd.functions import {}\n\n\n{}",
+            "from pymodd.functions import {}, DataType\n\n\n{}",
             importing_classes.join(", "),
             file_content,
         )
@@ -64,8 +66,10 @@ fn build_class_variables_of_category(
                 variable.id,
                 if is_category_of_variable_type(&category) {
                     format!(
-                        ", variable_type='{}'",
-                        variable.data_type.as_ref().unwrap_or(&String::from("None"))
+                        ", {}",
+                        VARIABLE_DATA_TYPES_TO_PYMODD_ENUM
+                            .get(variable.data_type.as_ref().unwrap_or(&String::new()))
+                            .unwrap_or(&String::from("None"))
                     )
                 } else {
                     String::new()

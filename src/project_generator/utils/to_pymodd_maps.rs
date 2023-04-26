@@ -12,6 +12,7 @@ const PYMODD_FUNCTIONS_FILE_CONTENT: &str = include_str!("../../../pymodd/functi
 lazy_static! {
     // enum maps
     pub static ref TRIGGERS_TO_PYMODD_ENUM: HashMap<String, String> = generate_to_pymodd_enums_map_for_type("Trigger", PYMODD_SCRIPT_FILE_CONTENT);
+    pub static ref VARIABLE_DATA_TYPES_TO_PYMODD_ENUM: HashMap<String, String> = generate_to_pymodd_enums_map_for_type("DataType", PYMODD_FUNCTIONS_FILE_CONTENT);
     pub static ref UI_TARGET_CONSTANTS_TO_PYMODD_ENUM:HashMap<String, String> = generate_to_pymodd_enums_map_for_type("UiTarget", PYMODD_SCRIPT_FILE_CONTENT);
     pub static ref FLIP_CONSTANTS_TO_PYMODD_ENUM:HashMap<String, String> = generate_to_pymodd_enums_map_for_type("Flip", PYMODD_SCRIPT_FILE_CONTENT);
 
