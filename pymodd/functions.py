@@ -1,7 +1,9 @@
-from enum import Enum
 from caseconverter import camelcase
 
 from .script import Base, to_dict
+from .variable_types import (AttributeType, ItemType, PlayerType,
+                             ProjectileType, State, UnitType, Variable,
+                             VariableType)
 
 
 class Function(Base):
@@ -94,7 +96,7 @@ def type_of_item(item):
         return None
     if (primitive := primitive_to_type.get(type(item))):
         return primitive
-    if isinstance(item, Variable):
+    if isinstance(item, VariableType):
         return item.type.value
     if isinstance(item, Function):
         base_classes = item.__class__.mro()
@@ -588,15 +590,7 @@ class LastTriggeringSensor(Sensor):
 # ---------------------------------------------------------------------------- #
 
 
-class State(Function):
-    def __init__(self, state_id):
-        self.function = {
-            'direct': True,
-            'value': state_id,
-        }
-
-
-class EntityState(State):
+class CurrentStateOfEntity(State):
     def __init__(self, entity):
         self.function = 'getEntityState'
         self.options = {
@@ -1453,52 +1447,9 @@ class UnitParticle(Particle):
 # ---------------------------------------------------------------------------- #
 
 
-class DataType(Enum):
-    NUMBER = 'number'
-    STRING = 'string'
-    BOOLEAN = 'boolean'
-    ITEM = 'item'
-    UNIT = 'unit'
-    PLAYER = 'player'
-    PROJECTILE = 'projectile'
-    ITEM_TYPE = 'itemType'
-    UNIT_TYPE = 'unitType'
-    PLAYER_TYPE = 'playerType'
-    PROJECTILE_TYPE = 'projectileType'
-    ITEM_GROUP = 'itemGroup'
-    UNIT_GROUP = 'unitGroup'
-    PLAYER_GROUP = 'playerGroup'
-    ITEM_TYPE_GROUP = 'itemTypeGroup'
-    UNIT_TYPE_GROUP = 'unitTypeGroup'
-
-
-class Variable(Function):
-    def __init__(self, variable_name, data_type: DataType):
-        self.function = 'getVariable'
-        self.name = variable_name
-        self.type = data_type
-        self.options = {
-            'variableName': variable_name
-        }
-
-
 # ---------------------------------------------------------------------------- #
 #                               Entity Variables                               #
 # ---------------------------------------------------------------------------- #
-
-
-class EntityVariable(Variable):
-    def __init__(self, variable_name, data_type):
-        self.function = 'getEntityVariable'
-        self.type = data_type
-        self.options = {
-            'variable': {
-                'text': f'{variable_name}',
-                'dataType': f'{data_type}',
-                'entity': 'null',
-                'key': f'{variable_name}'
-            }
-        }
 
 
 class ValueOfEntityVariable(Variable):
@@ -1514,20 +1465,6 @@ class ValueOfEntityVariable(Variable):
 # ---------------------------------------------------------------------------- #
 #                               Player Variables                               #
 # ---------------------------------------------------------------------------- #
-
-
-class PlayerVariable(Variable):
-    def __init__(self, variable_name, data_type):
-        self.function = 'getPlayerVariable'
-        self.type = data_type
-        self.options = {
-            'variable': {
-                'text': f'{variable_name}',
-                'dataType': f'{data_type}',
-                'entity': 'null',
-                'key': f'{variable_name}'
-            }
-        }
 
 
 class ValueOfPlayerVariable(Variable):
@@ -1591,14 +1528,6 @@ class DynamicRegion(Region):
 # ---------------------------------------------------------------------------- #
 
 
-class UnitType(Function):
-    def __init__(self, unit_type_id):
-        self.function = {
-            'direct': True,
-            'value': unit_type_id,
-        }
-
-
 class UnitTypeOfUnit(UnitType):
     def __init__(self, entity):
         self.function = 'getUnitTypeOfUnit'
@@ -1632,14 +1561,6 @@ class SelectedUnitType(UnitType):
 # ---------------------------------------------------------------------------- #
 
 
-class ItemType(Function):
-    def __init__(self, item_type_id):
-        self.function = {
-            'direct': True,
-            'value': item_type_id,
-        }
-
-
 class SelectedItemType(ItemType):
     def __init__(self):
         self.function = 'selectedItemType'
@@ -1667,14 +1588,6 @@ class RandomItemTypeFromItemTypeGroup(ItemType):
 # ---------------------------------------------------------------------------- #
 
 
-class ProjectileType(Function):
-    def __init__(self, projectile_type_id):
-        self.function = {
-            'direct': True,
-            'value': projectile_type_id,
-        }
-
-
 class ProjectileTypeOfProjectile(ProjectileType):
     def __init__(self, entity):
         self.function = 'getProjectileTypeOfProjectile'
@@ -1688,14 +1601,6 @@ class ProjectileTypeOfProjectile(ProjectileType):
 # ---------------------------------------------------------------------------- #
 
 
-class PlayerType(Function):
-    def __init__(self, player_type_id):
-        self.function = {
-            'direct': True,
-            'value': player_type_id,
-        }
-
-
 class PlayerTypeOfPlayer(PlayerType):
     def __init__(self, player):
         self.function = 'playerTypeOfPlayer'
@@ -1707,14 +1612,6 @@ class PlayerTypeOfPlayer(PlayerType):
 # ---------------------------------------------------------------------------- #
 #                                Attribute Types                               #
 # ---------------------------------------------------------------------------- #
-
-
-class AttributeType(Function):
-    def __init__(self, attribute_type_id):
-        self.function = {
-            'direct': True,
-            'value': attribute_type_id,
-        }
 
 
 class AttributeTypeOfAttribute(AttributeType):
@@ -1996,25 +1893,9 @@ class AllRegionsInTheGame(RegionGroup):
 # ---------------------------------------------------------------------------- #
 
 
-class Shop(Function):
-    def __init__(self, shop_id):
-        self.function = {
-            'direct': True,
-            'value': shop_id,
-        }
-
-
 # ---------------------------------------------------------------------------- #
 #                                  Animations                                  #
 # ---------------------------------------------------------------------------- #
-
-
-class AnimationType(Function):
-    def __init__(self, animation_type_id):
-        self.function = {
-            'direct': True,
-            'value': animation_type_id,
-        }
 
 
 # ---------------------------------------------------------------------------- #
@@ -2022,35 +1903,11 @@ class AnimationType(Function):
 # ---------------------------------------------------------------------------- #
 
 
-class Music(Function):
-    def __init__(self, music_id):
-        self.function = {
-            'direct': True,
-            'value': music_id,
-        }
-
-
 # ---------------------------------------------------------------------------- #
 #                                    Sounds                                    #
 # ---------------------------------------------------------------------------- #
 
 
-class Sound(Function):
-    def __init__(self, sound_id):
-        self.function = {
-            'direct': True,
-            'value': sound_id,
-        }
-
-
 # ---------------------------------------------------------------------------- #
 #                                   Dialogues                                  #
 # ---------------------------------------------------------------------------- #
-
-
-class Dialogue(Function):
-    def __init__(self, dialogue_id):
-        self.function = {
-            'direct': True,
-            'value': dialogue_id,
-        }
