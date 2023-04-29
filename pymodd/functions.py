@@ -1,9 +1,6 @@
 from caseconverter import camelcase
 
 from .script import Base, to_dict
-from .variable_types import (AttributeType, ItemType, PlayerType,
-                             ProjectileType, State, UnitType, Variable,
-                             VariableType)
 
 
 class Function(Base):
@@ -80,6 +77,12 @@ class Function(Base):
         return Exponent(other, self)
 
 
+# only subclasses of Function requires these types
+# (also prevents a circular import)
+from .variable_types import (AttributeType, ItemType, PlayerType,
+                             ProjectileType, State, UnitType, Variable)
+
+
 # ---------------------------------------------------------------------------- #
 #                                     Other                                    #
 # ---------------------------------------------------------------------------- #
@@ -96,8 +99,8 @@ def type_of_item(item):
         return None
     if (primitive := primitive_to_type.get(type(item))):
         return primitive
-    if isinstance(item, VariableType):
-        return item.type.value
+    if isinstance(item, Variable):
+        return item.data_type.value
     if isinstance(item, Function):
         base_classes = item.__class__.mro()
         for i, base_class in enumerate(base_classes):
@@ -119,12 +122,10 @@ class Condition(Function):
         self.item_a = item_a
         self.operator = operator.upper()
         self.item_b = item_b
-        comparison = None
-        if (operator := operator.lower()) == 'and' or operator == 'or':
-            comparison = operator
+        if self.operator == 'AND' or self.operator == 'OR':
+            self.comparison = operator
         else:
-            comparison = type_of_item(item_a) or type_of_item(item_b)
-        self.comparison = comparison
+            self.comparison = type_of_item(item_a) or type_of_item(item_b)
 
     def to_dict(self):
         return [
@@ -1455,7 +1456,7 @@ class UnitParticle(Particle):
 class ValueOfEntityVariable(Variable):
     def __init__(self, entity_variable_type, entity):
         self.function = 'getValueOfEntityVariable'
-        self.type = entity_variable_type.type
+        self.data_type = entity_variable_type.data_type
         self.options = {
             'variable': to_dict(entity_variable_type),
             'entity': to_dict(entity)
@@ -1470,7 +1471,7 @@ class ValueOfEntityVariable(Variable):
 class ValueOfPlayerVariable(Variable):
     def __init__(self, player_variable_type, player):
         self.function = 'getValueOfPlayerVariable'
-        self.type = player_variable_type.type
+        self.data_type = player_variable_type.data_type
         self.options = {
             'variable': to_dict(player_variable_type),
             'player': to_dict(player)

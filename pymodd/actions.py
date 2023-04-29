@@ -444,7 +444,7 @@ def create_entity_at_position_with_dimensions(entity, position, height: Number, 
 def set_variable(variable, value, comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'setVariable',
-        'variableName': variable.name,
+        'variableName': variable.id,
         'value': to_dict(value),
     }
 

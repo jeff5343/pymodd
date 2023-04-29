@@ -1,5 +1,5 @@
 from enum import Enum
-from functions import Function
+from .functions import Function
 
 
 class VariableType(Function):
@@ -36,9 +36,7 @@ class DataType(Enum):
 class Variable(VariableType):
     def __init__(self, variable_name, data_type: DataType):
         self.function = 'getVariable'
-        # renamed id from name, there might be conflicts
         self.id = variable_name
-        # renamed data_type from type, there might be conflicts
         self.data_type = data_type
         self.options = {
             'variableName': variable_name
@@ -53,7 +51,7 @@ class Variable(VariableType):
 
 class EntityVariable(Variable):
     def __init__(self, variable_name, data_type):
-        super(variable_name, data_type)
+        super().__init__(variable_name, data_type)
         self.function = 'getEntityVariable'
         self.options = {
             'variable': {
@@ -67,7 +65,7 @@ class EntityVariable(Variable):
 
 class PlayerVariable(Variable):
     def __init__(self, variable_name, data_type):
-        super(variable_name, data_type)
+        super().__init__(variable_name, data_type)
         self.function = 'getPlayerVariable'
         self.options = {
             'variable': {
@@ -81,7 +79,7 @@ class PlayerVariable(Variable):
 
 class UnitType(VariableType):
     def __init__(self, unit_type_id):
-        super(unit_type_id)
+        super().__init__(unit_type_id)
 
     def get_template_data(self):
         return {
@@ -585,7 +583,7 @@ class UnitType(VariableType):
 
 class ItemType(VariableType):
     def __init__(self, item_type_id):
-        super(item_type_id)
+        super().__init__(item_type_id)
 
     def get_template_data(self):
         return {
@@ -834,7 +832,7 @@ class ItemType(VariableType):
 
 class ProjectileType(VariableType):
     def __init__(self, projectile_type_id):
-        super(projectile_type_id)
+        super().__init__(projectile_type_id)
 
     def get_template_data(self):
         return {
@@ -944,7 +942,7 @@ class ProjectileType(VariableType):
 
 class PlayerType(VariableType):
     def __init__(self, player_type_id):
-        super(player_type_id)
+        super().__init__(player_type_id)
 
     def get_template_data(self):
         return {
@@ -958,7 +956,7 @@ class PlayerType(VariableType):
 
 class AttributeType(VariableType):
     def __init__(self, attribute_type_id):
-        super(attribute_type_id)
+        super().__init__(attribute_type_id)
 
     def get_template_data(self):
         return {
@@ -979,7 +977,7 @@ class AttributeType(VariableType):
 
 class AnimationType(VariableType):
     def __init__(self, animation_type_id):
-        super(animation_type_id)
+        super().__init__(animation_type_id)
 
     def get_template_data(self):
         return {
@@ -994,7 +992,7 @@ class AnimationType(VariableType):
 
 class State(VariableType):
     def __init__(self, state_id):
-        super(state_id)
+        super().__init__(state_id)
 
     def get_template_data(self):
         return {
@@ -1008,7 +1006,7 @@ class State(VariableType):
 
 class Shop(VariableType):
     def __init__(self, shop_id):
-        super(shop_id)
+        super().__init__(shop_id)
 
     def get_template_data(self):
         return {
@@ -1021,7 +1019,7 @@ class Shop(VariableType):
 
 class Music(VariableType):
     def __init__(self, music_id):
-        super(music_id)
+        super().__init__(music_id)
 
     def get_template_data(self):
         return {
@@ -1033,7 +1031,7 @@ class Music(VariableType):
 
 class Sound(VariableType):
     def __init__(self, sound_id):
-        super(sound_id)
+        super().__init__(sound_id)
 
     def get_template_data(self):
         return {
@@ -1045,7 +1043,7 @@ class Sound(VariableType):
 
 class Dialogue(VariableType):
     def __init__(self, dialogue_id):
-        super(dialogue_id)
+        super().__init__(dialogue_id)
 
     def get_template_data(self):
         return {
