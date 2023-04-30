@@ -46,6 +46,13 @@ const VARIABLE_CATEGORIES_ITERATION_ORDER: [&str; 17] = [
     "sound",
 ];
 
+#[derive(Debug, PartialEq, Eq)]
+pub struct Variable {
+    pub id: String,
+    pub enum_name: String,
+    pub data_type: Option<String>,
+}
+
 pub struct CategoriesToVariables {
     pub categories_to_variables: HashMap<&'static str, Vec<Variable>>,
 }
@@ -198,10 +205,6 @@ pub fn pymodd_class_name_of_category(category: &'static str) -> String {
 }
 
 pub fn pymodd_class_type_of_category(category: &'static str) -> String {
-    // in order to match with classes defined in pymodd/functions.py
-    if VARIABLES_CATEGORY_NAME == category || SEPERATED_VARIABLE_CATEGORIES.contains(&category) {
-        return String::from("Variable");
-    }
     pymodd_class_name_of_category(&category)
         .strip_suffix('s')
         .unwrap()
@@ -209,15 +212,7 @@ pub fn pymodd_class_type_of_category(category: &'static str) -> String {
 }
 
 pub fn is_category_of_variable_type(category: &'static str) -> bool {
-    category.to_lowercase().contains("variables")
-        || SEPERATED_VARIABLE_CATEGORIES.contains(&category)
-}
-
-#[derive(Debug, PartialEq, Eq)]
-pub struct Variable {
-    pub id: String,
-    pub enum_name: String,
-    pub data_type: Option<String>,
+    ["variables", "entityTypeVariables", "playerTypeVariables"].contains(&category)
 }
 
 #[cfg(test)]
