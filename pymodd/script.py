@@ -53,13 +53,43 @@ class Game(Base):
             flattened_scripts[script_data['key']] = script_data
         return flattened_scripts
 
-    def variables_from_class(self, variable_class):
-        variables = []
-        for enum_name, variable in vars(variable_class).items():
-            if enum_name.startswith('__'):
-                continue
-            variables.append(variable)
-        return variables
+    def update_data_with_variable_classes(self, variable_classes):
+        # pull variable objects out from each class
+        variable_class_name_to_variables = {}
+        for klass in variable_classes:
+            class_name = klass.__name__
+            variable_class_name_to_variables[class_name] = []
+            class_vars = [item for item in vars(
+                klass) if not item.startswith('_') and not callable(item)]
+            for var in class_vars:
+                variable_class_name_to_variables[class_name].append(getattr(
+                    klass, var))
+
+        # update game data with new variable objects
+        for class_name, variables in variable_class_name_to_variables.items():
+            variable_category_name = variable_category_name_from_variable_class_name(
+                class_name)
+            new_variables = filter(lambda variable: not self.variable_category_contains_variable(
+                variable_category_name, variable), variables)
+            for variable in new_variables:
+                self.data['data'][variable_category_name][variable.id] = variable.get_template_data(
+                )
+
+    def variable_category_contains_variable(self, variable_category, variable):
+        return variable.id in self.data['data'][variable_category].keys()
+
+
+def variable_category_name_from_variable_class_name(variable_class_name):
+    if variable_class_name == 'EntityVariables':
+        return 'entityTypeVariables'
+    elif variable_class_name == 'PlayerVariables':
+        return 'playerTypeVariables'
+    elif variable_class_name == 'Musics':
+        return 'music'
+    elif variable_class_name in ['Regions', 'ItemTypeGroups', 'UnitTypeGroups']:
+        return 'variables'
+    else:
+        return camelcase(variable_class_name)
 
 
 class EntityScripts(Game):

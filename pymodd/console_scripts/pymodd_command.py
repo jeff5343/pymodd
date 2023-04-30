@@ -41,19 +41,13 @@ def compile_project(_args):
         _pymodd_helper.log_error(
             'more than one class subclassing Game was found in mapping.py, only one is required')
         return
+    game = game_classes[0]('utils/game.json')
 
     game_variables_file_data = runpy.run_path('game_variables.py')
     variable_classes = find_variable_classes_in_file_data(
         game_variables_file_data)
-    class_to_variables = {}
-    for variable_class in variable_classes:
-        class_vars = [item for item in vars(
-            variable_class) if not item.startswith('_') and not callable(item)]
-        for class_var in class_vars:
-            class_to_variables[variable_class.__name__] = getattr(
-                variable_class, class_var)
+    game.update_data_with_variable_classes(variable_classes)
 
-    game = game_classes[0]('utils/game.json')
     compiled_json_output_path = f'output/{game.name}.json'
     if not os.path.exists('output/'):
         os.makedirs('output/')
