@@ -1,4 +1,6 @@
 from enum import Enum
+
+from pymodd.variable_types import DataType
 from .functions import Function
 
 
@@ -31,6 +33,7 @@ class DataType(Enum):
     PLAYER_GROUP = 'playerGroup'
     ITEM_TYPE_GROUP = 'itemTypeGroup'
     UNIT_TYPE_GROUP = 'unitTypeGroup'
+    REGION = 'region'
 
 
 class Variable(VariableType):
@@ -38,6 +41,7 @@ class Variable(VariableType):
         self.function = 'getVariable'
         self.id = variable_name
         self.data_type = data_type
+        self.default_value = ''
         self.options = {
             'variableName': variable_name
         }
@@ -74,6 +78,43 @@ class PlayerVariable(Variable):
                 'entity': 'null',
                 'key': f'{variable_name}'
             }
+        }
+
+
+class ItemTypeGroup(Variable):
+    def __init__(self, variable_name, default_item_types=[]):
+        super().__init__(variable_name, DataType.ITEM_TYPE_GROUP)
+        self.default_value = {}
+        for item_type in default_item_types:
+            self.default_value[item_type.id] = {
+                'probability': 20,
+                'quantity': 1
+            }
+
+
+class UnitTypeGroup(Variable):
+    def __init__(self, variable_name, default_unit_types=[]):
+        super().__init__(variable_name, DataType.UNIT_TYPE_GROUP)
+        self.default_value = {}
+        for unit_type in default_unit_types:
+            self.default_value[unit_type.id] = {
+                'probability': 20,
+                'quantity': 1
+            }
+
+
+class Region(Variable):
+    def __init__(self, region_name):
+        super().__init__(region_name, DataType.REGION)
+        self.default_value = {
+            'x': 0,
+            'y': 0,
+            'width': 100,
+            'height': 100,
+            'inside': '#FFFFFF',
+            'outside': '',
+            'alpha': 100,
+            'videoChatEnabled': False
         }
 
 
@@ -1047,10 +1088,10 @@ class Dialogue(VariableType):
 
     def get_template_data(self):
         return {
-            "name": "New Dialogue",
-            "dialogueTitle": "New Dialogue",
-            "message": "",
-            "image": "",
-            "letterPrintSpeed": 20,
-            "options": []
+            'name': 'New Dialogue',
+            'dialogueTitle': 'New Dialogue',
+            'message': '',
+            'image': '',
+            'letterPrintSpeed': 20,
+            'options': []
         }

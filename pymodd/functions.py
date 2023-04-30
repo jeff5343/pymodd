@@ -79,8 +79,8 @@ class Function(Base):
 
 # only subclasses of Function requires these types
 # (also prevents a circular import)
-from .variable_types import (AttributeType, ItemType, PlayerType,
-                             ProjectileType, State, UnitType, Variable)
+from .variable_types import (AttributeType, ItemType, ItemTypeGroup, PlayerType,
+                             ProjectileType, State, UnitType, UnitTypeGroup, Variable)
 
 
 # ---------------------------------------------------------------------------- #
@@ -1624,20 +1624,11 @@ class AttributeTypeOfAttribute(AttributeType):
 
 
 # ---------------------------------------------------------------------------- #
-#                                    Groups                                    #
-# ---------------------------------------------------------------------------- #
-
-
-class Group(Function):
-    pass
-
-
-# ---------------------------------------------------------------------------- #
 #                                 Entity Groups                                #
 # ---------------------------------------------------------------------------- #
 
 
-class EntityGroup(Group):
+class EntityGroup(Function):
     pass
 
 
@@ -1686,7 +1677,7 @@ class AllEntitiesBetweenTwoPositions(EntityGroup):
 # ---------------------------------------------------------------------------- #
 
 
-class UnitGroup(Group):
+class UnitGroup(Function):
     pass
 
 
@@ -1741,7 +1732,7 @@ class AllUnitsInRegion(UnitGroup):
 # ---------------------------------------------------------------------------- #
 
 
-class ProjectileGroup(Group):
+class ProjectileGroup(Function):
     pass
 
 
@@ -1764,7 +1755,7 @@ class AllProjectilesInTheGame(ProjectileGroup):
 # ---------------------------------------------------------------------------- #
 
 
-class ItemGroup(Group):
+class ItemGroup(Function):
     pass
 
 
@@ -1801,7 +1792,7 @@ class AllItemsOwnedByUnit(ItemGroup):
 # ---------------------------------------------------------------------------- #
 
 
-class PlayerGroup(Group):
+class PlayerGroup(Function):
     pass
 
 
@@ -1834,10 +1825,6 @@ class AllBotPlayers(PlayerGroup):
 # ---------------------------------------------------------------------------- #
 
 
-class ItemTypeGroup(Group):
-    pass
-
-
 class AllItemTypesInGame(ItemTypeGroup):
     def __init__(self):
         self.function = 'allItemTypesInGame'
@@ -1847,10 +1834,6 @@ class AllItemTypesInGame(ItemTypeGroup):
 # ---------------------------------------------------------------------------- #
 #                               Unit Type Groups                               #
 # ---------------------------------------------------------------------------- #
-
-
-class UnitTypeGroup(Group):
-    pass
 
 
 class AllUnitTypesInGame(UnitTypeGroup):
@@ -1864,11 +1847,11 @@ class AllUnitTypesInGame(UnitTypeGroup):
 # ---------------------------------------------------------------------------- #
 
 
-class DebrisGroup(Group):
+class DebrisGroup(Function):
     pass
 
 
-class AllDebris(DebrisGroup):
+class AllDebrisInTheGame(DebrisGroup):
     def __init__(self):
         self.function = 'allDebris'
         self.options = {}
@@ -1879,7 +1862,7 @@ class AllDebris(DebrisGroup):
 # ---------------------------------------------------------------------------- #
 
 
-class RegionGroup(Group):
+class RegionGroup(Function):
     pass
 
 
