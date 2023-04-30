@@ -14,25 +14,24 @@ pub struct GameVariablesFile {}
 
 impl GameVariablesFile {
     pub fn build_content(game_data: &GameData) -> String {
-        let mut importing_classes: Vec<String> = Vec::new();
         let mut file_content = String::new();
         game_data
             .categories_to_variables
             .iter()
             .for_each(|(category, variables)| {
-                let importing_class_for_category = pymodd_class_type_of_category(&category);
-                if variables.len() > 0 && !importing_classes.contains(&importing_class_for_category)
-                {
-                    importing_classes.push(importing_class_for_category);
-                }
                 file_content.push_str(
                     &build_class_content_of_category(&category, &variables).add("\n\n\n"),
                 );
             });
+        let classes_to_import = game_data
+            .categories_to_variables
+            .iter()
+            .map(|(category, _variables)| pymodd_class_type_of_category(&category))
+            .collect::<Vec<String>>();
 
         format!(
             "from pymodd.functions import {}, DataType\n\n\n{}",
-            importing_classes.join(", "),
+            classes_to_import.join(", "),
             file_content,
         )
     }
