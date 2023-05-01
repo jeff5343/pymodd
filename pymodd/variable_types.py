@@ -60,7 +60,7 @@ class EntityVariable(Variable):
         self.options = {
             'variable': {
                 'text': f'{variable_name}',
-                'dataType': f'{data_type}',
+                'dataType': f'{data_type.value}',
                 'entity': 'null',
                 'key': f'{variable_name}'
             }
@@ -74,7 +74,7 @@ class PlayerVariable(Variable):
         self.options = {
             'variable': {
                 'text': f'{variable_name}',
-                'dataType': f'{data_type}',
+                'dataType': f'{data_type.value}',
                 'entity': 'null',
                 'key': f'{variable_name}'
             }
