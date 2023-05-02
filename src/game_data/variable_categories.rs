@@ -211,10 +211,6 @@ pub fn pymodd_class_type_of_category(category: &'static str) -> String {
         .to_string()
 }
 
-pub fn is_category_of_variable_type(category: &'static str) -> bool {
-    ["variables", "entityTypeVariables", "playerTypeVariables"].contains(&category)
-}
-
 #[cfg(test)]
 mod tests {
     use std::collections::HashMap;

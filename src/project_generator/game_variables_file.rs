@@ -2,7 +2,7 @@ use std::ops::Add;
 
 use crate::game_data::{
     variable_categories::{
-        is_category_of_variable_type, pymodd_class_name_of_category, pymodd_class_type_of_category,
+        pymodd_class_name_of_category, pymodd_class_type_of_category,
         Variable,
     },
     GameData,
@@ -63,7 +63,7 @@ fn build_class_variables_of_category(
                 variable.enum_name,
                 pymodd_class_type_of_category(&category),
                 variable.id,
-                if is_category_of_variable_type(&category) {
+                if variable_category_requires_data_type(&category) {
                     format!(
                         ", {}",
                         VARIABLE_DATA_TYPES_TO_PYMODD_ENUM
@@ -77,6 +77,10 @@ fn build_class_variables_of_category(
             .to_string()
         })
         .collect()
+}
+
+fn variable_category_requires_data_type(category: &'static str) -> bool {
+    ["variables", "entityTypeVariables", "playerTypeVariables"].contains(&category)
 }
 
 #[cfg(test)]
