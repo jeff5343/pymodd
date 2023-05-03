@@ -5,16 +5,19 @@ use serde_json::Value;
 use crate::game_data::{
     actions::Action,
     directory::{Directory, Script},
-    variable_categories::{pymodd_class_name_of_category, CategoriesToVariables},
+    variable_categories::CategoriesToVariables,
     GameData,
 };
 
-use super::utils::{
-    iterators::{
-        argument_values_iterator::{ArgumentValueIterItem, ArgumentValuesIterator, Operation},
-        directory_iterator::DirectoryIterItem,
+use super::{
+    game_variables_file::pymodd_class_name_of_category,
+    utils::{
+        iterators::{
+            argument_values_iterator::{ArgumentValueIterItem, ArgumentValuesIterator, Operation},
+            directory_iterator::DirectoryIterItem,
+        },
+        surround_string_with_quotes,
     },
-    surround_string_with_quotes,
 };
 
 pub struct ScriptsFile {}

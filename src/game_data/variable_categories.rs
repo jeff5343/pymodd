@@ -1,6 +1,5 @@
 use std::collections::HashMap;
 
-use heck::ToPascalCase;
 use serde_json::{Map, Value};
 
 use crate::project_generator::utils::enum_name_of;
@@ -27,23 +26,23 @@ pub const SEPERATED_VARIABLE_CATEGORIES: [&str; 3] =
     ["regions", "itemTypeGroups", "unitTypeGroups"];
 
 const VARIABLE_CATEGORIES_ITERATION_ORDER: [&str; 17] = [
-    "unitTypes",
-    "playerTypes",
     "itemTypes",
     "projectileTypes",
-    "regions",
+    "unitTypes",
+    "playerTypes",
+    "itemTypeGroups",
+    "unitTypeGroups",
     "variables",
     "entityTypeVariables",
     "playerTypeVariables",
-    "animationTypes",
-    "attributeTypes",
-    "itemTypeGroups",
-    "unitTypeGroups",
-    "states",
+    "regions",
     "shops",
     "dialogues",
     "music",
     "sound",
+    "states",
+    "animationTypes",
+    "attributeTypes",
 ];
 
 #[derive(Debug, PartialEq, Eq)]
@@ -188,27 +187,6 @@ fn seperated_variables_categories(
                 .push(variable);
         });
     seperated_category_to_variables
-}
-
-pub fn pymodd_class_name_of_category(category: &'static str) -> String {
-    let mut class_name = match category {
-        "entityTypeVariables" => "EntityVariables",
-        "playerTypeVariables" => "PlayerVariables",
-        _ => category,
-    }
-    .to_pascal_case()
-    .to_string();
-    if !class_name.ends_with("s") {
-        class_name.push('s')
-    }
-    class_name
-}
-
-pub fn pymodd_class_type_of_category(category: &'static str) -> String {
-    pymodd_class_name_of_category(&category)
-        .strip_suffix('s')
-        .unwrap()
-        .to_string()
 }
 
 #[cfg(test)]

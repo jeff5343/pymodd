@@ -1,12 +1,8 @@
 use std::ops::Add;
 
-use crate::game_data::{
-    variable_categories::{
-        pymodd_class_name_of_category, pymodd_class_type_of_category,
-        Variable,
-    },
-    GameData,
-};
+use heck::ToPascalCase;
+
+use crate::game_data::{variable_categories::Variable, GameData};
 
 use super::utils::to_pymodd_maps::VARIABLE_DATA_TYPES_TO_PYMODD_ENUM;
 
@@ -30,7 +26,7 @@ impl GameVariablesFile {
             .collect::<Vec<String>>();
 
         format!(
-            "from pymodd.functions import {}, DataType\n\n\n{}",
+            "from pymodd.variable_types import {}, DataType\n\n\n{}",
             classes_to_import.join(", "),
             file_content,
         )
@@ -79,8 +75,39 @@ fn build_class_variables_of_category(
         .collect()
 }
 
+pub fn pymodd_class_name_of_category(category: &'static str) -> String {
+    let mut class_name = match category {
+        "entityTypeVariables" => "EntityVariables",
+        "playerTypeVariables" => "PlayerVariables",
+        _ => category,
+    }
+    .to_pascal_case()
+    .to_string();
+    if !class_name.ends_with("s") {
+        class_name.push('s')
+    }
+    class_name
+}
+
+fn pymodd_class_type_of_category(category: &'static str) -> String {
+    match category {
+        "itemTypeGroups" | "unitTypeGroups" => String::from("Variable"),
+        _ => pymodd_class_name_of_category(&category)
+            .strip_suffix('s')
+            .unwrap()
+            .to_string(),
+    }
+}
+
 fn variable_category_requires_data_type(category: &'static str) -> bool {
-    ["variables", "entityTypeVariables", "playerTypeVariables"].contains(&category)
+    [
+        "variables",
+        "entityTypeVariables",
+        "playerTypeVariables",
+        "itemTypeGroups",
+        "unitTypeGroups",
+    ]
+    .contains(&category)
 }
 
 #[cfg(test)]
