@@ -79,8 +79,8 @@ class Function(Base):
 
 # only subclasses of Function requires these types
 # (also prevents a circular import)
-from .variable_types import (AttributeType, ItemType, ItemTypeGroup, PlayerType,
-                             ProjectileType, State, UnitType, UnitTypeGroup, Variable)
+from .variable_types import (AttributeType, EntityVariable, ItemType, PlayerType, PlayerVariable,
+                             ProjectileType, State, UnitType, Variable)
 
 
 # ---------------------------------------------------------------------------- #
@@ -1453,7 +1453,7 @@ class UnitParticle(Particle):
 # ---------------------------------------------------------------------------- #
 
 
-class ValueOfEntityVariable(Variable):
+class ValueOfEntityVariable(EntityVariable):
     def __init__(self, entity_variable_type, entity):
         self.function = 'getValueOfEntityVariable'
         self.data_type = entity_variable_type.data_type
@@ -1468,7 +1468,7 @@ class ValueOfEntityVariable(Variable):
 # ---------------------------------------------------------------------------- #
 
 
-class ValueOfPlayerVariable(Variable):
+class ValueOfPlayerVariable(PlayerVariable):
     def __init__(self, player_variable_type, player):
         self.function = 'getValueOfPlayerVariable'
         self.data_type = player_variable_type.data_type
@@ -1825,6 +1825,10 @@ class AllBotPlayers(PlayerGroup):
 # ---------------------------------------------------------------------------- #
 
 
+class ItemTypeGroup(Function):
+    pass
+
+
 class AllItemTypesInGame(ItemTypeGroup):
     def __init__(self):
         self.function = 'allItemTypesInGame'
@@ -1834,6 +1838,10 @@ class AllItemTypesInGame(ItemTypeGroup):
 # ---------------------------------------------------------------------------- #
 #                               Unit Type Groups                               #
 # ---------------------------------------------------------------------------- #
+
+
+class UnitTypeGroup(Function):
+    pass
 
 
 class AllUnitTypesInGame(UnitTypeGroup):

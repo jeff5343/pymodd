@@ -1,6 +1,5 @@
 from enum import Enum
 
-from pymodd.variable_types import DataType
 from .functions import Function
 
 
@@ -37,19 +36,29 @@ class DataType(Enum):
 
 
 class Variable(VariableType):
-    def __init__(self, variable_name, data_type: DataType):
+    def __init__(self, variable_name, data_type: DataType, default_value=None):
         self.function = 'getVariable'
         self.id = variable_name
         self.data_type = data_type
-        self.default_value = ''
+        self.default_value = default_value
         self.options = {
-            'variableName': variable_name
+            'variableName': variable_name,
         }
 
+        # default values of group types are passed in as list of types
+        if data_type in [DataType.ITEM_TYPE_GROUP, DataType.UNIT_TYPE_GROUP] and type(default_value) is list:
+            # convert the list of types into a map
+            self.default_value = {}
+            for type_ in default_value:
+                self.default_value[type_.id] = {
+                    'probability': 20,
+                    'quantity': 1
+                }
+
     def get_template_data(self):
-        # LATER: depending if the data type contains special data, return different template
         return {
-            'dataType': f'{self.data_type.value}'
+            'dataType': f'{self.data_type.value}',
+            'default': self.default_value if self.default_value is not None else None
         }
 
 
@@ -79,28 +88,6 @@ class PlayerVariable(Variable):
                 'key': f'{variable_name}'
             }
         }
-
-
-class ItemTypeGroup(Variable):
-    def __init__(self, variable_name, default_item_types=[]):
-        super().__init__(variable_name, DataType.ITEM_TYPE_GROUP)
-        self.default_value = {}
-        for item_type in default_item_types:
-            self.default_value[item_type.id] = {
-                'probability': 20,
-                'quantity': 1
-            }
-
-
-class UnitTypeGroup(Variable):
-    def __init__(self, variable_name, default_unit_types=[]):
-        super().__init__(variable_name, DataType.UNIT_TYPE_GROUP)
-        self.default_value = {}
-        for unit_type in default_unit_types:
-            self.default_value[unit_type.id] = {
-                'probability': 20,
-                'quantity': 1
-            }
 
 
 class Region(Variable):
