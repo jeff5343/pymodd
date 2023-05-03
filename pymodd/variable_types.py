@@ -1,14 +1,18 @@
 from enum import Enum
 
-from .functions import Function
+from pymodd.script import generate_random_key
+from pymodd.functions import Function
 
 
 class VariableType(Function):
-    def __init__(self, id):
-        self.id = id
+    def __init__(self, id=None):
+        if id is None:
+            self.id = generate_random_key()
+        else:
+            self.id = id
         self.function = {
             'direct': True,
-            'value': id,
+            'value': self.id,
         }
 
     def get_template_data(self):

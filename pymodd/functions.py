@@ -1,6 +1,6 @@
 from caseconverter import camelcase
 
-from .script import Base, to_dict
+from pymodd.script import Base, to_dict
 
 
 class Function(Base):

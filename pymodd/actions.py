@@ -1,8 +1,8 @@
 from __future__ import annotations
 import functools
 
-from .functions import Condition, Number, String
-from .script import Script, to_dict
+from pymodd.functions import Condition, Number, String
+from pymodd.script import Script, to_dict
 
 
 def action(func):
