@@ -5,18 +5,22 @@ from pymodd.functions import Function
 
 
 class VariableType(Function):
-    def __init__(self, id=None):
-        if id is None:
-            self.id = generate_random_key()
-        else:
-            self.id = id
+    def __init__(self, id=None, **data_keys_to_new_values_kwargs):
+        self.id = generate_random_key() if id is None else id
+        self.data_keys_to_new_values = data_keys_to_new_values_kwargs.items()
         self.function = {
             'direct': True,
             'value': self.id,
         }
 
-    def get_template_data(self):
-        raise NotImplementedError('get_template_data method not implemented')
+    def updated_data_with_user_provided_values(self, data):
+        for key, value in self.data_keys_to_new_values:
+            if key in data.keys():
+                data[key] = value
+        return data
+
+    def get_template_data(self) -> dict:
+        raise NotImplementedError('_get_template_data method not implemented')
 
 
 class DataType(Enum):
@@ -41,10 +45,10 @@ class DataType(Enum):
 
 class Variable(VariableType):
     def __init__(self, variable_name, data_type: DataType, default_value=None):
-        self.function = 'getVariable'
-        self.id = variable_name
+        super().__init__(variable_name)
         self.data_type = data_type
         self.default_value = default_value
+        self.function = 'getVariable'
         self.options = {
             'variableName': variable_name,
         }
@@ -95,8 +99,8 @@ class PlayerVariable(Variable):
 
 
 class Region(Variable):
-    def __init__(self, region_name):
-        super().__init__(region_name, DataType.REGION)
+    def __init__(self, name):
+        super().__init__(name, DataType.REGION)
         self.default_value = {
             'x': 0,
             'y': 0,
@@ -110,8 +114,8 @@ class Region(Variable):
 
 
 class UnitType(VariableType):
-    def __init__(self, unit_type_id):
-        super().__init__(unit_type_id)
+    def __init__(self, id=None, name=None):
+        super().__init__(id, name=name)
 
     def get_template_data(self):
         return {
@@ -367,7 +371,7 @@ class UnitType(VariableType):
             'skin': 'https://s3-us-west-1.amazonaws.com/modd/halloween-0.18/spritesheet/man.png',
             'canBuyItem': True,
             'handle': 'human',
-            'name': 'New Unit',
+            'name': 'New Unit Type',
             'inventorySize': 5,
             'cellSheet': {
                 'url': 'https://cache.modd.io/asset/spriteImage/1588303353803_Human Circle Person.png',
@@ -614,8 +618,8 @@ class UnitType(VariableType):
 
 
 class ItemType(VariableType):
-    def __init__(self, item_type_id):
-        super().__init__(item_type_id)
+    def __init__(self, id=None, name=None):
+        super().__init__(id, name=name)
 
     def get_template_data(self):
         return {
@@ -626,7 +630,7 @@ class ItemType(VariableType):
                 'x': 0
             },
             'frames': {},
-            'name': 'New Item',
+            'name': 'New Item Type',
             'handle': '',
             'attributes': {},
             'variables': {},
@@ -863,13 +867,13 @@ class ItemType(VariableType):
 
 
 class ProjectileType(VariableType):
-    def __init__(self, projectile_type_id):
-        super().__init__(projectile_type_id)
+    def __init__(self, id=None, name=None):
+        super().__init__(id, name=name)
 
     def get_template_data(self):
         return {
             'inventoryImage': '',
-            'name': 'New Projectile',
+            'name': 'New Projectile Type',
             'attributes': {},
             'variables': {},
             'states': {
@@ -973,8 +977,8 @@ class ProjectileType(VariableType):
 
 
 class PlayerType(VariableType):
-    def __init__(self, player_type_id):
-        super().__init__(player_type_id)
+    def __init__(self, id=None, name=None):
+        super().__init__(id, name=name)
 
     def get_template_data(self):
         return {
@@ -987,8 +991,8 @@ class PlayerType(VariableType):
 
 
 class AttributeType(VariableType):
-    def __init__(self, attribute_type_id):
-        super().__init__(attribute_type_id)
+    def __init__(self, id=None, name=None):
+        super().__init__(id, name=name)
 
     def get_template_data(self):
         return {
@@ -1008,8 +1012,8 @@ class AttributeType(VariableType):
 
 
 class AnimationType(VariableType):
-    def __init__(self, animation_type_id):
-        super().__init__(animation_type_id)
+    def __init__(self, id=None, name=None):
+        super().__init__(id, name=name)
 
     def get_template_data(self):
         return {
@@ -1023,8 +1027,8 @@ class AnimationType(VariableType):
 
 
 class State(VariableType):
-    def __init__(self, state_id):
-        super().__init__(state_id)
+    def __init__(self, id=None, name=None):
+        super().__init__(id, name=name)
 
     def get_template_data(self):
         return {
@@ -1037,8 +1041,8 @@ class State(VariableType):
 
 
 class Shop(VariableType):
-    def __init__(self, shop_id):
-        super().__init__(shop_id)
+    def __init__(self, id=None, name=None):
+        super().__init__(id, name=name)
 
     def get_template_data(self):
         return {
@@ -1050,8 +1054,8 @@ class Shop(VariableType):
 
 
 class Music(VariableType):
-    def __init__(self, music_id):
-        super().__init__(music_id)
+    def __init__(self, id=None, name=None):
+        super().__init__(id, name=name)
 
     def get_template_data(self):
         return {
@@ -1062,8 +1066,8 @@ class Music(VariableType):
 
 
 class Sound(VariableType):
-    def __init__(self, sound_id):
-        super().__init__(sound_id)
+    def __init__(self, id=None, name=None):
+        super().__init__(id, name=name)
 
     def get_template_data(self):
         return {
@@ -1074,8 +1078,8 @@ class Sound(VariableType):
 
 
 class Dialogue(VariableType):
-    def __init__(self, dialogue_id):
-        super().__init__(dialogue_id)
+    def __init__(self, id=None, name=None):
+        super().__init__(id, name=name)
 
     def get_template_data(self):
         return {

@@ -65,15 +65,15 @@ class Game(Base):
                 variable_class_name_to_variables[class_name].append(getattr(
                     klass, var))
 
-        # update game data with new variable objects
+        # update game data with modified variable objects
         for class_name, variables in variable_class_name_to_variables.items():
-            variable_category_name = variable_category_name_from_variable_class_name(
-                class_name)
-            new_variables = filter(lambda variable: not self.variable_category_contains_variable(
-                variable_category_name, variable), variables)
-            for variable in new_variables:
-                self.data['data'][variable_category_name][variable.id] = variable.get_template_data(
-                )
+            if (variable_category_name := variable_category_name_from_variable_class_name(class_name)) not in self.data['data'].keys():
+                continue
+            variable_category_data = self.data['data'][variable_category_name]
+            for variable in variables:
+                category_contains_variable = variable.id in variable_category_data.keys()
+                variable_category_data[variable.id] = variable.updated_data_with_user_provided_values(
+                    variable.get_template_data() if not category_contains_variable else variable_category_data[variable.id])
 
     def variable_category_contains_variable(self, variable_category, variable):
         return variable.id in self.data['data'][variable_category].keys()
