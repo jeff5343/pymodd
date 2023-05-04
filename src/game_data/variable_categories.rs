@@ -48,6 +48,7 @@ const VARIABLE_CATEGORIES_ITERATION_ORDER: [&str; 17] = [
 #[derive(Debug, PartialEq, Eq)]
 pub struct Variable {
     pub id: String,
+    pub name: String,
     pub enum_name: String,
     pub data_type: Option<String>,
 }
@@ -116,16 +117,18 @@ fn variables_from_category_data(category_data: &Value) -> Vec<Variable> {
         .as_object()
         .unwrap_or(&Map::new())
         .iter()
-        .map(|(var_id, var)| Variable {
-            id: var_id.clone(),
-            enum_name: enum_name_of(
-                var.get("name")
-                    .unwrap_or(&Value::String(var_id.clone()))
-                    .as_str()
-                    .unwrap(),
-            )
-            .to_string(),
-            data_type: parse_data_type(var.get("dataType")),
+        .map(|(var_id, var)| {
+            let var_name = var
+                .get("name")
+                .unwrap_or(&Value::Null)
+                .as_str()
+                .unwrap_or(var_id);
+            Variable {
+                id: var_id.clone(),
+                name: var_name.to_string(),
+                enum_name: enum_name_of(var_name).to_string(),
+                data_type: parse_data_type(var.get("dataType")),
+            }
         })
         .collect()
 }

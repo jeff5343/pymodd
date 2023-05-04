@@ -2,7 +2,10 @@ use std::ops::Add;
 
 use heck::ToPascalCase;
 
-use crate::game_data::{variable_categories::Variable, GameData};
+use crate::{
+    game_data::{variable_categories::Variable, GameData},
+    project_generator::utils::surround_string_with_quotes,
+};
 
 use super::utils::to_pymodd_maps::VARIABLE_DATA_TYPES_TO_PYMODD_ENUM;
 
@@ -55,10 +58,10 @@ fn build_class_variables_of_category(
         .iter()
         .map(|variable| {
             format!(
-                "{} = {}(\"{}\"{})",
+                "{} = {}({}{})",
                 variable.enum_name,
                 pymodd_class_type_of_category(&category),
-                variable.id,
+                surround_string_with_quotes(&variable.id),
                 if variable_category_requires_data_type(&category) {
                     format!(
                         ", {}",
@@ -67,7 +70,7 @@ fn build_class_variables_of_category(
                             .unwrap_or(&String::from("None"))
                     )
                 } else {
-                    String::new()
+                    format!(", name={}", surround_string_with_quotes(&variable.name))
                 }
             )
             .to_string()
