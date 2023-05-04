@@ -54,29 +54,33 @@ class Game(Base):
         return flattened_scripts
 
     def update_data_with_variable_classes(self, variable_classes):
-        # pull variable objects out from each class
-        variable_class_name_to_variables = {}
+        # pull variable objects out from each class and place them in categories
+        variable_category_to_variables = {}
         for klass in variable_classes:
-            class_name = klass.__name__
-            variable_class_name_to_variables[class_name] = []
-            class_vars = [item for item in vars(
-                klass) if not item.startswith('_') and not callable(item)]
+            variable_category = variable_category_name_from_variable_class_name(
+                klass.__name__)
+            variable_category_to_variables.setdefault(variable_category, [])
+            class_vars = [item for item in vars(klass)
+                          if not item.startswith('_') and not callable(item)]
             for var in class_vars:
-                variable_class_name_to_variables[class_name].append(getattr(
+                variable_category_to_variables[variable_category].append(getattr(
                     klass, var))
 
         # update game data with modified variable objects
-        for class_name, variables in variable_class_name_to_variables.items():
-            if (variable_category_name := variable_category_name_from_variable_class_name(class_name)) not in self.data['data'].keys():
+        for variable_category, variables in variable_category_to_variables.items():
+            if variable_category not in self.data['data'].keys():
                 continue
-            variable_category_data = self.data['data'][variable_category_name]
+            category_data = self.data['data'][variable_category]
+            unincluded_category_variable_ids = list(
+                category_data.keys())
             for variable in variables:
-                category_contains_variable = variable.id in variable_category_data.keys()
-                variable_category_data[variable.id] = variable.updated_data_with_user_provided_values(
-                    variable.get_template_data() if not category_contains_variable else variable_category_data[variable.id])
-
-    def variable_category_contains_variable(self, variable_category, variable):
-        return variable.id in self.data['data'][variable_category].keys()
+                category_contains_variable = variable.id in category_data.keys()
+                category_data[variable.id] = variable.updated_data_with_user_provided_values(
+                    category_data[variable.id] if category_contains_variable else variable.get_template_data())
+                unincluded_category_variable_ids.remove(variable.id)
+            # remove variables no longer included
+            for unincluded_variable_id in unincluded_category_variable_ids:
+                category_data.pop(unincluded_variable_id)
 
 
 def variable_category_name_from_variable_class_name(variable_class_name):
