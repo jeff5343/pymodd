@@ -53,15 +53,27 @@ class Variable(VariableType):
             'variableName': variable_name,
         }
 
-        # default values of group types are passed in as list of types
+        # group types take in a list of types as their default values
         if data_type in [DataType.ITEM_TYPE_GROUP, DataType.UNIT_TYPE_GROUP] and type(default_value) is list:
-            # convert the list of types into a map
+            # convert the list of types into modd.io data
             self.default_value = {}
             for type_ in default_value:
                 self.default_value[type_.id] = {
                     'probability': 20,
                     'quantity': 1
                 }
+        # regions have additional parameters for their default value
+        if data_type == DataType.REGION:
+            self.default_value = {
+                'x': 0,
+                'y': 0,
+                'width': 100,
+                'height': 100,
+                'inside': '#FFFFFF',
+                'outside': '',
+                'alpha': 100,
+                'videoChatEnabled': False
+            }
 
     def get_template_data(self):
         return {
@@ -95,21 +107,6 @@ class PlayerVariable(Variable):
                 'entity': 'null',
                 'key': f'{variable_name}'
             }
-        }
-
-
-class Region(Variable):
-    def __init__(self, name):
-        super().__init__(name, DataType.REGION)
-        self.default_value = {
-            'x': 0,
-            'y': 0,
-            'width': 100,
-            'height': 100,
-            'inside': '#FFFFFF',
-            'outside': '',
-            'alpha': 100,
-            'videoChatEnabled': False
         }
 
 

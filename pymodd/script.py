@@ -77,7 +77,8 @@ class Game(Base):
                 category_contains_variable = variable.id in category_data.keys()
                 category_data[variable.id] = variable.updated_data_with_user_provided_values(
                     category_data[variable.id] if category_contains_variable else variable.get_template_data())
-                unincluded_category_variable_ids.remove(variable.id)
+                if variable.id in unincluded_category_variable_ids:
+                    unincluded_category_variable_ids.remove(variable.id)
             # remove variables no longer included
             for unincluded_variable_id in unincluded_category_variable_ids:
                 category_data.pop(unincluded_variable_id)

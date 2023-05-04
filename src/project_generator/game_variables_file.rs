@@ -94,7 +94,7 @@ pub fn pymodd_class_name_of_category(category: &'static str) -> String {
 
 fn pymodd_class_type_of_category(category: &'static str) -> String {
     match category {
-        "itemTypeGroups" | "unitTypeGroups" => String::from("Variable"),
+        "itemTypeGroups" | "unitTypeGroups" | "regions" => String::from("Variable"),
         _ => pymodd_class_name_of_category(&category)
             .strip_suffix('s')
             .unwrap()
@@ -109,6 +109,7 @@ fn variable_category_requires_data_type(category: &'static str) -> bool {
         "playerTypeVariables",
         "itemTypeGroups",
         "unitTypeGroups",
+        "regions",
     ]
     .contains(&category)
 }
