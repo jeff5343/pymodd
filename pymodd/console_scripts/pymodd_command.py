@@ -20,7 +20,7 @@ def generate_project(args):
 
 
 def compile_project(_args):
-    required_files = ['mapping.py', 'game_variables.py']
+    required_files = ['mapping.py']
     for file in required_files:
         if not os.path.isfile(file):
             _pymodd_helper.log_error(
@@ -31,8 +31,9 @@ def compile_project(_args):
     _pymodd_helper.log_cli_start_message("Compiling", project_directory_name)
 
     sys.path.append(os.path.abspath(f'../{project_directory_name}/'))
-    mapping_file_data = runpy.run_path('mapping.py')
-    game_classes = find_game_classes_in_file_data(mapping_file_data)
+    project_data = runpy.run_path('mapping.py')
+
+    game_classes = find_game_classes_in_project_data(project_data)
     if len(game_classes) == 0:
         _pymodd_helper.log_error(
             'no class subclassing Game was found in mapping.py, one is required')
@@ -41,12 +42,10 @@ def compile_project(_args):
         _pymodd_helper.log_error(
             'more than one class subclassing Game was found in mapping.py, only one is required')
         return
-    game = game_classes[0]('utils/game.json')
 
-    game_variables_file_data = runpy.run_path('game_variables.py')
-    variable_classes = find_variable_classes_in_file_data(
-        game_variables_file_data)
-    game.update_data_with_variable_classes(variable_classes)
+    variable_classes = find_variable_classes_in_project_data(
+        project_data)
+    game = game_classes[0]('utils/game.json', variable_classes)
 
     compiled_json_output_path = f'output/{game.name}.json'
     if not os.path.exists('output/'):
@@ -58,7 +57,7 @@ def compile_project(_args):
     _pymodd_helper.log_cli_end_message("compilation", True)
 
 
-def find_game_classes_in_file_data(file_data: dict):
+def find_game_classes_in_project_data(project_data: dict):
     return list(filter(
         lambda object_data:
         # is a class
@@ -69,16 +68,16 @@ def find_game_classes_in_file_data(file_data: dict):
         object_data != Game and
         # does not subclass the EntityScripts class
         not issubclass(object_data, EntityScripts),
-        file_data.values()))
+        project_data.values()))
 
 
-def find_variable_classes_in_file_data(file_data: dict):
+def find_variable_classes_in_project_data(project_data: dict):
     def is_class_data_of_variable_type(pair):
         key, _value = pair
         return key in VARIABLE_TYPE_CLASS_NAMES
     return list(dict(filter(
         is_class_data_of_variable_type,
-        file_data.items())).values())
+        project_data.items())).values())
 
 
 def main_cli():

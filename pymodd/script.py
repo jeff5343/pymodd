@@ -12,48 +12,20 @@ class Base():
 
 
 class Game(Base):
-    def __init__(self, json_file):
+    def __init__(self, json_file, game_variable_classes):
         with open(json_file, 'r') as file:
             data = json.load(file)
         self.name = data.get('title')
         self.data = data
         self.entity_scripts = []
         self.scripts = []
+        self._update_data_with_variable_classes(game_variable_classes)
         self._build()
         # set position of scripts inside game
         for i, script in enumerate(self.scripts):
             script.set_position(i, None)
 
-    def _build():
-        pass
-
-    def to_dict(self):
-        # replace game scripts with scripts defined in self.scripts
-        self.data['data']['scripts'] = self.flatten_scripts_data(self.scripts)
-        for script in self.entity_scripts:
-            entity_type_category, entity_type_id = f'{camelcase(script.entity_type.__class__.__name__)}s', script.entity_type_id
-            self.data['data'][entity_type_category][entity_type_id]['scripts'] = self.flatten_scripts_data(
-                script.scripts)
-        return self.data
-
-    def flatten_scripts_data(self, scripts):
-        """Takes all scripts out of folders, transforms them into json, and put them all into one dictionary with the rest of the game's scripts
-
-        Returns:
-            dict: keys are the script's key, values are the script's data
-        """
-        flattened_scripts = {}
-        scripts_queue = scripts.copy()
-        while len(scripts_queue) > 0:
-            script = scripts_queue.pop(0)
-            # add folder's scripts to the queue
-            if isinstance(script, Folder):
-                scripts_queue += script.scripts
-            script_data = script.to_dict()
-            flattened_scripts[script_data['key']] = script_data
-        return flattened_scripts
-
-    def update_data_with_variable_classes(self, variable_classes):
+    def _update_data_with_variable_classes(self, variable_classes):
         # pull variable objects out from each class and place them in categories
         variable_category_to_variables = {}
         for klass in variable_classes:
@@ -83,6 +55,35 @@ class Game(Base):
             for unincluded_variable_id in unincluded_category_variable_ids:
                 category_data.pop(unincluded_variable_id)
 
+    def _build():
+        pass
+
+    def to_dict(self):
+        # replace game scripts with scripts defined in self.scripts
+        self.data['data']['scripts'] = self.flatten_scripts_data(self.scripts)
+        for script in self.entity_scripts:
+            entity_type_category, entity_type_id = f'{camelcase(script.entity_type.__class__.__name__)}s', script.entity_type.id
+            self.data['data'][entity_type_category][entity_type_id]['scripts'] = self.flatten_scripts_data(
+                script.scripts)
+        return self.data
+
+    def flatten_scripts_data(self, scripts):
+        """Takes all scripts out of folders, transforms them into json, and put them all into one dictionary with the rest of the game's scripts
+
+        Returns:
+            dict: keys are the script's key, values are the script's data
+        """
+        flattened_scripts = {}
+        scripts_queue = scripts.copy()
+        while len(scripts_queue) > 0:
+            script = scripts_queue.pop(0)
+            # add folder's scripts to the queue
+            if isinstance(script, Folder):
+                scripts_queue += script.scripts
+            script_data = script.to_dict()
+            flattened_scripts[script_data['key']] = script_data
+        return flattened_scripts
+
 
 def variable_category_name_from_variable_class_name(variable_class_name):
     if variable_class_name == 'EntityVariables':
@@ -105,10 +106,7 @@ class EntityScripts(Game):
         # set position of scripts inside entity_scripts
         for i, script in enumerate(self.scripts):
             script.set_position(i, None)
-        self.entity_type_id = self.get_entity_type_id()
-
-    def get_entity_type_id(self):
-        return self.entity_type.function.get('value')
+        print('hmm', self.entity_type.id)
 
     def to_dict(self):
         self.flatten_scripts_data(self.scripts)
