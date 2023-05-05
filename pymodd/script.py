@@ -7,7 +7,7 @@ from enum import Enum
 
 from caseconverter import camelcase, snakecase
 
-from pymodd.actions import break_loop, continue_loop, if_else, return_loop, while_do
+import pymodd
 
 
 class Base():
@@ -184,6 +184,7 @@ class ScriptBuildFunctionCompiler(ast.NodeVisitor):
     def __init__(self, build_function) -> None:
         self.depth = 0
         self.actions_data = []
+        print(inspect.getsource(build_function))
         tree = ast.parse(inspect.getsource(build_function))
         self.visit(tree)
 
@@ -216,7 +217,7 @@ class ScriptBuildFunctionCompiler(ast.NodeVisitor):
             then_actions_data.append(self.visit(nde))
         for nde in node.orelse:
             else_actions_data.append(self.visit(nde))
-        if_action_data = if_else(
+        if_action_data = pymodd.actions.if_else(
             self.eval_node(node.test), then_actions_data, else_actions_data)
         return if_action_data
 
@@ -224,7 +225,7 @@ class ScriptBuildFunctionCompiler(ast.NodeVisitor):
         actions_data = []
         for nde in node.body:
             actions_data.append(self.visit(nde))
-        return while_do(self.eval_node(node.test), actions_data)
+        return pymodd.actions.while_do(self.eval_node(node.test), actions_data)
 
     def visit_For(self, node: ast.For):
         actions_data = []
@@ -232,13 +233,13 @@ class ScriptBuildFunctionCompiler(ast.NodeVisitor):
             actions_data.append(self.visit(nde))
 
     def visit_Break(self, node: ast.Break):
-        return break_loop()
+        return pymodd.actions.break_loop()
 
     def visit_Continue(self, node: ast.Continue):
-        return continue_loop()
+        return pymodd.actions.continue_loop()
 
     def visit_Return(self, node: ast.Return):
-        return return_loop()
+        return pymodd.actions.return_loop()
 
     def eval_node(self, node: ast.AST):
         return eval(compile(ast.Expression(body=node), filename='<ast>', mode='eval'))
