@@ -1,9 +1,13 @@
+import ast
+import inspect
 import json
 import random
 import string
 from enum import Enum
 
 from caseconverter import camelcase, snakecase
+
+from pymodd.actions import break_loop, continue_loop, if_else, return_loop, while_do
 
 
 class Base():
@@ -168,12 +172,76 @@ class Script(File):
         return {
             'triggers': [{'type': trigger.value} for trigger in self.triggers],
             'conditions': [{'operator': '==', 'operandType': 'boolean'}, True, True],
-            'actions': self.actions,
+            'actions': ScriptBuildFunctionCompiler(self._build).actions_data,
             'name': self.name,
             'parent': self.parent,
             'key': self.key,
             'order': self.order
         }
+
+
+class ScriptBuildFunctionCompiler(ast.NodeVisitor):
+    def __init__(self, build_function) -> None:
+        self.depth = 0
+        self.actions_data = []
+        tree = ast.parse(inspect.getsource(build_function))
+        self.visit(tree)
+
+    def visit(self, node: ast.AST):
+        """Visit a node."""
+        method = 'visit_' + node.__class__.__name__
+        visitor = getattr(self, method, self.generic_visit)
+
+        if visitor == self.generic_visit:
+            return visitor(node)
+
+        if visitor in [self.visit_If, self.visit_While, self.visit_For]:
+            self.depth += 1
+            action_data = visitor(node)
+            self.depth -= 1
+        else:
+            action_data = visitor(node)
+        if self.depth == 0:
+            self.actions_data.append(action_data)
+        return action_data
+
+    def visit_Expr(self, node: ast.Expr):
+        action = self.eval_node(node.value)
+        return action
+
+    def visit_If(self, node: ast.If):
+        then_actions_data = []
+        else_actions_data = []
+        for nde in node.body:
+            then_actions_data.append(self.visit(nde))
+        for nde in node.orelse:
+            else_actions_data.append(self.visit(nde))
+        if_action_data = if_else(
+            self.eval_node(node.test), then_actions_data, else_actions_data)
+        return if_action_data
+
+    def visit_While(self, node: ast.While):
+        actions_data = []
+        for nde in node.body:
+            actions_data.append(self.visit(nde))
+        return while_do(self.eval_node(node.test), actions_data)
+
+    def visit_For(self, node: ast.For):
+        actions_data = []
+        for nde in node.body:
+            actions_data.append(self.visit(nde))
+
+    def visit_Break(self, node: ast.Break):
+        return break_loop()
+
+    def visit_Continue(self, node: ast.Continue):
+        return continue_loop()
+
+    def visit_Return(self, node: ast.Return):
+        return return_loop()
+
+    def eval_node(self, node: ast.AST):
+        return eval(compile(ast.Expression(body=node), filename='<ast>', mode='eval'))
 
 
 def script(triggers=[], name=None):
