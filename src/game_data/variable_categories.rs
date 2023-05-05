@@ -209,6 +209,7 @@ mod tests {
         pub fn new(id: &str, enum_name: &str, data_type: Option<&str>) -> Variable {
             Variable {
                 id: id.to_string(),
+                name: id.to_string(),
                 enum_name: enum_name.to_string(),
                 data_type: data_type.map(|val| val.to_string()),
             }
