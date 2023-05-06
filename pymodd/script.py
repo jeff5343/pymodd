@@ -1,3 +1,4 @@
+from _ast import AnnAssign, Assign, AugAssign, Delete
 import ast
 import inspect
 import json
@@ -5,6 +6,7 @@ import random
 import string
 import textwrap
 from enum import Enum
+from typing import Any
 
 from caseconverter import camelcase, snakecase
 
@@ -170,7 +172,6 @@ class Script(File):
         pass
 
     def to_dict(self, project_globals_data):
-        # self._build()
         return {
             'triggers': [{'type': trigger.value} for trigger in self.triggers],
             'conditions': [{'operator': '==', 'operandType': 'boolean'}, True, True],
@@ -209,6 +210,7 @@ def script(triggers=[], name=None):
 class ScriptActionsCompiler(ast.NodeVisitor):
     def __init__(self, script: Script, project_globals_data) -> None:
         self.project_globals_data = project_globals_data
+        self.depth_to_locals_data = {0: {}}
         self.depth = 0
         self.actions_data = []
         tree = ast.parse(textwrap.dedent(script.build_func_source_code))
@@ -224,7 +226,9 @@ class ScriptActionsCompiler(ast.NodeVisitor):
 
         if visitor in [self.visit_If, self.visit_While, self.visit_For]:
             self.depth += 1
+            self.depth_to_locals_data[self.depth] = {}
             action_data = visitor(node)
+            self.depth_to_locals_data[self.depth].clear()
             self.depth -= 1
         else:
             action_data = visitor(node)
@@ -254,9 +258,14 @@ class ScriptActionsCompiler(ast.NodeVisitor):
         return pymodd.actions.while_do(self.eval_node(node.test), actions_data)
 
     def visit_For(self, node: ast.For):
+        # work on this tommorow
+        if isinstance(node.target, ast.Name):
+            self.depth_to_locals_data[self.depth][node.target.id] = 5
+
         actions_data = []
         for nde in node.body:
             actions_data.append(self.visit(nde))
+        return pymodd.actions.for_all_players_in(pymodd.functions.AllPlayers(), actions_data)
 
     def visit_Break(self, node: ast.Break):
         return pymodd.actions.break_loop()
@@ -267,8 +276,40 @@ class ScriptActionsCompiler(ast.NodeVisitor):
     def visit_Return(self, node: ast.Return):
         return pymodd.actions.return_loop()
 
+    def visit_Assign(self, node: Assign):
+        for target in node.targets:
+            if isinstance(target, ast.Name):
+                self.depth_to_locals_data[self.depth][target.id] = self.eval_node(
+                    node.value)
+            elif isinstance(target, ast.Tuple):
+                for tuple_target in target.elts:
+                    self.depth_to_locals_data[self.depth][tuple_target.id] = self.eval_node(
+                        node.value)
+
+    def visit_AnnAssign(self, node: AnnAssign):
+        if isinstance(node.target, ast.Name):
+            self.depth_to_locals_data[self.depth][node.target.id] = self.eval_node(
+                node.value)
+
+    # unsure how to do for now
+    # def visit_AugAssign(self, node: AugAssign):
+    #     if isinstance(node.target, ast.Name):
+    #         self.depth_to_locals_data[self.depth][node.target.id] = self.eval_node(
+    #             node.value)
+
+    def visit_Delete(self, node: Delete):
+        for target in node.targets:
+            if isinstance(target, ast.Name):
+                self.depth_to_locals_data[self.depth].pop(target.id)
+
+    def get_current_locals_data(self):
+        locals_data = {}
+        for value in self.depth_to_locals_data.values():
+            locals_data.update(value)
+        return locals_data
+
     def eval_node(self, node: ast.AST):
-        return eval(compile(ast.Expression(body=node), filename='<ast>', mode='eval'), self.project_globals_data)
+        return eval(compile(ast.Expression(body=node), filename='<ast>', mode='eval'), self.project_globals_data, self.get_current_locals_data())
 
 
 def generate_random_key():
