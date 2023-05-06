@@ -952,7 +952,7 @@ def move_entity_to_position(entity, position, comment=None, disabled=False, run_
 def for_range(variable, start: Number, stop: Number, actions=[], comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'for',
-        'variableName': variable.name,
+        'variableName': variable.id,
         'start': to_dict(start),
         'stop': to_dict(stop),
         'actions': actions,

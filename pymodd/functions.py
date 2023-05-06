@@ -1,3 +1,4 @@
+import pymodd
 from caseconverter import camelcase
 
 from pymodd.script import Base, to_dict
@@ -1624,12 +1625,29 @@ class AttributeTypeOfAttribute(AttributeType):
 
 
 # ---------------------------------------------------------------------------- #
+#                                    Groups                                    #
+# ---------------------------------------------------------------------------- #
+
+
+class Group(Function):
+    def _get_iterating_action(self):
+        raise NotImplementedError('_get_iteration_object not implemented')
+
+    def _get_iteration_object(self):
+        raise NotImplementedError('_get_iteration_object not implemented')
+
+
+# ---------------------------------------------------------------------------- #
 #                                 Entity Groups                                #
 # ---------------------------------------------------------------------------- #
 
 
-class EntityGroup(Function):
-    pass
+class EntityGroup(Group):
+    def _get_iterating_action(self):
+        return pymodd.actions.for_all_entities_in
+
+    def _get_iteration_object(self):
+        return SelectedEntity()
 
 
 class AllEntitiesCollidingWithLastRaycast(EntityGroup):
@@ -1677,8 +1695,12 @@ class AllEntitiesBetweenTwoPositions(EntityGroup):
 # ---------------------------------------------------------------------------- #
 
 
-class UnitGroup(Function):
-    pass
+class UnitGroup(Group):
+    def _get_iterating_action(self):
+        return pymodd.actions.for_all_units_in
+
+    def _get_iteration_object(self):
+        return SelectedUnit()
 
 
 class AllUnitsOwnedByPlayer(UnitGroup):
@@ -1732,8 +1754,12 @@ class AllUnitsInRegion(UnitGroup):
 # ---------------------------------------------------------------------------- #
 
 
-class ProjectileGroup(Function):
-    pass
+class ProjectileGroup(Group):
+    def _get_iterating_action(self):
+        return pymodd.actions.for_all_projectiles_in
+
+    def _get_iteration_object(self):
+        return SelectedProjectile()
 
 
 class AllProjectilesAttachedToUnit(ProjectileGroup):
@@ -1755,8 +1781,12 @@ class AllProjectilesInTheGame(ProjectileGroup):
 # ---------------------------------------------------------------------------- #
 
 
-class ItemGroup(Function):
-    pass
+class ItemGroup(Group):
+    def _get_iterating_action(self):
+        return pymodd.actions.for_all_items_in
+
+    def _get_iteration_object(self):
+        return SelectedItem()
 
 
 class AllItemsDroppedOnGround(ItemGroup):
@@ -1792,8 +1822,12 @@ class AllItemsOwnedByUnit(ItemGroup):
 # ---------------------------------------------------------------------------- #
 
 
-class PlayerGroup(Function):
-    pass
+class PlayerGroup(Group):
+    def _get_iterating_action(self):
+        return pymodd.actions.for_all_players_in
+
+    def _get_iteration_object(self):
+        return SelectedPlayer()
 
 
 class AllHumanPlayers(PlayerGroup):
@@ -1825,8 +1859,12 @@ class AllBotPlayers(PlayerGroup):
 # ---------------------------------------------------------------------------- #
 
 
-class ItemTypeGroup(Function):
-    pass
+class ItemTypeGroup(Group):
+    def _get_iterating_action(self):
+        return pymodd.actions.for_all_item_types_in
+
+    def _get_iteration_object(self):
+        return SelectedItemType()
 
 
 class AllItemTypesInGame(ItemTypeGroup):
@@ -1840,8 +1878,12 @@ class AllItemTypesInGame(ItemTypeGroup):
 # ---------------------------------------------------------------------------- #
 
 
-class UnitTypeGroup(Function):
-    pass
+class UnitTypeGroup(Group):
+    def _get_iterating_action(self):
+        return pymodd.actions.for_all_unit_types_in
+
+    def _get_iteration_object(self):
+        return SelectedUnitType()
 
 
 class AllUnitTypesInGame(UnitTypeGroup):
@@ -1855,8 +1897,12 @@ class AllUnitTypesInGame(UnitTypeGroup):
 # ---------------------------------------------------------------------------- #
 
 
-class DebrisGroup(Function):
-    pass
+class DebrisGroup(Group):
+    def _get_iterating_action(self):
+        return pymodd.actions.for_all_debris_in
+
+    def _get_iteration_object(self):
+        return SelectedDebris()
 
 
 class AllDebrisInTheGame(DebrisGroup):
@@ -1870,8 +1916,12 @@ class AllDebrisInTheGame(DebrisGroup):
 # ---------------------------------------------------------------------------- #
 
 
-class RegionGroup(Function):
-    pass
+class RegionGroup(Group):
+    def _get_iterating_action(self):
+        return pymodd.actions.for_all_regions_in
+
+    def _get_iteration_object(self):
+        return SelectedRegion()
 
 
 class AllRegionsInTheGame(RegionGroup):
