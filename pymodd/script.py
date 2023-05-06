@@ -3,6 +3,7 @@ import inspect
 import json
 import random
 import string
+import textwrap
 from enum import Enum
 
 from caseconverter import camelcase, snakecase
@@ -16,8 +17,9 @@ class Base():
 
 
 class Game(Base):
-    def __init__(self, json_file, game_variable_classes):
-        with open(json_file, 'r') as file:
+    def __init__(self, json_file_path, game_variable_classes, project_globals_data):
+        self.project_globals_data = project_globals_data
+        with open(json_file_path, 'r') as file:
             data = json.load(file)
         self.name = data.get('title')
         self.data = data
@@ -84,7 +86,7 @@ class Game(Base):
             # add folder's scripts to the queue
             if isinstance(script, Folder):
                 scripts_queue += script.scripts
-            script_data = script.to_dict()
+            script_data = script.to_dict(self.project_globals_data)
             flattened_scripts[script_data['key']] = script_data
         return flattened_scripts
 
@@ -110,7 +112,6 @@ class EntityScripts(Game):
         # set position of scripts inside entity_scripts
         for i, script in enumerate(self.scripts):
             script.set_position(i, None)
-        print('hmm', self.entity_type.id)
 
     def to_dict(self):
         self.flatten_scripts_data(self.scripts)
@@ -163,16 +164,17 @@ class Script(File):
         self.key = Script._class_to_key[self.__class__]
         self.triggers = []
         self.actions = []
+        self.build_func_source_code = None
 
     def _build(self):
         pass
 
-    def to_dict(self):
-        self._build()
+    def to_dict(self, project_globals_data):
+        # self._build()
         return {
             'triggers': [{'type': trigger.value} for trigger in self.triggers],
             'conditions': [{'operator': '==', 'operandType': 'boolean'}, True, True],
-            'actions': ScriptBuildFunctionCompiler(self._build).actions_data,
+            'actions': ScriptActionsCompiler(self, project_globals_data).actions_data,
             'name': self.name,
             'parent': self.parent,
             'key': self.key,
@@ -180,12 +182,36 @@ class Script(File):
         }
 
 
-class ScriptBuildFunctionCompiler(ast.NodeVisitor):
-    def __init__(self, build_function) -> None:
+def script(triggers=[], name=None):
+    """
+    Args:
+        triggers (list, optional): triggers for the script. Defaults to [].
+        name (str, optional): name to override the default name of the script. Defaults to the class name of the script.
+    """
+    def wrapper_script(cls):
+        class NewScript(Script):
+            def __init__(self):
+                super().__init__()
+                self.triggers = triggers
+                if name is not None:
+                    self.name = name
+                else:
+                    self.name = snakecase(cls.__name__).replace('_', ' ')
+                self.build_func_source_code = inspect.getsource(cls._build)
+
+            def _build(self):
+                cls._build(self)
+
+        return NewScript
+    return wrapper_script
+
+
+class ScriptActionsCompiler(ast.NodeVisitor):
+    def __init__(self, script: Script, project_globals_data) -> None:
+        self.project_globals_data = project_globals_data
         self.depth = 0
         self.actions_data = []
-        print(inspect.getsource(build_function))
-        tree = ast.parse(inspect.getsource(build_function))
+        tree = ast.parse(textwrap.dedent(script.build_func_source_code))
         self.visit(tree)
 
     def visit(self, node: ast.AST):
@@ -242,30 +268,7 @@ class ScriptBuildFunctionCompiler(ast.NodeVisitor):
         return pymodd.actions.return_loop()
 
     def eval_node(self, node: ast.AST):
-        return eval(compile(ast.Expression(body=node), filename='<ast>', mode='eval'))
-
-
-def script(triggers=[], name=None):
-    """
-    Args:
-        triggers (list, optional): triggers for the script. Defaults to [].
-        name (str, optional): name to override the default name of the script. Defaults to the class name of the script.
-    """
-    def wrapper_script(cls):
-        class NewScript(Script):
-            def __init__(self):
-                super().__init__()
-                self.triggers = triggers
-                if name is not None:
-                    self.name = name
-                else:
-                    self.name = snakecase(cls.__name__).replace('_', ' ')
-
-            def _build(self):
-                cls._build(self)
-
-        return NewScript
-    return wrapper_script
+        return eval(compile(ast.Expression(body=node), filename='<ast>', mode='eval'), self.project_globals_data)
 
 
 def generate_random_key():

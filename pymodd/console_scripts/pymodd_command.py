@@ -45,7 +45,7 @@ def compile_project(_args):
 
     variable_classes = find_variable_classes_in_project_data(
         project_data)
-    game = game_classes[0]('utils/game.json', variable_classes)
+    game = game_classes[0]('utils/game.json', variable_classes, project_data)
 
     compiled_json_output_path = f'output/{game.name}.json'
     if not os.path.exists('output/'):
