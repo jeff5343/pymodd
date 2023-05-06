@@ -221,14 +221,14 @@ class ScriptActionsCompiler(ast.NodeVisitor):
         method = 'visit_' + node.__class__.__name__
         visitor = getattr(self, method, self.generic_visit)
 
-        if visitor == self.generic_visit:
+        if visitor == self.generic_visit or visitor in [self.visit_Assign, self.visit_AnnAssign, self.visit_Delete]:
             return visitor(node)
 
         if visitor in [self.visit_If, self.visit_While, self.visit_For]:
             self.depth += 1
             self.depth_to_locals_data[self.depth] = {}
             action_data = visitor(node)
-            self.depth_to_locals_data[self.depth].clear()
+            self.depth_to_locals_data.pop(self.depth)
             self.depth -= 1
         else:
             action_data = visitor(node)
@@ -241,30 +241,22 @@ class ScriptActionsCompiler(ast.NodeVisitor):
         return action
 
     def visit_If(self, node: ast.If):
-        then_actions_data = []
-        else_actions_data = []
-        for nde in node.body:
-            then_actions_data.append(self.visit(nde))
-        for nde in node.orelse:
-            else_actions_data.append(self.visit(nde))
+        then_actions_data = [self.visit(nde) for nde in node.body]
+        else_actions_data = [self.visit(nde) for nde in node.orelse]
         if_action_data = pymodd.actions.if_else(
             self.eval_node(node.test), then_actions_data, else_actions_data)
         return if_action_data
 
     def visit_While(self, node: ast.While):
-        actions_data = []
-        for nde in node.body:
-            actions_data.append(self.visit(nde))
+        actions_data = [self.visit(nde) for nde in node.body]
         return pymodd.actions.while_do(self.eval_node(node.test), actions_data)
 
     def visit_For(self, node: ast.For):
         # work on this tommorow
         if isinstance(node.target, ast.Name):
-            self.depth_to_locals_data[self.depth][node.target.id] = 5
+            self.add_local_var_to_curr_depth_locals_data(node.target.id, 5)
 
-        actions_data = []
-        for nde in node.body:
-            actions_data.append(self.visit(nde))
+        actions_data = [self.visit(nde) for nde in node.body]
         return pymodd.actions.for_all_players_in(pymodd.functions.AllPlayers(), actions_data)
 
     def visit_Break(self, node: ast.Break):
@@ -279,17 +271,17 @@ class ScriptActionsCompiler(ast.NodeVisitor):
     def visit_Assign(self, node: Assign):
         for target in node.targets:
             if isinstance(target, ast.Name):
-                self.depth_to_locals_data[self.depth][target.id] = self.eval_node(
-                    node.value)
+                self.add_local_var_to_curr_depth_locals_data(
+                    target.id, self.eval_node(node.value))
             elif isinstance(target, ast.Tuple):
                 for tuple_target in target.elts:
-                    self.depth_to_locals_data[self.depth][tuple_target.id] = self.eval_node(
-                        node.value)
+                    self.add_local_var_to_curr_depth_locals_data(
+                        tuple_target.id, self.eval_node(node.value))
 
     def visit_AnnAssign(self, node: AnnAssign):
         if isinstance(node.target, ast.Name):
-            self.depth_to_locals_data[self.depth][node.target.id] = self.eval_node(
-                node.value)
+            self.add_local_var_to_curr_depth_locals_data(
+                node.target.id, self.eval_node(node.value))
 
     # unsure how to do for now
     # def visit_AugAssign(self, node: AugAssign):
@@ -307,6 +299,9 @@ class ScriptActionsCompiler(ast.NodeVisitor):
         for value in self.depth_to_locals_data.values():
             locals_data.update(value)
         return locals_data
+
+    def add_local_var_to_curr_depth_locals_data(self, var_name, var_value):
+        self.depth_to_locals_data[self.depth][var_name] = var_value
 
     def eval_node(self, node: ast.AST):
         return eval(compile(ast.Expression(body=node), filename='<ast>', mode='eval'), self.project_globals_data, self.get_current_locals_data())
