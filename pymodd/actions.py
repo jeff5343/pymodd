@@ -879,9 +879,12 @@ def remove_unit_from_unit_group(unit, unit_group, comment=None, disabled=False, 
 
 
 @action
-def flip_sprite_of_entity(flip, entity, comment=None, disabled=False, run_on_client=False):
+def flip_sprite_of_entity(entity, flip, comment=None, disabled=False, run_on_client=False):
     '''Flip the sprite of an entity
 
+    example:
+        `flip_sprite_of_entity(LastTriggeringUnit(), Flip.HORIZONTAL)`
+    
     Args:
         entity (Entity): the entity that will be flipped
         flip (Flip): the flip direction from `Flip` enum class
