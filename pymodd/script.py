@@ -251,28 +251,39 @@ class ScriptActionsCompiler(ast.NodeVisitor):
         return pymodd.actions.while_do(self.eval_node(node.test), actions_data)
 
     def visit_For(self, node: ast.For):
-        if isinstance(node.iter, ast.Call):
-            evaled_iter = self.eval_node(node.iter)
-            # repeat action
-            if isinstance((repeat_action_data := evaled_iter), dict) and repeat_action_data.get('type') == 'repeat':
-                repeat_action_data['actions'] = [
-                    self.visit(nde) for nde in node.body]
-                return repeat_action_data
-            # for _ in all _ action
-            elif isinstance((group_function := evaled_iter), pymodd.functions.Group):
-                if isinstance(node.target, ast.Name):
-                    self.add_local_var_to_curr_depth_locals_data(
-                        node.target.id, group_function._get_iteration_object())
-                action = group_function._get_iterating_action()
-                return action(group_function, [self.visit(nde) for nde in node.body])
-            # for loop action
-            elif isinstance((range_function := evaled_iter), range):
-                for_loop_var = self.eval_code(ast.unparse(node.target))
-                if for_loop_var.data_type != pymodd.variable_types.DataType.NUMBER:
-                    raise TypeError(
-                        "iterating Variable's data type must be of DataType.Number"
-                    )
-                return pymodd.actions.for_range(for_loop_var, range_function.start, range_function.stop, [self.visit(nde) for nde in node.body])
+        evaled_iter = self.eval_node(node.iter)
+        # repeat action
+        if isinstance((repeat_action_data := evaled_iter), dict) and repeat_action_data.get('type') == 'repeat':
+            repeat_action_data['actions'] = [
+                self.visit(nde) for nde in node.body]
+            return repeat_action_data
+        # for _ in group_function action
+        elif isinstance((group_function := evaled_iter), pymodd.functions.Group):
+            if isinstance(node.target, ast.Name):
+                self.add_local_var_to_curr_depth_locals_data(
+                    node.target.id, group_function._get_iteration_object())
+            action = group_function._get_iterating_action()
+            return action(group_function, [self.visit(nde) for nde in node.body])
+        # for _ in group_variable action
+        elif isinstance((variable := evaled_iter), pymodd.variable_types.Variable):
+            if variable.data_type not in [pymodd.variable_types.DataType.ITEM_GROUP, pymodd.variable_types.DataType.UNIT_GROUP, pymodd.variable_types.DataType.PLAYER_GROUP,
+                                          pymodd.variable_types.DataType.ITEM_TYPE_GROUP, pymodd.variable_types.DataType.UNIT_TYPE_GROUP]:
+                raise TypeError(
+                    "iterating Variable's data type must be of either DataType.ITEM_GROUP, DataType.UNIT_GROUP, DataType.PLAYER_GROUP, DataType.ITEM_TYPE_GROUP, or DataType.UNIT_TYPE_GROUP"
+                )
+            if isinstance(node.target, ast.Name):
+                self.add_local_var_to_curr_depth_locals_data(
+                    node.target.id, variable._get_iteration_object())
+            action = variable._get_iterating_action()
+            return action(variable, [self.visit(nde) for nde in node.body])
+        # for loop action
+        elif isinstance((range_function := evaled_iter), range):
+            for_loop_var = self.eval_code(ast.unparse(node.target))
+            if for_loop_var.data_type != pymodd.variable_types.DataType.NUMBER:
+                raise TypeError(
+                    "iterating Variable's data type must be of DataType.Number"
+                )
+            return pymodd.actions.for_range(for_loop_var, range_function.start, range_function.stop, [self.visit(nde) for nde in node.body])
 
     def visit_Break(self, node: ast.Break):
         return pymodd.actions.break_loop()

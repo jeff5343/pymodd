@@ -1,5 +1,7 @@
 from enum import Enum
 
+import pymodd
+
 from pymodd.script import generate_random_key
 from pymodd.functions import Function
 
@@ -80,6 +82,34 @@ class Variable(VariableType):
             'dataType': f'{self.data_type.value}',
             'default': self.default_value if self.default_value is not None else None
         }
+
+    def _get_iterating_action(self):
+        '''For group data types only. Used during script compilation'''
+        if self.data_type == DataType.ITEM_GROUP:
+            return pymodd.functions.ItemGroup()._get_iterating_action()
+        elif self.data_type == DataType.UNIT_GROUP:
+            return pymodd.functions.UnitGroup()._get_iterating_action()
+        elif self.data_type == DataType.PLAYER_GROUP:
+            return pymodd.functions.PlayerGroup()._get_iterating_action()
+        elif self.data_type == DataType.ITEM_TYPE_GROUP:
+            return pymodd.functions.ItemTypeGroup()._get_iterating_action()
+        elif self.data_type == DataType.UNIT_TYPE_GROUP:
+            return pymodd.functions.UnitTypeGroup()._get_iterating_action()
+        return None
+
+    def _get_iteration_object(self):
+        '''For group data types only. Used during script compilation'''
+        if self.data_type == DataType.ITEM_GROUP:
+            return pymodd.functions.ItemGroup()._get_iteration_object()
+        elif self.data_type == DataType.UNIT_GROUP:
+            return pymodd.functions.UnitGroup()._get_iteration_object()
+        elif self.data_type == DataType.PLAYER_GROUP:
+            return pymodd.functions.PlayerGroup()._get_iteration_object()
+        elif self.data_type == DataType.ITEM_TYPE_GROUP:
+            return pymodd.functions.ItemTypeGroup()._get_iteration_object()
+        elif self.data_type == DataType.UNIT_TYPE_GROUP:
+            return pymodd.functions.UnitTypeGroup()._get_iteration_object()
+        return None
 
 
 class EntityVariable(Variable):
