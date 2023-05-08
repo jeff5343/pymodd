@@ -206,10 +206,10 @@ mod tests {
     };
 
     impl Variable {
-        pub fn new(id: &str, enum_name: &str, data_type: Option<&str>) -> Variable {
+        pub fn new(id: &str, name: &str, enum_name: &str, data_type: Option<&str>) -> Variable {
             Variable {
                 id: id.to_string(),
-                name: id.to_string(),
+                name: name.to_string(),
                 enum_name: enum_name.to_string(),
                 data_type: data_type.map(|val| val.to_string()),
             }
@@ -230,11 +230,16 @@ mod tests {
             CategoriesToVariables::new(HashMap::from([
                 (
                     "unitTypeGroups",
-                    vec![Variable::new("O23FJW2", "BANANA", Some("unitTypeGroup"))]
+                    vec![Variable::new(
+                        "O23FJW2",
+                        "banana",
+                        "BANANA",
+                        Some("unitTypeGroup")
+                    )]
                 ),
                 (
                     "regions",
-                    vec![Variable::new("WDWI313", "WATER", Some("region"))]
+                    vec![Variable::new("WDWI313", "water", "WATER", Some("region"))]
                 ),
                 ("variables", vec![]),
             ]))
@@ -242,7 +247,7 @@ mod tests {
             .unwrap(),
             (
                 "regions",
-                &Variable::new("WDWI313", "WATER", Some("region"))
+                &Variable::new("WDWI313", "water", "WATER", Some("region"))
             )
         );
     }
@@ -257,9 +262,9 @@ mod tests {
             }))
             .as_slice(),
             [
-                Variable::new("FW3513W", "APPLE", None),
-                Variable::new("O23FJW2", "BANANA", None),
-                Variable::new("WDWI313", "WATER", Some("region")),
+                Variable::new("FW3513W", "apple", "APPLE", None),
+                Variable::new("O23FJW2", "banana", "BANANA", None),
+                Variable::new("WDWI313", "water", "WATER", Some("region")),
             ]
         );
     }
@@ -268,15 +273,15 @@ mod tests {
     fn ensure_no_duplicated_enum_names() {
         assert_eq!(
             resolve_duplicate_variable_enum_names(vec![
-                Variable::new("FW3513W", "APPLE", None),
-                Variable::new("O23FJW2", "APPLE", None),
-                Variable::new("WDWI313", "APPLE", None),
+                Variable::new("FW3513W", "apple", "APPLE", None),
+                Variable::new("O23FJW2", "apple", "APPLE", None),
+                Variable::new("WDWI313", "apple", "APPLE", None),
             ])
             .as_slice(),
             [
-                Variable::new("FW3513W", "APPLE", None),
-                Variable::new("O23FJW2", "APPLE_1", None),
-                Variable::new("WDWI313", "APPLE_2", None),
+                Variable::new("FW3513W", "apple", "APPLE", None),
+                Variable::new("O23FJW2", "apple", "APPLE_1", None),
+                Variable::new("WDWI313", "apple", "APPLE_2", None),
             ]
         );
     }
@@ -292,15 +297,25 @@ mod tests {
             HashMap::from([
                 (
                     "itemTypeGroups",
-                    vec![Variable::new("FW3513W", "APPLE", Some("itemTypeGroup"))]
+                    vec![Variable::new(
+                        "FW3513W",
+                        "apple",
+                        "APPLE",
+                        Some("itemTypeGroup")
+                    )]
                 ),
                 (
                     "unitTypeGroups",
-                    vec![Variable::new("O23FJW2", "BANANA", Some("unitTypeGroup"))]
+                    vec![Variable::new(
+                        "O23FJW2",
+                        "banana",
+                        "BANANA",
+                        Some("unitTypeGroup")
+                    )]
                 ),
                 (
                     "regions",
-                    vec![Variable::new("WDWI313", "WATER", Some("region"))]
+                    vec![Variable::new("WDWI313", "water", "WATER", Some("region"))]
                 ),
                 ("variables", vec![]),
             ])

@@ -71,10 +71,13 @@ fn generate_actions_to_pymodd_structure_map() -> HashMap<String, PymoddStructure
         .skip(3)
         .collect();
     action_functions.into_iter().for_each(|function_content| {
-        actions_to_structure.insert(
-            parse_action_name_of_pymodd_action_function(&function_content),
-            parse_pymodd_structure_of_pymodd_action_function(&function_content),
-        );
+        // skip over divider comments
+        if !function_content.starts_with("# ------") {
+            actions_to_structure.insert(
+                parse_action_name_of_pymodd_action_function(&function_content),
+                parse_pymodd_structure_of_pymodd_action_function(&function_content),
+            );
+        }
     });
     actions_to_structure
 }

@@ -127,14 +127,14 @@ mod tests {
             build_class_content_of_category(
                 "itemTypes",
                 &vec![
-                    Variable::new("FW3513W", "APPLE", None),
-                    Variable::new("OE51DW2", "BANANA", None)
+                    Variable::new("FW3513W", "apple", "APPLE", None),
+                    Variable::new("OE51DW2", "banana", "BANANA", None)
                 ],
             ),
             String::from(
                 "class ItemTypes:\
-                    \n\tAPPLE = ItemType(\"FW3513W\")\
-                    \n\tBANANA = ItemType(\"OE51DW2\")"
+                    \n\tAPPLE = ItemType('FW3513W', name='apple')\
+                    \n\tBANANA = ItemType('OE51DW2', name='banana')"
             )
         );
     }

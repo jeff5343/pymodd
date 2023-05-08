@@ -358,7 +358,7 @@ mod tests {
             ScriptsContentBuilder::new(
                 &CategoriesToVariables::new(HashMap::from([(
                     "shops",
-                    vec![Variable::new("OJbEQyc7is", "WEAPONS", None)]
+                    vec![Variable::new("OJbEQyc7is", "weapons", "WEAPONS", None)]
                 )])),
                 &Directory::new("root", "null", Vec::new())
             )
