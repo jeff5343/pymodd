@@ -1,15 +1,16 @@
-from _ast import AnnAssign, Assign, AugAssign, Delete
 import ast
 import inspect
 import json
 import random
 import string
 import textwrap
+from _ast import AnnAssign, Assign, AugAssign, Delete
 from enum import Enum
 
 from caseconverter import camelcase, snakecase
 
 import pymodd
+from pymodd import _pymodd_helper
 
 
 class Base():
@@ -166,15 +167,30 @@ class Script(File):
         self.triggers = []
         self.actions = []
         self.build_func_source_code = None
+        self.build_func_source_starting_line_num = None
+        self.build_func_source_file = None
 
     def _build(self):
         pass
 
     def to_dict(self, project_globals_data):
+        script_actions_compiler = ScriptActionsCompiler(project_globals_data)
+        actions_data = None
+        try:
+            actions_data = script_actions_compiler.compile(self).actions_data
+        except ScriptActionsCompileError as compile_error:
+            print()
+            _pymodd_helper.log_error('Compile error!\n')
+            print(f''' File "{self.build_func_source_file}", line {self.build_func_source_starting_line_num + compile_error.error_line_num - 1}''',
+                  f'   {compile_error.error_line_code}\n',
+                  f'{type(compile_error.error).__name__}: {compile_error.error}\n',
+                  sep='\n')
+            import sys
+            sys.exit(1)
         return {
             'triggers': [{'type': trigger.value} for trigger in self.triggers],
             'conditions': [{'operator': '==', 'operandType': 'boolean'}, True, True],
-            'actions': ScriptActionsCompiler(self, project_globals_data).actions_data,
+            'actions': actions_data,
             'name': self.name,
             'parent': self.parent,
             'key': self.key,
@@ -197,7 +213,10 @@ def script(triggers=[], name=None):
                     self.name = name
                 else:
                     self.name = snakecase(cls.__name__).replace('_', ' ')
-                self.build_func_source_code = inspect.getsource(cls._build)
+                sourcelines = inspect.getsourcelines(cls._build)
+                self.build_func_source_code = ''.join(sourcelines[0])
+                self.build_func_source_starting_line_num = sourcelines[1]
+                self.build_func_source_file = inspect.getsourcefile(cls._build)
 
             def _build(self):
                 cls._build(self)
@@ -206,11 +225,27 @@ def script(triggers=[], name=None):
     return wrapper_script
 
 
+class ScriptActionsCompileError(Exception):
+    """Exception raised for errors while compiling script actions"""
+
+    def __init__(self, error_line_num, error_line_code, error) -> None:
+        self.error_line_num = error_line_num
+        self.error_line_code = error_line_code
+        self.error = error
+        # handle recursive errors
+        if isinstance(error, ScriptActionsCompileError):
+            self.error_line_num = error.error_line_num
+            self.error_line_code = error.error_line_code
+            self.error = error.error
+
+
 class ScriptActionsCompiler(ast.NodeVisitor):
-    def __init__(self, script: Script, project_globals_data) -> None:
+    def __init__(self, project_globals_data):
         self.project_globals_data = project_globals_data
-        self.depth_to_locals_data = {0: {}}
+
+    def compile(self, script: Script):
         self.depth = 0
+        self.depth_to_locals_data = {0: {}}
         self.actions_data = []
         tree = ast.parse(textwrap.dedent(script.build_func_source_code))
         self.visit(tree)
@@ -220,20 +255,27 @@ class ScriptActionsCompiler(ast.NodeVisitor):
         method = 'visit_' + node.__class__.__name__
         visitor = getattr(self, method, self.generic_visit)
 
-        if visitor == self.generic_visit or visitor in [self.visit_Assign, self.visit_AnnAssign, self.visit_Delete]:
-            return visitor(node)
+        try:
+            if visitor == self.generic_visit or visitor in [self.visit_Assign, self.visit_AnnAssign, self.visit_Delete]:
+                return visitor(node)
 
-        if visitor in [self.visit_If, self.visit_While, self.visit_For]:
-            self.depth += 1
-            self.depth_to_locals_data[self.depth] = {}
-            action_data = visitor(node)
-            self.depth_to_locals_data.pop(self.depth)
-            self.depth -= 1
-        else:
-            action_data = visitor(node)
-        if self.depth == 0:
-            self.actions_data.append(action_data)
-        return action_data
+            if visitor in [self.visit_If, self.visit_While, self.visit_For]:
+                self.depth += 1
+                self.depth_to_locals_data[self.depth] = {}
+                action_data = visitor(node)
+                self.depth_to_locals_data.pop(self.depth)
+                self.depth -= 1
+            else:
+                action_data = visitor(node)
+            if self.depth == 0:
+                self.actions_data.append(action_data)
+            return action_data
+        except Exception as error:
+            raise ScriptActionsCompileError(
+                node.lineno if 'lineno' in node._attributes else 1,
+                ast.unparse(node).splitlines()[0],
+                error
+            )
 
     def visit_Expr(self, node: ast.Expr):
         action = self.eval_node(node.value)
@@ -269,7 +311,7 @@ class ScriptActionsCompiler(ast.NodeVisitor):
             if variable.data_type not in [pymodd.variable_types.DataType.ITEM_GROUP, pymodd.variable_types.DataType.UNIT_GROUP, pymodd.variable_types.DataType.PLAYER_GROUP,
                                           pymodd.variable_types.DataType.ITEM_TYPE_GROUP, pymodd.variable_types.DataType.UNIT_TYPE_GROUP]:
                 raise TypeError(
-                    "iterating Variable's data type must be of either DataType.ITEM_GROUP, DataType.UNIT_GROUP, DataType.PLAYER_GROUP, DataType.ITEM_TYPE_GROUP, or DataType.UNIT_TYPE_GROUP"
+                    f"iterating Variable's data type must be DataType.ITEM_GROUP, UNIT_GROUP, PLAYER_GROUP, ITEM_TYPE_GROUP, or UNIT_TYPE_GROUP. currently set to DataType.{variable.data_type.name}"
                 )
             if isinstance(node.target, ast.Name):
                 self.add_local_var_to_curr_depth_locals_data(
@@ -281,7 +323,7 @@ class ScriptActionsCompiler(ast.NodeVisitor):
             for_loop_var = self.eval_code(ast.unparse(node.target))
             if for_loop_var.data_type != pymodd.variable_types.DataType.NUMBER:
                 raise TypeError(
-                    "iterating Variable's data type must be of DataType.Number"
+                    f"iteration Variable's data type must be DataType.NUMBER. currently set to DataType.{for_loop_var.data_type.name}"
                 )
             return pymodd.actions.for_range(for_loop_var, range_function.start, range_function.stop, [self.visit(nde) for nde in node.body])
 
@@ -308,12 +350,6 @@ class ScriptActionsCompiler(ast.NodeVisitor):
         if isinstance(node.target, ast.Name):
             self.add_local_var_to_curr_depth_locals_data(
                 node.target.id, self.eval_node(node.value))
-
-    # unsure how to do for now
-    # def visit_AugAssign(self, node: AugAssign):
-    #     if isinstance(node.target, ast.Name):
-    #         self.depth_to_locals_data[self.depth][node.target.id] = self.eval_node(
-    #             node.value)
 
     def visit_Delete(self, node: Delete):
         for target in node.targets:
