@@ -680,7 +680,7 @@ class AttributeMaxOfPlayer(Number):
         }
 
 
-class PlayerAttribute(Number):
+class ValueOfPlayerAttribute(Number):
     def __init__(self, attribute, entity):
         self.function = 'getPlayerAttribute'
         self.options = {
@@ -914,7 +914,7 @@ class AbsoluteValueOfNumber(Number):
         }
 
 
-class EntityAttribute(Number):
+class ValueOfEntityAttribute(Number):
     def __init__(self, attribute, entity):
         self.function = 'getEntityAttribute'
         self.options = {
