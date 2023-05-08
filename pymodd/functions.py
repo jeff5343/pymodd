@@ -116,7 +116,9 @@ class Condition(Function):
 
         Args:
             item_a (Base): any object
+
             operator (str): can be regular comparisons (==, !=, >=, ...) or 'AND' and 'OR'
+
             item_b (Base): any object
         """
 

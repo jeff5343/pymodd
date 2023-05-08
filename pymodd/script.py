@@ -202,6 +202,7 @@ def script(triggers=[], name=None):
     """
     Args:
         triggers (list, optional): triggers for the script. Defaults to [].
+
         name (str, optional): name to override the default name of the script. Defaults to the class name of the script.
     """
     def wrapper_script(cls):

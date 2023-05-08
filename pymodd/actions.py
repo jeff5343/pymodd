@@ -887,6 +887,7 @@ def flip_sprite_of_entity(entity, flip, comment=None, disabled=False, run_on_cli
     
     Args:
         entity (Entity): the entity that will be flipped
+
         flip (Flip): the flip direction from `Flip` enum class
     '''
     return {
