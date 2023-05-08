@@ -177,7 +177,7 @@ class Script(File):
         script_actions_compiler = ScriptActionsCompiler(project_globals_data)
         actions_data = None
         try:
-            actions_data = script_actions_compiler.compile(self).actions_data
+            actions_data = script_actions_compiler.compile_script(self)
         except ScriptActionsCompileError as compile_error:
             print()
             _pymodd_helper.log_error('Compile error!\n')
@@ -245,12 +245,13 @@ class ScriptActionsCompiler(ast.NodeVisitor):
     def __init__(self, project_globals_data):
         self.project_globals_data = project_globals_data
 
-    def compile(self, script: Script):
+    def compile_script(self, script: Script):
         self.depth = 0
         self.depth_to_locals_data = {0: {}}
         self.actions_data = []
         tree = ast.parse(textwrap.dedent(script.build_func_source_code))
         self.visit(tree)
+        return self.actions_data
 
     def visit(self, node: ast.AST):
         '''Visit a node.'''
