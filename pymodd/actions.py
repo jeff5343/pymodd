@@ -30,16 +30,6 @@ def parse_optional_arguments_into_dictionary(comment, disabled, run_on_client):
 
 
 @action
-def if_else(condition: Condition, then_actions=[], else_actions=[], comment=None, disabled=False, run_on_client=False):
-    return {
-        'type': 'condition',
-        'conditions': to_dict(condition),
-        'then': then_actions,
-        'else': else_actions,
-    }
-
-
-@action
 def set_player_variable(variable_type, player, value, comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'setPlayerVariable',
@@ -307,15 +297,6 @@ def move_debris_to_position(entity, position, comment=None, disabled=False, run_
 
 
 @action
-def for_all_items_in(item_group, actions=[], comment=None, disabled=False, run_on_client=False):
-    return {
-        'type': 'forAllItems',
-        'itemGroup': to_dict(item_group),
-        'actions': actions,
-    }
-
-
-@action
 def remove_player_from_player_group(player, player_group, comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'removePlayerFromPlayerGroup',
@@ -579,15 +560,6 @@ def attach_debris_to_unit(debris, unit, comment=None, disabled=False, run_on_cli
 
 
 @action
-def repeat(count: Number, actions=[], comment=None, disabled=False, run_on_client=False):
-    return {
-        'type': 'repeat',
-        'count': to_dict(count),
-        'actions': actions,
-    }
-
-
-@action
 def stop_music_for_everyone(comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'stopMusic',
@@ -658,15 +630,6 @@ def start_accepting_players(comment=None, disabled=False, run_on_client=False):
 
 
 @action
-def for_all_entities_in(entity_group, actions=[], comment=None, disabled=False, run_on_client=False):
-    return {
-        'type': 'forAllEntities',
-        'entityGroup': to_dict(entity_group),
-        'actions': actions,
-    }
-
-
-@action
 def make_player_select_unit(player, unit, comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'makePlayerSelectUnit',
@@ -682,15 +645,6 @@ def set_entity_attribute(attribute, entity, value: Number, comment=None, disable
         'attribute': to_dict(attribute),
         'entity': to_dict(entity),
         'value': to_dict(value),
-    }
-
-
-@action
-def for_all_item_types_in(item_type_group, actions=[], comment=None, disabled=False, run_on_client=False):
-    return {
-        'type': 'forAllItemTypes',
-        'itemTypeGroup': to_dict(item_type_group),
-        'actions': actions,
     }
 
 
@@ -720,24 +674,6 @@ def update_ui_text_for_everyone(target, value: String, comment=None, disabled=Fa
         'type': 'updateUiTextForEveryone',
         'target': to_dict(target),
         'value': to_dict(value),
-    }
-
-
-@action
-def for_all_units_in(unit_group, actions=[], comment=None, disabled=False, run_on_client=False):
-    return {
-        'type': 'forAllUnits',
-        'unitGroup': to_dict(unit_group),
-        'actions': actions,
-    }
-
-
-@action
-def for_all_projectiles_in(projectile_group, actions=[], comment=None, disabled=False, run_on_client=False):
-    return {
-        'type': 'forAllProjectiles',
-        'projectileGroup': to_dict(projectile_group),
-        'actions': actions,
     }
 
 
@@ -797,15 +733,6 @@ def change_scale_of_entity_body(scale: Number, entity, comment=None, disabled=Fa
 
 
 @action
-def for_all_regions_in(region_group, actions=[], comment=None, disabled=False, run_on_client=False):
-    return {
-        'type': 'forAllRegions',
-        'regionGroup': to_dict(region_group),
-        'actions': actions,
-    }
-
-
-@action
 def rotate_entity_loss_tolerant_to_radians(entity, radians: Number, comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'rotateEntityToRadiansLT',
@@ -835,15 +762,6 @@ def set_player_attribute_regeneration_rate(attribute_type, player, number: Numbe
 
 
 @action
-def for_all_unit_types_in(unit_type_group, actions=[], comment=None, disabled=False, run_on_client=False):
-    return {
-        'type': 'forAllUnitTypes',
-        'unitTypeGroup': to_dict(unit_type_group),
-        'actions': actions,
-    }
-
-
-@action
 def decrease_variable_by_number(variable, number: Number, comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'decreaseVariableByNumber',
@@ -857,15 +775,6 @@ def kick_player(entity, comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'kickPlayer',
         'entity': to_dict(entity),
-    }
-
-
-@action
-def for_all_players_in(player_group, actions=[], comment=None, disabled=False, run_on_client=False):
-    return {
-        'type': 'forAllPlayers',
-        'playerGroup': to_dict(player_group),
-        'actions': actions,
     }
 
 
@@ -884,7 +793,7 @@ def flip_sprite_of_entity(entity, flip, comment=None, disabled=False, run_on_cli
 
     example:
         `flip_sprite_of_entity(LastTriggeringUnit(), Flip.HORIZONTAL)`
-    
+
     Args:
         entity (Entity): the entity that will be flipped
 
@@ -950,17 +859,6 @@ def move_entity_to_position(entity, position, comment=None, disabled=False, run_
 
 
 @action
-def for_range(variable, start: Number, stop: Number, actions=[], comment=None, disabled=False, run_on_client=False):
-    return {
-        'type': 'for',
-        'variableName': variable.id,
-        'start': to_dict(start),
-        'stop': to_dict(stop),
-        'actions': actions,
-    }
-
-
-@action
 def show_menu_to_player_and_select_best_server(player, comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'showMenuAndSelectBestServer',
@@ -1015,15 +913,6 @@ def change_unit_type_of_entity(unit_type, entity, comment=None, disabled=False, 
         'type': 'changeUnitType',
         'entity': to_dict(entity),
         'unitType': to_dict(unit_type),
-    }
-
-
-@action
-def for_all_debris_in(debris_group, actions=[], comment=None, disabled=False, run_on_client=False):
-    return {
-        'type': 'forAllDebris',
-        'debrisGroup': to_dict(debris_group),
-        'actions': actions,
     }
 
 
@@ -1616,4 +1505,192 @@ def command_ai_to_idle(unit, comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'aiGoIdle',
         'unit': to_dict(unit),
+    }
+
+
+# ---------------------------------------------------------------------------- #
+#                              Deprecated Actions                              #
+# ---------------------------------------------------------------------------- #
+
+
+@action
+def if_else(condition: Condition, then_actions=[], else_actions=[], comment=None, disabled=False, run_on_client=False):
+    '''Deprecated, use a python if statement instead:
+    ```
+    if NumberOfPlayers() > 10 & Variables.TIMER <= 0:
+        ...
+    ```
+    '''
+    return {
+        'type': 'condition',
+        'conditions': to_dict(condition),
+        'then': then_actions,
+        'else': else_actions,
+    }
+
+
+@action
+def repeat(count: Number, actions=[], comment=None, disabled=False, run_on_client=False):
+    '''Deprecated, use a python for loop instead:
+    ```
+    for _ in repeat(5):
+        ...
+    ```
+    '''
+    return {
+        'type': 'repeat',
+        'count': to_dict(count),
+        'actions': actions,
+    }
+
+
+@action
+def for_range(variable, start: Number, stop: Number, actions=[], comment=None, disabled=False, run_on_client=False):
+    '''Deprecated, use a python for loop instead:
+    ```
+    for Variables.I in range(5):
+        ...
+    ```
+    '''
+    return {
+        'type': 'for',
+        'variableName': variable.id,
+        'start': to_dict(start),
+        'stop': to_dict(stop),
+        'actions': actions,
+    }
+
+
+@action
+def for_all_entities_in(entity_group, actions=[], comment=None, disabled=False, run_on_client=False):
+    '''Deprecated, use a python for loop instead:
+    ```
+    for entity in AllEntitiesInTheGame()
+        ...
+    ```
+    '''
+    return {
+        'type': 'forAllEntities',
+        'entityGroup': to_dict(entity_group),
+        'actions': actions,
+    }
+
+
+@action
+def for_all_projectiles_in(projectile_group, actions=[], comment=None, disabled=False, run_on_client=False):
+    '''Deprecated, use a python for loop instead:
+    ```
+    for projectile in AllProjectilesInTheGame()
+        ...
+    ```
+    '''
+    return {
+        'type': 'forAllProjectiles',
+        'projectileGroup': to_dict(projectile_group),
+        'actions': actions,
+    }
+
+
+@action
+def for_all_items_in(item_group, actions=[], comment=None, disabled=False, run_on_client=False):
+    '''Deprecated, use a python for loop instead:
+    ```
+    for items in AllItemsInTheGame()
+        ...
+    ```
+    '''
+    return {
+        'type': 'forAllItems',
+        'itemGroup': to_dict(item_group),
+        'actions': actions,
+    }
+
+
+@action
+def for_all_units_in(unit_group, actions=[], comment=None, disabled=False, run_on_client=False):
+    '''Deprecated, use a python for loop instead:
+    ```
+    for unit in AllUnitsInTheGame()
+        ...
+    ```
+    '''
+    return {
+        'type': 'forAllUnits',
+        'unitGroup': to_dict(unit_group),
+        'actions': actions,
+    }
+
+
+@action
+def for_all_players_in(player_group, actions=[], comment=None, disabled=False, run_on_client=False):
+    '''Deprecated, use a python for loop instead:
+    ```
+    for player in AllPlayersInTheGame()
+        ...
+    ```
+    '''
+    return {
+        'type': 'forAllPlayers',
+        'playerGroup': to_dict(player_group),
+        'actions': actions,
+    }
+
+
+@action
+def for_all_item_types_in(item_type_group, actions=[], comment=None, disabled=False, run_on_client=False):
+    '''Deprecated, use a python for loop instead:
+    ```
+    for item_type in AllItemTypesInTheGame()
+        ...
+    ```
+    '''
+    return {
+        'type': 'forAllItemTypes',
+        'itemTypeGroup': to_dict(item_type_group),
+        'actions': actions,
+    }
+
+
+@action
+def for_all_unit_types_in(unit_type_group, actions=[], comment=None, disabled=False, run_on_client=False):
+    '''Deprecated, use a python for loop instead:
+    ```
+    for unit_type in AllUnitTypesInTheGame()
+        ...
+    ```
+    '''
+    return {
+        'type': 'forAllUnitTypes',
+        'unitTypeGroup': to_dict(unit_type_group),
+        'actions': actions,
+    }
+
+
+@action
+def for_all_regions_in(region_group, actions=[], comment=None, disabled=False, run_on_client=False):
+    '''Deprecated, use a python for loop instead:
+    ```
+    for region in AllRegionsInTheGame()
+        ...
+    ```
+    '''
+    return {
+        'type': 'forAllRegions',
+        'regionGroup': to_dict(region_group),
+        'actions': actions,
+    }
+
+
+@action
+def for_all_debris_in(debris_group, actions=[], comment=None, disabled=False, run_on_client=False):
+    '''Deprecated, use a python for loop instead:
+    ```
+    for debris in AllDebrisInTheGame()
+        ...
+    ```
+    '''
+    return {
+        'type': 'forAllDebris',
+        'debrisGroup': to_dict(debris_group),
+        'actions': actions,
     }

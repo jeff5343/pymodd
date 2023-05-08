@@ -76,11 +76,11 @@ class Game(Base):
         return self.data
 
     def flatten_scripts_data(self, scripts):
-        """Takes all scripts out of folders, transforms them into json, and put them all into one dictionary with the rest of the game's scripts
+        '''Takes all scripts out of folders, transforms them into json, and put them all into one dictionary with the rest of the game's scripts
 
         Returns:
             dict: keys are the script's key, values are the script's data
-        """
+        '''
         flattened_scripts = {}
         scripts_queue = scripts.copy()
         while len(scripts_queue) > 0:
@@ -199,12 +199,13 @@ class Script(File):
 
 
 def script(triggers=[], name=None):
-    """
+    '''turn a class into a script
+
     Args:
         triggers (list, optional): triggers for the script. Defaults to [].
 
         name (str, optional): name to override the default name of the script. Defaults to the class name of the script.
-    """
+    '''
     def wrapper_script(cls):
         class NewScript(Script):
             def __init__(self):
@@ -227,7 +228,7 @@ def script(triggers=[], name=None):
 
 
 class ScriptActionsCompileError(Exception):
-    """Exception raised for errors while compiling script actions"""
+    '''Exception raised for errors while compiling script actions'''
 
     def __init__(self, error_line_num, error_line_code, error) -> None:
         self.error_line_num = error_line_num
@@ -252,7 +253,7 @@ class ScriptActionsCompiler(ast.NodeVisitor):
         self.visit(tree)
 
     def visit(self, node: ast.AST):
-        """Visit a node."""
+        '''Visit a node.'''
         method = 'visit_' + node.__class__.__name__
         visitor = getattr(self, method, self.generic_visit)
 
