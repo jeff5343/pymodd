@@ -112,7 +112,7 @@ def type_of_item(item):
 
 class Condition(Function):
     def __init__(self, item_a: Base, operator: str, item_b: Base):
-        """The comparison type of the condition is determined based on the type of item_a
+        '''The comparison type of the condition is determined based on the type of item_a
 
         Args:
             item_a (Base): any object
@@ -120,7 +120,7 @@ class Condition(Function):
             operator (str): can be regular comparisons (==, !=, >=, ...) or 'AND' and 'OR'
 
             item_b (Base): any object
-        """
+        '''
 
         self.item_a = item_a
         self.operator = operator.upper()
@@ -954,7 +954,7 @@ class QuantityOfItemTypeInItemTypeGroup(Number):
         }
 
 
-class NumberOfItemsPresent(Number):
+class NumberOfItems(Number):
     def __init__(self):
         self.function = 'getNumberOfItemsPresent'
         self.options = {}
@@ -1172,7 +1172,7 @@ class ReplaceValuesInString(String):
 
 class UnixTimeToFormattedString(String):
     def __init__(self, seconds):
-        """formats to (hh::mm:ss)"""
+        '''formats to (hh::mm:ss)'''
         self.function = 'getTimeString'
         self.options = {
             'seconds': to_dict(seconds),
@@ -1658,7 +1658,7 @@ class AllEntitiesCollidingWithLastRaycast(EntityGroup):
         self.options = {}
 
 
-class AllEntitesInTheGame(EntityGroup):
+class AllEntitiesInTheGame(EntityGroup):
     def __init__(self):
         self.function = 'allEntities'
         self.options = {}
@@ -1832,25 +1832,25 @@ class PlayerGroup(Group):
         return SelectedPlayer()
 
 
-class AllHumanPlayers(PlayerGroup):
+class AllHumanPlayersInTheGame(PlayerGroup):
     def __init__(self):
         self.function = 'humanPlayers'
         self.options = {}
 
 
-class AllComputerPlayers(PlayerGroup):
+class AllComputerPlayersInTheGame(PlayerGroup):
     def __init__(self):
         self.function = 'computerPlayers'
         self.options = {}
 
 
-class AllPlayers(PlayerGroup):
+class AllPlayersInTheGame(PlayerGroup):
     def __init__(self):
         self.function = 'allPlayers'
         self.options = {}
 
 
-class AllBotPlayers(PlayerGroup):
+class AllBotPlayersInTheGame(PlayerGroup):
     def __init__(self):
         self.function = 'botPlayers'
         self.options = {}
@@ -1869,7 +1869,7 @@ class ItemTypeGroup(Group):
         return SelectedItemType()
 
 
-class AllItemTypesInGame(ItemTypeGroup):
+class AllItemTypesInTheGame(ItemTypeGroup):
     def __init__(self):
         self.function = 'allItemTypesInGame'
         self.options = {}
@@ -1888,7 +1888,7 @@ class UnitTypeGroup(Group):
         return SelectedUnitType()
 
 
-class AllUnitTypesInGame(UnitTypeGroup):
+class AllUnitTypesInTheGame(UnitTypeGroup):
     def __init__(self):
         self.function = 'allUnitTypesInGame'
         self.options = {}
