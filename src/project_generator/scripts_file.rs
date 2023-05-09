@@ -116,7 +116,7 @@ impl<'a> ScriptsContentBuilder<'a> {
         match action.name.as_str() {
             "comment" => {
                 format!(
-                    "{}({}{}),\n",
+                    "{}({}{})\n",
                     action.pymodd_class_name(),
                     // set argument manually for comments
                     surround_string_with_quotes(
@@ -148,7 +148,7 @@ impl<'a> ScriptsContentBuilder<'a> {
                     })
                     .collect::<String>(),
             )
-            .add("),\n"),
+            .add(")\n"),
         }
     }
 
@@ -381,7 +381,7 @@ mod tests {
                 .as_array()
                 .unwrap()
             )),
-            "open_shop_for_player(Shops.WEAPONS, OwnerOfEntity(LastCastingUnit())),\n"
+            "open_shop_for_player(Shops.WEAPONS, OwnerOfEntity(LastCastingUnit()))\n"
         )
     }
 
@@ -407,7 +407,7 @@ mod tests {
                 .as_array()
                 .unwrap()
             )),
-            "use_item_continuously_until_stopped(LastTriggeringItem(), comment='hi!', disabled=True, run_on_client=True),\n"
+            "use_item_continuously_until_stopped(LastTriggeringItem(), comment='hi!', disabled=True, run_on_client=True)\n"
         )
     }
 
@@ -430,7 +430,7 @@ mod tests {
                 .as_array()
                 .unwrap()
             )),
-            "return_loop(comment='hi!', run_on_client=True),\n"
+            "return_loop(comment='hi!', run_on_client=True)\n"
         )
     }
 
@@ -452,7 +452,7 @@ mod tests {
                 .as_array()
                 .unwrap()
             )),
-            "update_ui_text_for_everyone(UiTarget.TOP, 'Hello!'),\n"
+            "update_ui_text_for_everyone(UiTarget.TOP, 'Hello!')\n"
         )
     }
 
@@ -473,7 +473,7 @@ mod tests {
                 .as_array()
                 .unwrap()
             )),
-            "comment('hey there'),\n"
+            "comment('hey there')\n"
         );
     }
 
@@ -507,7 +507,7 @@ mod tests {
                     .as_array()
                     .unwrap()
                 )),
-            "increase_variable_by_number(None, RandomNumberBetween(0, 5) * ((CurrentUnixTimeStamp() ** 2) + 3)),\n"
+            "increase_variable_by_number(None, RandomNumberBetween(0, 5) * ((CurrentUnixTimeStamp() ** 2) + 3))\n"
         );
     }
 
@@ -541,7 +541,7 @@ mod tests {
                     .as_array()
                     .unwrap()
                 )),
-            "send_chat_message_to_everyone('hi ' + IdOfPlayer(LastTriggeringPlayer()) + ' player!'),\n"
+            "send_chat_message_to_everyone('hi ' + IdOfPlayer(LastTriggeringPlayer()) + ' player!')\n"
         );
     }
 
@@ -591,21 +591,10 @@ mod tests {
                 .unwrap(),
             ))
             .as_str(),
-            "if_else((True == True), [\n\
-                \tif_else((True == True), [\n\
-    		        \t\tif_else((True == True), [\n\
-		                \t\t\t\n\
-		            \t\t], [\n\
-		                \t\t\t\n\
-		            \t\t]),\n\
-                    \t\t\n\
-                \t], [\n\
-                    \t\t\n\
-                \t]),\n\
-                \t\n\
-            ], [\n\
-                \t\n\
-            ]),\n"
+            "if True == True:\n\
+                \tif True == True:\n\
+    		        \t\tif True == True:\n\
+		                \t\t\tpass\n"
         )
     }
 
@@ -641,11 +630,8 @@ mod tests {
                     .unwrap(),
                 ))
                 .as_str(),
-            "if_else(((NumberOfUnitsOfUnitType('oTDQ3jlcMa') == 5) & (True == True)), [\n\
-                \t\n\
-            ], [\n\
-                \t\n\
-            ]),\n"
+            "if (NumberOfUnitsOfUnitType('oTDQ3jlcMa') == 5) & (True == True):\n\
+                \tpass\n"
         );
     }
 
@@ -680,7 +666,7 @@ mod tests {
                 .unwrap(),
             ))
             .as_str(),
-            "run_script(SpawnBoss()),\n"
+            "run_script(SpawnBoss())\n"
         )
     }
 }
