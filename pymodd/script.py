@@ -285,22 +285,22 @@ class ScriptActionsCompiler(ast.NodeVisitor):
         return action
 
     def visit_If(self, node: ast.If):
-        then_actions_data = [self.visit(nde) for nde in node.body]
-        else_actions_data = [self.visit(nde) for nde in node.orelse]
+        then_actions_data = self.parse_actions_of_node_body(node.body)
+        else_actions_data = self.parse_actions_of_node_body(node.orelse)
         if_action_data = pymodd.actions.if_else(
             self.eval_node(node.test), then_actions_data, else_actions_data)
         return if_action_data
 
     def visit_While(self, node: ast.While):
-        actions_data = [self.visit(nde) for nde in node.body]
+        actions_data = self.parse_actions_of_node_body(node.body)
         return pymodd.actions.while_do(self.eval_node(node.test), actions_data)
 
     def visit_For(self, node: ast.For):
         evaled_iter = self.eval_node(node.iter)
         # repeat action
         if isinstance((repeat_action_data := evaled_iter), dict) and repeat_action_data.get('type') == 'repeat':
-            repeat_action_data['actions'] = [
-                self.visit(nde) for nde in node.body]
+            repeat_action_data['actions'] = self.parse_actions_of_node_body(
+                node.body)
             return repeat_action_data
         # for _ in group_function action
         elif isinstance((group_function := evaled_iter), pymodd.functions.Group):
@@ -308,7 +308,7 @@ class ScriptActionsCompiler(ast.NodeVisitor):
                 self.add_local_var_to_curr_depth_locals_data(
                     node.target.id, group_function._get_iteration_object())
             action = group_function._get_iterating_action()
-            return action(group_function, [self.visit(nde) for nde in node.body])
+            return action(group_function, self.parse_actions_of_node_body(node.body))
         # for _ in group_variable action
         elif isinstance((variable := evaled_iter), pymodd.variable_types.Variable):
             if variable.data_type not in [pymodd.variable_types.DataType.ITEM_GROUP, pymodd.variable_types.DataType.UNIT_GROUP, pymodd.variable_types.DataType.PLAYER_GROUP,
@@ -320,7 +320,7 @@ class ScriptActionsCompiler(ast.NodeVisitor):
                 self.add_local_var_to_curr_depth_locals_data(
                     node.target.id, variable._get_iteration_object())
             action = variable._get_iterating_action()
-            return action(variable, [self.visit(nde) for nde in node.body])
+            return action(variable, self.parse_actions_of_node_body(node.body))
         # for loop action
         elif isinstance((range_function := evaled_iter), range):
             for_loop_var = self.eval_code(ast.unparse(node.target))
@@ -328,7 +328,7 @@ class ScriptActionsCompiler(ast.NodeVisitor):
                 raise TypeError(
                     f"iteration Variable's data type must be DataType.NUMBER. currently set to DataType.{for_loop_var.data_type.name}"
                 )
-            return pymodd.actions.for_range(for_loop_var, range_function.start, range_function.stop, [self.visit(nde) for nde in node.body])
+            return pymodd.actions.for_range(for_loop_var, range_function.start, range_function.stop, self.parse_actions_of_node_body(node.body))
 
     def visit_Break(self, node: ast.Break):
         return pymodd.actions.break_loop()
@@ -358,6 +358,14 @@ class ScriptActionsCompiler(ast.NodeVisitor):
         for target in node.targets:
             if isinstance(target, ast.Name):
                 self.depth_to_locals_data[self.depth].pop(target.id)
+
+    def parse_actions_of_node_body(self, node_body):
+        actions_data = []
+        for node in node_body:
+            action_data = self.visit(node)
+            if action_data is not None:
+                actions_data.append(action_data)
+        return actions_data
 
     def get_current_locals_data(self):
         locals_data = {}
