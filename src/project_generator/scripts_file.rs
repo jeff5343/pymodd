@@ -114,6 +114,23 @@ impl<'a> ScriptsContentBuilder<'a> {
 
     fn build_action_content(&self, action: &Action) -> String {
         match action.name.as_str() {
+            // convert if statement actions into python if statements
+            "condition" => {
+                let mut args_iter = action.iter_flattened_argument_values();
+                let err_msg = "if statement does not contain valid args";
+                let condition = self.build_argument_content(args_iter.next().expect(err_msg));
+                let then_actions = self.build_argument_content(args_iter.next().expect(err_msg));
+                let else_actions = self.build_argument_content(args_iter.next().expect(err_msg));
+                format!(
+                    "if {condition}:{}{}",
+                    then_actions.strip_suffix("\n").unwrap(),
+                    if else_actions != "\n\tpass\n" {
+                        format!("\nelse:{else_actions}")
+                    } else {
+                        String::from("\n")
+                    }
+                )
+            }
             "comment" => {
                 format!(
                     "{}({}{})\n",
@@ -130,11 +147,9 @@ impl<'a> ScriptsContentBuilder<'a> {
                 )
             }
             _ => format!(
-                "{}({}",
+                "{}({}{})\n",
                 action.pymodd_class_name(),
-                self.build_arguments_content(action.iter_flattened_argument_values())
-            )
-            .add(
+                self.build_arguments_content(action.iter_flattened_argument_values()),
                 &self
                     .build_optional_arguments_contents(&action)
                     .into_iter()
@@ -147,8 +162,7 @@ impl<'a> ScriptsContentBuilder<'a> {
                         }
                     })
                     .collect::<String>(),
-            )
-            .add(")\n"),
+            ),
         }
     }
 
@@ -181,11 +195,15 @@ impl<'a> ScriptsContentBuilder<'a> {
             }
             ArgumentValueIterItem::Actions(actions) => {
                 format!(
-                    "[\n{}\t\n]",
-                    self.build_actions_content(actions)
-                        .lines()
-                        .map(|line| format!("\t{line}\n"))
-                        .collect::<String>()
+                    "\n{}",
+                    if actions.len() > 0 {
+                        self.build_actions_content(actions)
+                            .lines()
+                            .map(|line| format!("\t{line}\n"))
+                            .collect::<String>()
+                    } else {
+                        String::from("\tpass\n")
+                    }
                 )
             }
             ArgumentValueIterItem::Value(value) => match value {
@@ -557,34 +575,36 @@ mod tests {
                      {
                         "type": "condition",
                         "conditions": [
-                            { "operandType": "boolean", "operator": "==" },
-                            true,
-                            true
+                            { "operandType": "boolean", "operator": "==" }, true, true
                         ],
                         "then": [
                             {
                                 "type": "condition",
                                 "conditions": [
-                                    { "operandType": "boolean", "operator": "==" },
-                                    true,
-                                    true
+                                    { "operandType": "boolean", "operator": "==" }, true, true
                                 ],
                                 "then": [
                                     {
                                         "type": "condition",
                                         "conditions": [
-                                            { "operandType": "boolean", "operator": "==" },
-                                            true,
-                                            true
+                                            { "operandType": "boolean", "operator": "==" }, true, true
                                         ],
-                                        "then": [],
-                                        "else": []
+                                        "then": [
+                                            { "type": "sendChatMessage", "message": "hi" }
+                                        ],
+                                        "else": [
+                                            { "type": "sendChatMessage", "message": "hi" }
+                                        ]
                                     }
                                 ],
-                                "else": []
-                               }
-                          ],
-                          "else": []
+                                "else": [
+                                    { "type": "sendChatMessage", "message": "hi" }
+                                ]
+                            }
+                        ],
+                        "else": [
+                            { "type": "sendChatMessage", "message": "hi" }
+                        ]
                      }
                 ])
                 .as_array()
@@ -594,7 +614,13 @@ mod tests {
             "if True == True:\n\
                 \tif True == True:\n\
     		        \t\tif True == True:\n\
-		                \t\t\tpass\n"
+		                \t\t\tsend_chat_message_to_everyone('hi')\n\
+                    \t\telse:\n\
+		                \t\t\tsend_chat_message_to_everyone('hi')\n\
+                \telse:\n\
+		            \t\tsend_chat_message_to_everyone('hi')\n\
+            else:\n\
+                \tsend_chat_message_to_everyone('hi')\n"
         )
     }
 
