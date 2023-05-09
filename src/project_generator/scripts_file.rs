@@ -24,19 +24,20 @@ pub struct ScriptsFile {}
 
 impl ScriptsFile {
     pub fn build_content(game_data: &GameData) -> String {
-        let content = format!(
+        format!(
             "from pymodd.actions import *\n\
             from pymodd.functions import *\n\
             from pymodd.script import Trigger, UiTarget, Flip, script\n\n\
-            from game_variables import *\n\n\n"
-        );
-        content.add(&build_directory_content(
-            &game_data.root_directory,
-            &ScriptsContentBuilder::new(
-                &game_data.categories_to_variables,
+            from game_variables import *\n\n\n\
+            {}\n\n",
+            &build_directory_content(
                 &game_data.root_directory,
-            ),
-        ))
+                &ScriptsContentBuilder::new(
+                    &game_data.categories_to_variables,
+                    &game_data.root_directory,
+                ),
+            )
+        )
     }
 }
 
@@ -88,20 +89,21 @@ impl<'a> ScriptsContentBuilder<'a> {
             "@script(triggers=[{}]{})\n\
             class {class_name}():\n\
             \tdef _build(self):\n\
-                \t\tself.actions = [\n\
-                {}\
-                \t\t\t\n\
-                \t\t]\n",
+                {}",
             script.triggers_into_pymodd_enums().join(", "),
-            if !script.name.is_ascii() {
-                format!(", name={}", surround_string_with_quotes(&script.name))
-            } else {
+            if script.name.is_ascii() {
                 String::new()
+            } else {
+                format!(", name={}", surround_string_with_quotes(&script.name))
             },
-            self.build_actions_content(&script.actions)
-                .lines()
-                .map(|action| format!("{}{action}\n", "\t".repeat(3)))
-                .collect::<String>(),
+            if script.actions.len() > 0 {
+                self.build_actions_content(&script.actions)
+                    .lines()
+                    .map(|action| format!("{}{action}\n", "\t".repeat(2)))
+                    .collect::<String>()
+            } else {
+                String::from("\t\tpass\n")
+            }
         )
     }
 
@@ -339,9 +341,7 @@ mod tests {
                 "@script(triggers=[Trigger.GAME_START])\n\
                 class Initialize():\n\
                     \tdef _build(self):\n\
-                        \t\tself.actions = [\n\
-                        \t\t\t\n\
-                        \t\t]\n",
+                        \t\tpass\n",
             ))
         );
     }
@@ -363,9 +363,7 @@ mod tests {
                 "@script(triggers=[Trigger.GAME_START], name='【 𝚒𝚗𝚒𝚝𝚒𝚊𝚕𝚒𝚣𝚎 イ】')\n\
                 class q():\n\
                     \tdef _build(self):\n\
-                        \t\tself.actions = [\n\
-                        \t\t\t\n\
-                        \t\t]\n",
+                        \t\tpass\n",
             ))
         );
     }
