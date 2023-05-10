@@ -117,6 +117,8 @@ impl<'a> ScriptsContentBuilder<'a> {
 
     fn build_action_content(&self, action: &Action) -> String {
         match action.name.as_str() {
+            // convert break, continue, and return actions into keywords
+            "break" | "continue" | "return" => format!("{}\n", &action.name),
             // convert condition actions into if statements
             "condition" => {
                 let args = self.build_arguments_of_action_seperately(action);
@@ -501,12 +503,12 @@ mod tests {
             )
             .build_actions_content(&parse_actions(
                 &json!([
-                    { "type": "return", "comment": "hi!", "runOnClient": true, "disabled": false, }
+                    { "type": "stopMusic", "comment": "hi!", "runOnClient": true, "disabled": false, }
                 ])
                 .as_array()
                 .unwrap()
             )),
-            "return_loop(comment='hi!', run_on_client=True)\n"
+            "stop_music_for_everyone(comment='hi!', run_on_client=True)\n"
         )
     }
 
@@ -543,6 +545,24 @@ mod tests {
                 .unwrap()
             )),
             "comment('hey there')\n"
+        );
+    }
+
+    #[test]
+    fn parse_keyword_actions_into_pymodd() {
+        assert_eq!(
+            ScriptsContentBuilder::new(
+                &CategoriesToVariables::new(HashMap::new()),
+                &Directory::new("root", "null", Vec::new())
+            )
+            .build_actions_content(&parse_actions(
+                &json!([ { "type": "break" }, { "type": "continue" }, { "type": "return" } ])
+                    .as_array()
+                    .unwrap()
+            )),
+            "break\n\
+            continue\n\
+            return\n"
         );
     }
 

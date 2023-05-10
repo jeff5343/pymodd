@@ -165,13 +165,6 @@ def open_dialogue_for_player(dialogue, player, comment=None, disabled=False, run
 
 
 @action
-def continue_loop(comment=None, disabled=False, run_on_client=False):
-    return {
-        'type': 'continue',
-    }
-
-
-@action
 def open_website_for_player(string: String, player, comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'openWebsiteForPlayer',
@@ -348,13 +341,6 @@ def hide_unit_in_minimap_for_player(unit, player, comment=None, disabled=False, 
         'type': 'hideUnitInPlayerMinimap',
         'unit': to_dict(unit),
         'player': to_dict(player),
-    }
-
-
-@action
-def return_loop(comment=None, disabled=False, run_on_client=False):
-    return {
-        'type': 'return',
     }
 
 
@@ -977,13 +963,6 @@ def make_unit_invisible_to_hostile_players(entity, comment=None, disabled=False,
     }
 
 
-@action
-def break_loop(comment=None, disabled=False, run_on_client=False):
-    return {
-        'type': 'break',
-    }
-
-
 @ action
 def change_scale_of_sprite_for_entity(scale: Number, entity, comment=None, disabled=False, run_on_client=False):
     return {
@@ -1511,6 +1490,29 @@ def command_ai_to_idle(unit, comment=None, disabled=False, run_on_client=False):
 # ---------------------------------------------------------------------------- #
 #                              Deprecated Actions                              #
 # ---------------------------------------------------------------------------- #
+
+@action
+def break_loop(comment=None, disabled=False, run_on_client=False):
+    '''Deprecated, use the python `break` keyword instead'''
+    return {
+        'type': 'break',
+    }
+
+
+@action
+def continue_loop(comment=None, disabled=False, run_on_client=False):
+    '''Deprecated, use the python `continue` keyword instead'''
+    return {
+        'type': 'continue',
+    }
+
+
+@action
+def return_loop(comment=None, disabled=False, run_on_client=False):
+    '''Deprecated, use the python `return` keyword instead'''
+    return {
+        'type': 'return',
+    }
 
 
 @action
