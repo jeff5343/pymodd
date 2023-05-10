@@ -119,7 +119,7 @@ impl<'a> ScriptsContentBuilder<'a> {
         match action.name.as_str() {
             // convert condition actions into if statements
             "condition" => {
-                let args = self.build_action_arguments_seperately(action);
+                let args = self.build_arguments_of_action_seperately(action);
                 let err_msg = "condition action does not contain valid args";
                 let (condition, then_actions, else_actions) = (
                     args.get(0).expect(err_msg),
@@ -139,7 +139,7 @@ impl<'a> ScriptsContentBuilder<'a> {
 
             // convert variable for loop actions into for loops
             "for" => {
-                let args = self.build_action_arguments_seperately(action);
+                let args = self.build_arguments_of_action_seperately(action);
                 let err_msg = "variable for loop action does not contain valid args";
                 let (variable, start, stop, actions) = (
                     args.get(0).expect(err_msg),
@@ -154,7 +154,7 @@ impl<'a> ScriptsContentBuilder<'a> {
             "forAllEntities" | "forAllProjectiles" | "forAllItems" | "forAllUnits"
             | "forAllPlayers" | "forAllItemTypes" | "forAllUnitTypes" | "forAllRegions"
             | "forAllDebris" => {
-                let args = self.build_action_arguments_seperately(action);
+                let args = self.build_arguments_of_action_seperately(action);
                 let err_msg =
                     "for each type in function/variable action does not contain valid args";
                 let (group, actions) = (args.get(0).expect(err_msg), args.get(1).expect(err_msg));
@@ -176,11 +176,19 @@ impl<'a> ScriptsContentBuilder<'a> {
 
             // convert repeat actions into for loops
             "repeat" => {
-                let mut args_iter = action.iter_flattened_argument_values();
+                let args = self.build_arguments_of_action_seperately(action);
                 let err_msg = "repeat action does not contain valid args";
-                let count = self.build_argument_content(args_iter.next().expect(err_msg));
-                let actions = self.build_argument_content(args_iter.next().expect(err_msg));
+                let (count, actions) = (args.get(0).expect(err_msg), args.get(1).expect(err_msg));
                 format!("for _ in repeat({count}):{actions}")
+            }
+
+            // convert while actions into while loops
+            "while" => {
+                let args = self.build_arguments_of_action_seperately(action);
+                let err_msg = "while action does not contain valid args";
+                let (condition, actions) =
+                    (args.get(0).expect(err_msg), args.get(1).expect(err_msg));
+                format!("while {condition}:{actions}")
             }
 
             "comment" => {
@@ -220,7 +228,7 @@ impl<'a> ScriptsContentBuilder<'a> {
     }
 
     /// used while parsing if statements, for loops, and while loops
-    fn build_action_arguments_seperately(&self, action: &Action) -> Vec<String> {
+    fn build_arguments_of_action_seperately(&self, action: &Action) -> Vec<String> {
         action
             .args
             .iter()
@@ -801,6 +809,34 @@ mod tests {
             ))
             .as_str(),
             "for _ in repeat(5):\n\
+                \tpass\n"
+        );
+    }
+
+    #[test]
+    fn parse_while_action_into_python() {
+        assert_eq!(
+            ScriptsContentBuilder::new(
+                &CategoriesToVariables::new(HashMap::new()),
+                &Directory::new("root", "null", Vec::new())
+            )
+            .build_actions_content(&parse_actions(
+                json!([
+                    {
+                        "type": "while",
+                        "conditions": [
+                            { "operandType": "boolean", "operator": "==" },
+                            { "function": "entityExists", "entity": { "function": "getTriggeringUnit" } },
+                            true
+                        ],
+                        "actions": []
+                    }
+                ])
+                .as_array()
+                .unwrap(),
+            ))
+            .as_str(),
+            "while (EntityExists(LastTriggeringUnit()) == True):\n\
                 \tpass\n"
         );
     }
