@@ -133,6 +133,16 @@ impl<'a> ScriptsContentBuilder<'a> {
                     }
                 )
             }
+            // convert variable for loop actions into python for loops
+            "for" => {
+                let mut args_iter = action.iter_flattened_argument_values();
+                let err_msg = "variable for loop does not contain valid args";
+                let variable = self.build_argument_content(args_iter.next().expect(err_msg));
+                let start = self.build_argument_content(args_iter.next().expect(err_msg));
+                let stop = self.build_argument_content(args_iter.next().expect(err_msg));
+                let actions = self.build_argument_content(args_iter.next().expect(err_msg));
+                format!("for {variable} in range({start}, {stop}):{actions}")
+            }
             "comment" => {
                 format!(
                     "{}({}{})\n",
@@ -384,10 +394,7 @@ mod tests {
                         "type": "openShopForPlayer",
                             "player": {
                                 "function": "getOwner",
-                                "entity": {
-                                    "function": "getLastCastingUnit",
-                                    "vars": []
-                                },
+                                "entity": { "function": "getLastCastingUnit", "vars": [] },
                                 "vars": []
                             },
                         "shop": "OJbEQyc7is",
@@ -412,9 +419,7 @@ mod tests {
                 &json!([
                     {
                         "type": "startUsingItem",
-                        "entity": {
-                            "function": "getTriggeringItem"
-                        },
+                        "entity": { "function": "getTriggeringItem" },
                         "comment": "hi!",
                         "runOnClient": true,
                         "disabled": true,
@@ -436,12 +441,7 @@ mod tests {
             )
             .build_actions_content(&parse_actions(
                 &json!([
-                    {
-                        "type": "return",
-                        "comment": "hi!",
-                        "runOnClient": true,
-                        "disabled": false,
-                    }
+                    { "type": "return", "comment": "hi!", "runOnClient": true, "disabled": false, }
                 ])
                 .as_array()
                 .unwrap()
@@ -459,11 +459,7 @@ mod tests {
             )
             .build_actions_content(&parse_actions(
                 &json!([
-                    {
-                        "type": "updateUiTextForEveryone",
-                        "target": "top",
-                        "value": "Hello!"
-                    }
+                    { "type": "updateUiTextForEveryone", "target": "top", "value": "Hello!" }
                 ])
                 .as_array()
                 .unwrap()
@@ -481,10 +477,7 @@ mod tests {
             )
             .build_actions_content(&parse_actions(
                 &json!([
-                    {
-                        "type": "comment",
-                        "comment": "hey there",
-                    }
+                    { "type": "comment", "comment": "hey there", }
                 ])
                 .as_array()
                 .unwrap()
@@ -545,9 +538,7 @@ mod tests {
                                     "function": "concat",
                                     "textA": {
                                         "function": "getPlayerId",
-                                        "player": {
-                                            "function": "getTriggeringPlayer"
-                                        }
+                                        "player": { "function": "getTriggeringPlayer" }
                                     },
                                     "textB": " player!"
                                 }
@@ -655,6 +646,29 @@ mod tests {
                 ))
                 .as_str(),
             "if (NumberOfUnitsOfUnitType('oTDQ3jlcMa') == 5) & (True == True):\n\
+                \tpass\n"
+        );
+    }
+
+    #[test]
+    fn parse_variable_for_loop_into_pymodd() {
+        assert_eq!(
+            ScriptsContentBuilder::new(
+                &CategoriesToVariables::new(HashMap::from([(
+                    "variables",
+                    vec![Variable::new("i", "i", "I", Some("number"))]
+                )])),
+                &Directory::new("root", "null", Vec::new())
+            )
+            .build_actions_content(&parse_actions(
+                json!([
+                    { "type": "for", "variableName": "i", "start": 0, "stop": 5, "actions": [] }
+                ])
+                .as_array()
+                .unwrap(),
+            ))
+            .as_str(),
+            "for Variables.I in range(0, 5):\n\
                 \tpass\n"
         );
     }
