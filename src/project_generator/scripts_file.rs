@@ -116,10 +116,10 @@ impl<'a> ScriptsContentBuilder<'a> {
 
     fn build_action_content(&self, action: &Action) -> String {
         match action.name.as_str() {
-            // convert if statement actions into python if statements
+            // convert condition actions into if statements
             "condition" => {
                 let mut args_iter = action.iter_flattened_argument_values();
-                let err_msg = "if statement does not contain valid args";
+                let err_msg = "condition action does not contain valid args";
                 let condition = self.build_argument_content(args_iter.next().expect(err_msg));
                 let then_actions = self.build_argument_content(args_iter.next().expect(err_msg));
                 let else_actions = self.build_argument_content(args_iter.next().expect(err_msg));
@@ -133,15 +133,23 @@ impl<'a> ScriptsContentBuilder<'a> {
                     }
                 )
             }
-            // convert variable for loop actions into python for loops
+            // convert variable for loop actions into for loops
             "for" => {
                 let mut args_iter = action.iter_flattened_argument_values();
-                let err_msg = "variable for loop does not contain valid args";
+                let err_msg = "variable for loop action does not contain valid args";
                 let variable = self.build_argument_content(args_iter.next().expect(err_msg));
                 let start = self.build_argument_content(args_iter.next().expect(err_msg));
                 let stop = self.build_argument_content(args_iter.next().expect(err_msg));
                 let actions = self.build_argument_content(args_iter.next().expect(err_msg));
                 format!("for {variable} in range({start}, {stop}):{actions}")
+            }
+            // convert repeat actions into for loops
+            "repeat" => {
+                let mut args_iter = action.iter_flattened_argument_values();
+                let err_msg = "repeat action does not contain valid args";
+                let count = self.build_argument_content(args_iter.next().expect(err_msg));
+                let actions = self.build_argument_content(args_iter.next().expect(err_msg));
+                format!("for _ in repeat({count}):{actions}")
             }
             "comment" => {
                 format!(
@@ -673,6 +681,25 @@ mod tests {
         );
     }
 
+    #[test]
+    fn parse_repeat_action_into_python() {
+        assert_eq!(
+            ScriptsContentBuilder::new(
+                &CategoriesToVariables::new(HashMap::new()),
+                &Directory::new("root", "null", Vec::new())
+            )
+            .build_actions_content(&parse_actions(
+                json!([
+                    { "type": "repeat", "count": 5, "actions": [] }
+                ])
+                .as_array()
+                .unwrap(),
+            ))
+            .as_str(),
+            "for _ in repeat(5):\n\
+                \tpass\n"
+        );
+    }
     #[test]
     fn parse_run_script_action_into_pymodd() {
         assert_eq!(
