@@ -1,5 +1,6 @@
 use std::ops::Add;
 
+use heck::ToSnakeCase;
 use serde_json::Value;
 
 use crate::game_data::{
@@ -118,11 +119,13 @@ impl<'a> ScriptsContentBuilder<'a> {
         match action.name.as_str() {
             // convert condition actions into if statements
             "condition" => {
-                let mut args_iter = action.iter_flattened_argument_values();
+                let args = self.build_action_arguments_seperately(action);
                 let err_msg = "condition action does not contain valid args";
-                let condition = self.build_argument_content(args_iter.next().expect(err_msg));
-                let then_actions = self.build_argument_content(args_iter.next().expect(err_msg));
-                let else_actions = self.build_argument_content(args_iter.next().expect(err_msg));
+                let (condition, then_actions, else_actions) = (
+                    args.get(0).expect(err_msg),
+                    args.get(1).expect(err_msg),
+                    args.get(2).expect(err_msg),
+                );
                 format!(
                     "if {condition}:{}{}",
                     then_actions.strip_suffix("\n").unwrap(),
@@ -133,16 +136,44 @@ impl<'a> ScriptsContentBuilder<'a> {
                     }
                 )
             }
+
             // convert variable for loop actions into for loops
             "for" => {
-                let mut args_iter = action.iter_flattened_argument_values();
+                let args = self.build_action_arguments_seperately(action);
                 let err_msg = "variable for loop action does not contain valid args";
-                let variable = self.build_argument_content(args_iter.next().expect(err_msg));
-                let start = self.build_argument_content(args_iter.next().expect(err_msg));
-                let stop = self.build_argument_content(args_iter.next().expect(err_msg));
-                let actions = self.build_argument_content(args_iter.next().expect(err_msg));
+                let (variable, start, stop, actions) = (
+                    args.get(0).expect(err_msg),
+                    args.get(1).expect(err_msg),
+                    args.get(2).expect(err_msg),
+                    args.get(3).expect(err_msg),
+                );
                 format!("for {variable} in range({start}, {stop}):{actions}")
             }
+
+            // convert for each type in function/variable actions into for loops
+            "forAllEntities" | "forAllProjectiles" | "forAllItems" | "forAllUnits"
+            | "forAllPlayers" | "forAllItemTypes" | "forAllUnitTypes" | "forAllRegions"
+            | "forAllDebris" => {
+                let args = self.build_action_arguments_seperately(action);
+                let err_msg =
+                    "for each type in function/variable action does not contain valid args";
+                let (group, actions) = (args.get(0).expect(err_msg), args.get(1).expect(err_msg));
+                let group_type = match action
+                    .name
+                    .strip_prefix("forAll")
+                    .unwrap()
+                    .to_snake_case()
+                    .strip_suffix("s")
+                    .unwrap()
+                {
+                    "entitie" => "entity",
+                    "debri" => "debris",
+                    group_type => group_type,
+                }
+                .to_string();
+                format!("for {group_type} in {group}:{actions}")
+            }
+
             // convert repeat actions into for loops
             "repeat" => {
                 let mut args_iter = action.iter_flattened_argument_values();
@@ -151,6 +182,7 @@ impl<'a> ScriptsContentBuilder<'a> {
                 let actions = self.build_argument_content(args_iter.next().expect(err_msg));
                 format!("for _ in repeat({count}):{actions}")
             }
+
             "comment" => {
                 format!(
                     "{}({}{})\n",
@@ -166,6 +198,7 @@ impl<'a> ScriptsContentBuilder<'a> {
                         .collect::<String>(),
                 )
             }
+
             _ => format!(
                 "{}({}{})\n",
                 action.pymodd_class_name(),
@@ -184,6 +217,17 @@ impl<'a> ScriptsContentBuilder<'a> {
                     .collect::<String>(),
             ),
         }
+    }
+
+    /// used while parsing if statements, for loops, and while loops
+    fn build_action_arguments_seperately(&self, action: &Action) -> Vec<String> {
+        action
+            .args
+            .iter()
+            .map(|arg| {
+                self.build_arguments_content(ArgumentValuesIterator::new(&vec![arg.clone()]))
+            })
+            .collect::<Vec<String>>()
     }
 
     fn build_arguments_content(&self, args_iter: ArgumentValuesIterator) -> String {
@@ -571,46 +615,32 @@ mod tests {
                 json!([
                      {
                         "type": "condition",
-                        "conditions": [
-                            { "operandType": "boolean", "operator": "==" }, true, true
-                        ],
+                        "conditions": [ { "operandType": "boolean", "operator": "==" }, true, true ],
                         "then": [
                             {
                                 "type": "condition",
-                                "conditions": [
-                                    { "operandType": "boolean", "operator": "==" }, true, true
-                                ],
+                                "conditions": [ { "operandType": "boolean", "operator": "==" }, true, true ],
                                 "then": [
                                     {
                                         "type": "condition",
-                                        "conditions": [
-                                            { "operandType": "boolean", "operator": "==" }, true, true
-                                        ],
-                                        "then": [
-                                            { "type": "sendChatMessage", "message": "hi" }
-                                        ],
-                                        "else": [
-                                            { "type": "sendChatMessage", "message": "hi" }
-                                        ]
+                                        "conditions": [ { "operandType": "boolean", "operator": "==" }, true, true ],
+                                        "then": [ { "type": "sendChatMessage", "message": "hi" } ],
+                                        "else": [ { "type": "sendChatMessage", "message": "hi" } ]
                                     }
                                 ],
-                                "else": [
-                                    { "type": "sendChatMessage", "message": "hi" }
-                                ]
+                                "else": [ { "type": "sendChatMessage", "message": "hi" } ]
                             }
                         ],
-                        "else": [
-                            { "type": "sendChatMessage", "message": "hi" }
-                        ]
+                        "else": [ { "type": "sendChatMessage", "message": "hi" } ]
                      }
                 ])
                 .as_array()
                 .unwrap(),
             ))
             .as_str(),
-            "if True == True:\n\
-                \tif True == True:\n\
-    		        \t\tif True == True:\n\
+            "if (True == True):\n\
+                \tif (True == True):\n\
+    		        \t\tif (True == True):\n\
 		                \t\t\tsend_chat_message_to_everyone('hi')\n\
                     \t\telse:\n\
 		                \t\t\tsend_chat_message_to_everyone('hi')\n\
@@ -653,7 +683,7 @@ mod tests {
                     .unwrap(),
                 ))
                 .as_str(),
-            "if (NumberOfUnitsOfUnitType('oTDQ3jlcMa') == 5) & (True == True):\n\
+            "if ((NumberOfUnitsOfUnitType('oTDQ3jlcMa') == 5) & (True == True)):\n\
                 \tpass\n"
         );
     }
@@ -682,6 +712,80 @@ mod tests {
     }
 
     #[test]
+    fn parse_for_each_type_in_function_action_into_pymodd() {
+        assert_eq!(
+            ScriptsContentBuilder::new(
+                &CategoriesToVariables::new(HashMap::new()),
+                &Directory::new("root", "null", Vec::new())
+            )
+            .build_actions_content(&parse_actions(
+                json!([
+                    { "type": "forAllEntities", "entityGroup": { "function": "allEntities" }, "actions": [] }
+                ])
+                .as_array()
+                .unwrap(),
+            ))
+            .as_str(),
+            "for entity in AllEntitiesInTheGame():\n\
+                \tpass\n"
+        );
+    }
+
+    #[test]
+    fn parse_for_each_type_in_variable_action_into_pymodd() {
+        assert_eq!(
+            ScriptsContentBuilder::new(
+                &CategoriesToVariables::new(HashMap::from([(
+                    "itemTypeGroups",
+                    vec![Variable::new("specialItemTypes", "specialItemTypes", "SPECIAL_ITEM_TYPES", None)]
+                )])),
+                &Directory::new("root", "null", Vec::new())
+            )
+            .build_actions_content(&parse_actions(
+                json!([
+                    {
+                        "type": "forAllItemTypes",
+                        "itemTypeGroup": { "function": "getVariable", "variableName": "specialItemTypes" },
+                        "actions": []
+                     }
+                ])
+                .as_array()
+                .unwrap(),
+            ))
+            .as_str(),
+            "for item_type in ItemTypeGroups.SPECIAL_ITEM_TYPES:\n\
+                \tpass\n"
+        );
+    }
+
+    #[test]
+    fn parse_for_each_type_in_multi_arg_function_action_into_pymodd() {
+        assert_eq!(
+            ScriptsContentBuilder::new(
+                &CategoriesToVariables::new(HashMap::new()),
+                &Directory::new("root", "null", Vec::new())
+            )
+            .build_actions_content(&parse_actions(
+                json!([
+                    {
+                        "type": "forAllUnits",
+                        "unitGroup": { "function": "allUnitsInRegion", "region": {
+                                "function": "dynamicRegion",
+                                "x": 0, "y": 0, "width": 5, "height": 5 }
+                        },
+                        "actions": []
+                    }
+                ])
+                .as_array()
+                .unwrap(),
+            ))
+            .as_str(),
+            "for unit in AllUnitsInRegion(DynamicRegion(0, 0, 5, 5)):\n\
+                \tpass\n"
+        );
+    }
+
+    #[test]
     fn parse_repeat_action_into_python() {
         assert_eq!(
             ScriptsContentBuilder::new(
@@ -700,6 +804,7 @@ mod tests {
                 \tpass\n"
         );
     }
+
     #[test]
     fn parse_run_script_action_into_pymodd() {
         assert_eq!(
