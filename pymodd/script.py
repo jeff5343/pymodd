@@ -4,7 +4,7 @@ import json
 import random
 import string
 import textwrap
-from _ast import AnnAssign, Assign, AugAssign, Delete
+from _ast import AnnAssign, Assign, Delete
 from enum import Enum
 
 from caseconverter import camelcase, snakecase
@@ -288,12 +288,12 @@ class ScriptActionsCompiler(ast.NodeVisitor):
         then_actions_data = self.parse_actions_of_node_body(node.body)
         else_actions_data = self.parse_actions_of_node_body(node.orelse)
         if_action_data = pymodd.actions.if_else(
-            self.eval_node(node.test), then_actions_data, else_actions_data)
+            self.eval_condition(node.test), then_actions_data, else_actions_data)
         return if_action_data
 
     def visit_While(self, node: ast.While):
         actions_data = self.parse_actions_of_node_body(node.body)
-        return pymodd.actions.while_do(self.eval_node(node.test), actions_data)
+        return pymodd.actions.while_do(self.eval_condition(node.test), actions_data)
 
     def visit_For(self, node: ast.For):
         evaled_iter = self.eval_node(node.iter)
@@ -303,7 +303,11 @@ class ScriptActionsCompiler(ast.NodeVisitor):
                 node.body)
             return repeat_action_data
         # for _ in group_function action
-        elif isinstance((group_function := evaled_iter), pymodd.functions.Group):
+        elif isinstance((group_function := evaled_iter), pymodd.functions.Function):
+            if not isinstance(group_function, pymodd.functions.Group):
+                raise TypeError(
+                    f"'{ast.unparse(node.iter)}' is not iterable"
+                )
             if isinstance(node.target, ast.Name):
                 self.add_local_var_to_curr_depth_locals_data(
                     node.target.id, group_function._get_iteration_object())
@@ -311,10 +315,11 @@ class ScriptActionsCompiler(ast.NodeVisitor):
             return action(group_function, self.parse_actions_of_node_body(node.body))
         # for _ in group_variable action
         elif isinstance((variable := evaled_iter), pymodd.variable_types.Variable):
-            if variable.data_type not in [pymodd.variable_types.DataType.ITEM_GROUP, pymodd.variable_types.DataType.UNIT_GROUP, pymodd.variable_types.DataType.PLAYER_GROUP,
-                                          pymodd.variable_types.DataType.ITEM_TYPE_GROUP, pymodd.variable_types.DataType.UNIT_TYPE_GROUP]:
+            if variable.data_type not in [pymodd.variable_types.DataType.ITEM_GROUP, pymodd.variable_types.DataType.UNIT_GROUP,
+                                          pymodd.variable_types.DataType.PLAYER_GROUP, pymodd.variable_types.DataType.ITEM_TYPE_GROUP,
+                                          pymodd.variable_types.DataType.UNIT_TYPE_GROUP]:
                 raise TypeError(
-                    f"iterating Variable's data type must be DataType.ITEM_GROUP, UNIT_GROUP, PLAYER_GROUP, ITEM_TYPE_GROUP, or UNIT_TYPE_GROUP. currently set to DataType.{variable.data_type.name}"
+                    f"DataType of '{ast.unparse(node.iter)}' must be DataType.ITEM_GROUP, UNIT_GROUP, PLAYER_GROUP, ITEM_TYPE_GROUP, or UNIT_TYPE_GROUP"
                 )
             if isinstance(node.target, ast.Name):
                 self.add_local_var_to_curr_depth_locals_data(
@@ -326,7 +331,7 @@ class ScriptActionsCompiler(ast.NodeVisitor):
             for_loop_var = self.eval_code(ast.unparse(node.target))
             if for_loop_var.data_type != pymodd.variable_types.DataType.NUMBER:
                 raise TypeError(
-                    f"iteration Variable's data type must be DataType.NUMBER. currently set to DataType.{for_loop_var.data_type.name}"
+                    f"DataType of '{ast.unparse(node.iter)}' must be DataType.NUMBER"
                 )
             return pymodd.actions.for_range(for_loop_var, range_function.start, range_function.stop, self.parse_actions_of_node_body(node.body))
 
@@ -375,6 +380,32 @@ class ScriptActionsCompiler(ast.NodeVisitor):
 
     def add_local_var_to_curr_depth_locals_data(self, var_name, var_value):
         self.depth_to_locals_data[self.depth][var_name] = var_value
+
+    def eval_condition(self, condition_node: ast.AST):
+        if isinstance(condition_node, ast.BoolOp):
+            return pymodd.functions.Condition(
+                self.eval_condition(condition_node.values[0]),
+                'AND' if isinstance(condition_node.op, ast.And) else 'OR',
+                self.eval_condition(condition_node.values[1]))
+
+        if isinstance(condition_node, ast.Compare):
+            ast_operator_to_string = {
+                ast.Eq: '==', ast.NotEq: '!=',
+                ast.Gt: '>', ast.Lt: '<',
+                ast.GtE: '>=', ast.LtE: '<='
+            }
+            if len(condition_node.ops) == 0 or (operator := ast_operator_to_string.get(type(condition_node.ops[0]))) is None:
+                raise ValueError(
+                    f"Condition '{ast.unparse(condition_node)}' contains an invalid comparison operator"
+                )
+            return pymodd.functions.Condition(
+                self.eval_node(condition_node.left),
+                operator,
+                self.eval_node(condition_node.comparators[0]))
+
+        raise ValueError(
+            f"Condition '{ast.unparse(condition_node)}' must include a comparison operator"
+        )
 
     def eval_node(self, node: ast.AST):
         return self.eval_code(compile(ast.Expression(body=node), filename='<ast>', mode='eval'))

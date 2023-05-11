@@ -21,25 +21,6 @@ class Function(Base):
             data.update(self.options)
         return data
 
-    # condition functions
-    def __eq__(self, other):
-        return Condition(self, '==', other)
-
-    def __ne__(self, other):
-        return Condition(self, '!=', other)
-
-    def __ge__(self, other):
-        return Condition(self, '>=', other)
-
-    def __gt__(self, other):
-        return Condition(self, '>', other)
-
-    def __le__(self, other):
-        return Condition(self, '<=', other)
-
-    def __lt__(self, other):
-        return Condition(self, '<', other)
-
     # calculation functions
     def __add__(self, other):
         if 'string' in [type_of_item(self).lower(), type_of_item(other).lower()]:
@@ -126,7 +107,7 @@ class Condition(Function):
         self.operator = operator.upper()
         self.item_b = item_b
         if self.operator == 'AND' or self.operator == 'OR':
-            self.comparison = operator
+            self.comparison = operator.lower()
         else:
             self.comparison = type_of_item(item_a) or type_of_item(item_b)
 
@@ -139,12 +120,6 @@ class Condition(Function):
             to_dict(self.item_a),
             to_dict(self.item_b)
         ]
-
-    def __and__(self, other):
-        return Condition(self, 'AND', other)
-
-    def __or__(self, other):
-        return Condition(self, 'OR', other)
 
 
 class Undefined(Function):
