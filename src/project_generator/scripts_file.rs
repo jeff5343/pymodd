@@ -116,6 +116,8 @@ impl<'a> ScriptsContentBuilder<'a> {
     }
 
     fn build_action_content(&self, action: &Action) -> String {
+        // for use while converting arguments of special actions
+        let (none, pass) = (String::from("None"), String::from("\t\tpass\n"));
         match action.name.as_str() {
             // convert break, continue, and return actions into keywords
             "break" | "continue" | "return" => format!("{}\n", &action.name),
@@ -123,11 +125,10 @@ impl<'a> ScriptsContentBuilder<'a> {
             // convert condition actions into if statements
             "condition" => {
                 let args = self.build_arguments_of_action_seperately(action);
-                let err_msg = "condition action does not contain valid args";
                 let (condition, then_actions, else_actions) = (
-                    args.get(0).expect(err_msg),
-                    args.get(1).expect(err_msg),
-                    args.get(2).expect(err_msg),
+                    args.get(0).unwrap_or(&none),
+                    args.get(1).unwrap_or(&pass),
+                    args.get(2).unwrap_or(&pass),
                 );
                 format!(
                     "if {condition}:{}{}",
@@ -143,12 +144,11 @@ impl<'a> ScriptsContentBuilder<'a> {
             // convert variable for loop actions into for loops
             "for" => {
                 let args = self.build_arguments_of_action_seperately(action);
-                let err_msg = "variable for loop action does not contain valid args";
                 let (variable, start, stop, actions) = (
-                    args.get(0).expect(err_msg),
-                    args.get(1).expect(err_msg),
-                    args.get(2).expect(err_msg),
-                    args.get(3).expect(err_msg),
+                    args.get(0).unwrap_or(&none),
+                    args.get(1).unwrap_or(&none),
+                    args.get(2).unwrap_or(&none),
+                    args.get(3).unwrap_or(&pass),
                 );
                 format!("for {variable} in range({start}, {stop}):{actions}")
             }
@@ -158,9 +158,7 @@ impl<'a> ScriptsContentBuilder<'a> {
             | "forAllPlayers" | "forAllItemTypes" | "forAllUnitTypes" | "forAllRegions"
             | "forAllDebris" => {
                 let args = self.build_arguments_of_action_seperately(action);
-                let err_msg =
-                    "for each type in function/variable action does not contain valid args";
-                let (group, actions) = (args.get(0).expect(err_msg), args.get(1).expect(err_msg));
+                let (group, actions) = (args.get(0).unwrap_or(&none), args.get(1).unwrap_or(&pass));
                 let group_type = match action
                     .name
                     .strip_prefix("forAll")
@@ -185,17 +183,15 @@ impl<'a> ScriptsContentBuilder<'a> {
             // convert repeat actions into for loops
             "repeat" => {
                 let args = self.build_arguments_of_action_seperately(action);
-                let err_msg = "repeat action does not contain valid args";
-                let (count, actions) = (args.get(0).expect(err_msg), args.get(1).expect(err_msg));
+                let (count, actions) = (args.get(0).unwrap_or(&none), args.get(1).expect(&pass));
                 format!("for _ in repeat({count}):{actions}")
             }
 
             // convert while actions into while loops
             "while" => {
                 let args = self.build_arguments_of_action_seperately(action);
-                let err_msg = "while action does not contain valid args";
                 let (condition, actions) =
-                    (args.get(0).expect(err_msg), args.get(1).expect(err_msg));
+                    (args.get(0).unwrap_or(&none), args.get(1).unwrap_or(&pass));
                 format!("while {condition}:{actions}")
             }
 
