@@ -17,18 +17,12 @@ class Pooper(EntityScripts):
 	@script(triggers=[])
 	class UseItem():
 		def _build(self):
-			self.actions = [
-				use_item_continuously_until_stopped(ItemCurrentlyHeldByUnit(ThisEntity())),
-				
-			]
+			use_item_continuously_until_stopped(ItemCurrentlyHeldByUnit(ThisEntity()))
 
 	@script(triggers=[])
 	class StopUsingItem():
 		def _build(self):
-			self.actions = [
-				stop_using_item(ItemCurrentlyHeldByUnit(ThisEntity())),
-				
-			]
+			stop_using_item(ItemCurrentlyHeldByUnit(ThisEntity()))
 
 
 class Frog(EntityScripts):
@@ -42,9 +36,6 @@ class Frog(EntityScripts):
 	@script(triggers=[])
 	class NewScript():
 		def _build(self):
-			self.actions = [
-				comment('wdwadawd'),
-				
-			]
+			comment('wdwadawd')
 
 
