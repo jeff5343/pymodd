@@ -251,11 +251,25 @@ impl<'a> ScriptsContentBuilder<'a> {
                     + &format!(
                         "{}{}",
                         String::from(if include_seperator { ", " } else { "" }),
-                        match arg {
-                            // surround entire condition with parenthesis
-                            ArgumentValueIterItem::Condition(_) =>
-                                format!("({})", self.build_argument_content(arg)),
-                            _ => self.build_argument_content(arg),
+                        {
+                            // remove parentheses surrounding the outermost layer of conditions
+                            if let ArgumentValueIterItem::Condition(_) = arg {
+                                let condition_content = self.build_argument_content(arg);
+                                if condition_content.starts_with("(")
+                                    && condition_content.ends_with(")")
+                                {
+                                    condition_content
+                                        .strip_prefix("(")
+                                        .unwrap()
+                                        .strip_suffix(")")
+                                        .unwrap()
+                                        .to_string()
+                                } else {
+                                    condition_content
+                                }
+                            } else {
+                                self.build_argument_content(arg)
+                            }
                         }
                     )
             })
@@ -330,22 +344,30 @@ impl<'a> ScriptsContentBuilder<'a> {
             ArgumentValueIterItem::from_argument(&operator.item_b),
         );
 
-        format!(
+        let operator = if let ArgumentValueIterItem::Value(operator_val) = operator {
+            into_operator(operator_val.as_str().unwrap_or("")).unwrap_or("")
+        } else {
+            ""
+        };
+
+        let content = format!(
             "{} {} {}",
             self.build_operation_item_content(item_a),
-            if let ArgumentValueIterItem::Value(operator_value) = operator {
-                into_operator(operator_value.as_str().unwrap_or("")).unwrap_or("")
-            } else {
-                ""
-            },
+            operator,
             self.build_operation_item_content(item_b)
-        )
+        );
+        // surround `and` and `or` conditions with parentheses
+        if ["and", "or"].contains(&operator) {
+            format!("({content})")
+        } else {
+            content
+        }
     }
 
     fn build_operation_item_content(&self, operation_item: ArgumentValueIterItem) -> String {
         match operation_item {
-            // only surround conditions and calculations with parenthesis
-            ArgumentValueIterItem::Condition(_) | ArgumentValueIterItem::Calculation(_) => {
+            // surround calculations with parentheses
+            ArgumentValueIterItem::Calculation(_) => {
                 format!("({})", self.build_argument_content(operation_item))
             }
             ArgumentValueIterItem::StartOfFunction(_) => self.build_arguments_content(
@@ -668,9 +690,9 @@ mod tests {
                 .unwrap(),
             ))
             .as_str(),
-            "if (True == True):\n\
-                \tif (True == True):\n\
-    		        \t\tif (True == True):\n\
+            "if True == True:\n\
+                \tif True == True:\n\
+    		        \t\tif True == True:\n\
 		                \t\t\tsend_chat_message_to_everyone('hi')\n\
                     \t\telse:\n\
 		                \t\t\tsend_chat_message_to_everyone('hi')\n\
@@ -708,7 +730,7 @@ mod tests {
                 .unwrap(),
             ))
             .as_str(),
-            "if ((True == True) and ((True == True) or (True == True))):\n\
+            "if True == True and (True == True or True == True):\n\
                 \tpass\n"
         );
     }
@@ -855,7 +877,7 @@ mod tests {
                 .unwrap(),
             ))
             .as_str(),
-            "while (EntityExists(LastTriggeringUnit()) == True):\n\
+            "while EntityExists(LastTriggeringUnit()) == True:\n\
                 \tpass\n"
         );
     }
