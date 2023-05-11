@@ -1,6 +1,6 @@
 use std::ops::Add;
 
-use heck::ToSnakeCase;
+use heck::{ToSnakeCase, ToUpperCamelCase};
 use serde_json::Value;
 
 use crate::game_data::{
@@ -119,6 +119,7 @@ impl<'a> ScriptsContentBuilder<'a> {
         match action.name.as_str() {
             // convert break, continue, and return actions into keywords
             "break" | "continue" | "return" => format!("{}\n", &action.name),
+
             // convert condition actions into if statements
             "condition" => {
                 let args = self.build_arguments_of_action_seperately(action);
@@ -173,6 +174,11 @@ impl<'a> ScriptsContentBuilder<'a> {
                     group_type => group_type,
                 }
                 .to_string();
+                // use the variable provided by the for loop instead of functions
+                let actions = actions.replace(
+                    &format!("Selected{}()", group_type.to_upper_camel_case()),
+                    &group_type,
+                );
                 format!("for {group_type} in {group}:{actions}")
             }
 
@@ -748,14 +754,16 @@ mod tests {
             )
             .build_actions_content(&parse_actions(
                 json!([
-                    { "type": "forAllEntities", "entityGroup": { "function": "allEntities" }, "actions": [] }
+                    { "type": "forAllEntities", "entityGroup": { "function": "allEntities" }, "actions": [
+                        { "type": "destroyEntity", "entity": { "function": "getSelectedEntity" } }
+                    ] }
                 ])
                 .as_array()
                 .unwrap(),
             ))
             .as_str(),
             "for entity in AllEntitiesInTheGame():\n\
-                \tpass\n"
+                \tdestroy_entity(entity)\n"
         );
     }
 
