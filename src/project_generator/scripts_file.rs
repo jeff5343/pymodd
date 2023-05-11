@@ -378,8 +378,8 @@ fn into_operator(string: &str) -> Option<&str> {
         return Some(string);
     }
     match string.to_lowercase().as_str() {
-        "and" => Some("&"),
-        "or" => Some("|"),
+        "and" => Some("and"),
+        "or" => Some("or"),
         _ => None,
     }
 }
@@ -688,32 +688,27 @@ mod tests {
                 &CategoriesToVariables::new(HashMap::new()),
                 &Directory::new("root", "null", Vec::new())
             )
-                .build_actions_content(&parse_actions(
-                    json!([
-                         {
-                            "type": "condition",
-                            "conditions": [
-                                { "operandType": "and", "operator": "AND" },
-                                [
-                                    { "operandType": "boolean", "operator": "==" },
-                                    { "function": "getNumberOfUnitsOfUnitType", "unitType": "oTDQ3jlcMa" },
-                                    5
-                                ],
-                                [
-                                    { "operandType": "boolean", "operator": "==" },
-                                    true,
-                                    true
-                                ]
-                            ],
-                            "then": [],
-                            "else": []
-                         }
-                    ])
-                    .as_array()
-                    .unwrap(),
-                ))
-                .as_str(),
-            "if ((NumberOfUnitsOfUnitType('oTDQ3jlcMa') == 5) & (True == True)):\n\
+            .build_actions_content(&parse_actions(
+                json!([
+                    {
+                        "type": "condition",
+                        "conditions": [
+                              { "operandType": "and", "operator": "AND" },
+                              [ { "operandType": "boolean", "operator": "==" }, true, true ],
+                              [
+                                   { "operandType": "or", "operator": "OR" },
+                                   [ { "operandType": "boolean", "operator": "==" }, true, true ],
+                                   [ { "operandType": "boolean", "operator": "==" }, true, true ]
+                              ]
+                         ],
+                         "then": [],
+                         "else": []
+                }])
+                .as_array()
+                .unwrap(),
+            ))
+            .as_str(),
+            "if ((True == True) and ((True == True) or (True == True))):\n\
                 \tpass\n"
         );
     }
