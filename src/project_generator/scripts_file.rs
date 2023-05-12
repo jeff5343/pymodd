@@ -278,7 +278,7 @@ impl<'a> ScriptsContentBuilder<'a> {
             .to_string()
     }
 
-    fn build_argument_content(&self, arg: ArgumentValueIterItem) -> String {
+    pub(crate) fn build_argument_content(&self, arg: ArgumentValueIterItem) -> String {
         match arg {
             ArgumentValueIterItem::StartOfFunction(function) => {
                 format!("{}(", function.pymodd_class_name())
@@ -305,7 +305,7 @@ impl<'a> ScriptsContentBuilder<'a> {
                         Some((category, variable)) => format!(
                             "{}.{}",
                             pymodd_class_name_of_category(category),
-                            variable.enum_name
+                            variable.enum_name()
                         ),
                         _ => surround_string_with_quotes(string),
                     }
@@ -470,7 +470,7 @@ mod tests {
             ScriptsContentBuilder::new(
                 &CategoriesToVariables::new(HashMap::from([(
                     "shops",
-                    vec![Variable::new("OJbEQyc7is", "weapons", "WEAPONS", None)]
+                    vec![Variable::new("OJbEQyc7is", "weapons", json!({}))]
                 )])),
                 &Directory::new("root", "null", Vec::new())
             )
@@ -741,7 +741,7 @@ mod tests {
             ScriptsContentBuilder::new(
                 &CategoriesToVariables::new(HashMap::from([(
                     "variables",
-                    vec![Variable::new("i", "i", "I", Some("number"))]
+                    vec![Variable::new("i", "i", json!({"dataType": "number"}))]
                 )])),
                 &Directory::new("root", "null", Vec::new())
             )
@@ -786,7 +786,7 @@ mod tests {
             ScriptsContentBuilder::new(
                 &CategoriesToVariables::new(HashMap::from([(
                     "itemTypeGroups",
-                    vec![Variable::new("specialItemTypes", "specialItemTypes", "SPECIAL_ITEM_TYPES", None)]
+                    vec![Variable::new("specialItemTypes", "specialItemTypes", json![{}])]
                 )])),
                 &Directory::new("root", "null", Vec::new())
             )
