@@ -8,10 +8,12 @@ use lazy_static::lazy_static;
 const PYMODD_SCRIPT_FILE_CONTENT: &str = include_str!("../../../pymodd/script.py");
 const PYMODD_ACTIONS_FILE_CONTENT: &str = include_str!("../../../pymodd/actions.py");
 const PYMODD_FUNCTIONS_FILE_CONTENT: &str = include_str!("../../../pymodd/functions.py");
+const PYMODD_VARIABLE_TYPES_FILE_CONTENT: &str = include_str!("../../../pymodd/variable_types.py");
 
 lazy_static! {
     // enum maps
     pub static ref TRIGGERS_TO_PYMODD_ENUM: HashMap<String, String> = generate_to_pymodd_enums_map_for_type("Trigger", PYMODD_SCRIPT_FILE_CONTENT);
+    pub static ref VARIABLE_DATA_TYPES_TO_PYMODD_ENUM: HashMap<String, String> = generate_to_pymodd_enums_map_for_type("DataType", PYMODD_VARIABLE_TYPES_FILE_CONTENT);
     pub static ref UI_TARGET_CONSTANTS_TO_PYMODD_ENUM:HashMap<String, String> = generate_to_pymodd_enums_map_for_type("UiTarget", PYMODD_SCRIPT_FILE_CONTENT);
     pub static ref FLIP_CONSTANTS_TO_PYMODD_ENUM:HashMap<String, String> = generate_to_pymodd_enums_map_for_type("Flip", PYMODD_SCRIPT_FILE_CONTENT);
 
@@ -69,10 +71,13 @@ fn generate_actions_to_pymodd_structure_map() -> HashMap<String, PymoddStructure
         .skip(3)
         .collect();
     action_functions.into_iter().for_each(|function_content| {
-        actions_to_structure.insert(
-            parse_action_name_of_pymodd_action_function(&function_content),
-            parse_pymodd_structure_of_pymodd_action_function(&function_content),
-        );
+        // skip over divider comments
+        if !function_content.starts_with("# ------") {
+            actions_to_structure.insert(
+                parse_action_name_of_pymodd_action_function(&function_content),
+                parse_pymodd_structure_of_pymodd_action_function(&function_content),
+            );
+        }
     });
     actions_to_structure
 }

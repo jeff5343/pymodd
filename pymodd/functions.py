@@ -1,6 +1,7 @@
+import pymodd
 from caseconverter import camelcase
 
-from .script import Base, to_dict
+from pymodd.script import Base, to_dict
 
 
 class Function(Base):
@@ -19,25 +20,6 @@ class Function(Base):
         if self.options is not None:
             data.update(self.options)
         return data
-
-    # condition functions
-    def __eq__(self, other):
-        return Condition(self, '==', other)
-
-    def __ne__(self, other):
-        return Condition(self, '!=', other)
-
-    def __ge__(self, other):
-        return Condition(self, '>=', other)
-
-    def __gt__(self, other):
-        return Condition(self, '>', other)
-
-    def __le__(self, other):
-        return Condition(self, '<=', other)
-
-    def __lt__(self, other):
-        return Condition(self, '<', other)
 
     # calculation functions
     def __add__(self, other):
@@ -77,6 +59,12 @@ class Function(Base):
         return Exponent(other, self)
 
 
+# only subclasses of Function requires these types
+# (also prevents a circular import)
+from .variable_types import (AttributeType, EntityVariable, ItemType, PlayerType, PlayerVariable,
+                             ProjectileType, State, UnitType, Variable)
+
+
 # ---------------------------------------------------------------------------- #
 #                                     Other                                    #
 # ---------------------------------------------------------------------------- #
@@ -94,7 +82,7 @@ def type_of_item(item):
     if (primitive := primitive_to_type.get(type(item))):
         return primitive
     if isinstance(item, Variable):
-        return camelcase(item.type)
+        return item.data_type.value
     if isinstance(item, Function):
         base_classes = item.__class__.mro()
         for i, base_class in enumerate(base_classes):
@@ -105,23 +93,23 @@ def type_of_item(item):
 
 class Condition(Function):
     def __init__(self, item_a: Base, operator: str, item_b: Base):
-        """The comparison type of the condition is determined based on the type of item_a
+        '''The comparison type of the condition is determined based on the type of item_a
 
         Args:
             item_a (Base): any object
+
             operator (str): can be regular comparisons (==, !=, >=, ...) or 'AND' and 'OR'
+
             item_b (Base): any object
-        """
+        '''
 
         self.item_a = item_a
         self.operator = operator.upper()
         self.item_b = item_b
-        comparison = None
-        if (operator := operator.lower()) == 'and' or operator == 'or':
-            comparison = operator
+        if self.operator == 'AND' or self.operator == 'OR':
+            self.comparison = operator.lower()
         else:
-            comparison = type_of_item(item_a) or type_of_item(item_b)
-        self.comparison = comparison
+            self.comparison = type_of_item(item_a) or type_of_item(item_b)
 
     def to_dict(self):
         return [
@@ -132,12 +120,6 @@ class Condition(Function):
             to_dict(self.item_a),
             to_dict(self.item_b)
         ]
-
-    def __and__(self, other):
-        return Condition(self, 'AND', other)
-
-    def __or__(self, other):
-        return Condition(self, 'OR', other)
 
 
 class Undefined(Function):
@@ -587,15 +569,7 @@ class LastTriggeringSensor(Sensor):
 # ---------------------------------------------------------------------------- #
 
 
-class State(Function):
-    def __init__(self, state_id):
-        self.function = {
-            'direct': True,
-            'value': state_id,
-        }
-
-
-class EntityState(State):
+class CurrentStateOfEntity(State):
     def __init__(self, entity):
         self.function = 'getEntityState'
         self.options = {
@@ -681,7 +655,7 @@ class AttributeMaxOfPlayer(Number):
         }
 
 
-class PlayerAttribute(Number):
+class ValueOfPlayerAttribute(Number):
     def __init__(self, attribute, entity):
         self.function = 'getPlayerAttribute'
         self.options = {
@@ -915,7 +889,7 @@ class AbsoluteValueOfNumber(Number):
         }
 
 
-class EntityAttribute(Number):
+class ValueOfEntityAttribute(Number):
     def __init__(self, attribute, entity):
         self.function = 'getEntityAttribute'
         self.options = {
@@ -955,7 +929,7 @@ class QuantityOfItemTypeInItemTypeGroup(Number):
         }
 
 
-class NumberOfItemsPresent(Number):
+class NumberOfItems(Number):
     def __init__(self):
         self.function = 'getNumberOfItemsPresent'
         self.options = {}
@@ -1173,7 +1147,7 @@ class ReplaceValuesInString(String):
 
 class UnixTimeToFormattedString(String):
     def __init__(self, seconds):
-        """formats to (hh::mm:ss)"""
+        '''formats to (hh::mm:ss)'''
         self.function = 'getTimeString'
         self.options = {
             'seconds': to_dict(seconds),
@@ -1452,39 +1426,15 @@ class UnitParticle(Particle):
 # ---------------------------------------------------------------------------- #
 
 
-class Variable(Function):
-    def __init__(self, variable_name, variable_type=None):
-        self.function = 'getVariable'
-        self.name = variable_name
-        self.type = variable_type
-        self.options = {
-            'variableName': variable_name
-        }
-
-
 # ---------------------------------------------------------------------------- #
 #                               Entity Variables                               #
 # ---------------------------------------------------------------------------- #
 
 
-class EntityVariable(Variable):
-    def __init__(self, variable_name, variable_type):
-        self.function = 'getEntityVariable'
-        self.type = variable_type
-        self.options = {
-            'variable': {
-                'text': f'{variable_name}',
-                'dataType': f'{variable_type}',
-                'entity': 'null',
-                'key': f'{variable_name}'
-            }
-        }
-
-
-class ValueOfEntityVariable(Variable):
+class ValueOfEntityVariable(EntityVariable):
     def __init__(self, entity_variable_type, entity):
         self.function = 'getValueOfEntityVariable'
-        self.type = entity_variable_type.type
+        self.data_type = entity_variable_type.data_type
         self.options = {
             'variable': to_dict(entity_variable_type),
             'entity': to_dict(entity)
@@ -1496,24 +1446,10 @@ class ValueOfEntityVariable(Variable):
 # ---------------------------------------------------------------------------- #
 
 
-class PlayerVariable(Variable):
-    def __init__(self, variable_name, variable_type):
-        self.function = 'getPlayerVariable'
-        self.type = variable_type
-        self.options = {
-            'variable': {
-                'text': f'{variable_name}',
-                'dataType': f'{variable_type}',
-                'entity': 'null',
-                'key': f'{variable_name}'
-            }
-        }
-
-
-class ValueOfPlayerVariable(Variable):
+class ValueOfPlayerVariable(PlayerVariable):
     def __init__(self, player_variable_type, player):
         self.function = 'getValueOfPlayerVariable'
-        self.type = player_variable_type.type
+        self.data_type = player_variable_type.data_type
         self.options = {
             'variable': to_dict(player_variable_type),
             'player': to_dict(player)
@@ -1571,14 +1507,6 @@ class DynamicRegion(Region):
 # ---------------------------------------------------------------------------- #
 
 
-class UnitType(Function):
-    def __init__(self, unit_type_id):
-        self.function = {
-            'direct': True,
-            'value': unit_type_id,
-        }
-
-
 class UnitTypeOfUnit(UnitType):
     def __init__(self, entity):
         self.function = 'getUnitTypeOfUnit'
@@ -1612,14 +1540,6 @@ class SelectedUnitType(UnitType):
 # ---------------------------------------------------------------------------- #
 
 
-class ItemType(Function):
-    def __init__(self, item_type_id):
-        self.function = {
-            'direct': True,
-            'value': item_type_id,
-        }
-
-
 class SelectedItemType(ItemType):
     def __init__(self):
         self.function = 'selectedItemType'
@@ -1647,14 +1567,6 @@ class RandomItemTypeFromItemTypeGroup(ItemType):
 # ---------------------------------------------------------------------------- #
 
 
-class ProjectileType(Function):
-    def __init__(self, projectile_type_id):
-        self.function = {
-            'direct': True,
-            'value': projectile_type_id,
-        }
-
-
 class ProjectileTypeOfProjectile(ProjectileType):
     def __init__(self, entity):
         self.function = 'getProjectileTypeOfProjectile'
@@ -1668,14 +1580,6 @@ class ProjectileTypeOfProjectile(ProjectileType):
 # ---------------------------------------------------------------------------- #
 
 
-class PlayerType(Function):
-    def __init__(self, player_type_id):
-        self.function = {
-            'direct': True,
-            'value': player_type_id,
-        }
-
-
 class PlayerTypeOfPlayer(PlayerType):
     def __init__(self, player):
         self.function = 'playerTypeOfPlayer'
@@ -1687,14 +1591,6 @@ class PlayerTypeOfPlayer(PlayerType):
 # ---------------------------------------------------------------------------- #
 #                                Attribute Types                               #
 # ---------------------------------------------------------------------------- #
-
-
-class AttributeType(Function):
-    def __init__(self, attribute_type_id):
-        self.function = {
-            'direct': True,
-            'value': attribute_type_id,
-        }
 
 
 class AttributeTypeOfAttribute(AttributeType):
@@ -1711,7 +1607,11 @@ class AttributeTypeOfAttribute(AttributeType):
 
 
 class Group(Function):
-    pass
+    def _get_iterating_action(self):
+        raise NotImplementedError('_get_iteration_object not implemented')
+
+    def _get_iteration_object(self):
+        raise NotImplementedError('_get_iteration_object not implemented')
 
 
 # ---------------------------------------------------------------------------- #
@@ -1720,7 +1620,11 @@ class Group(Function):
 
 
 class EntityGroup(Group):
-    pass
+    def _get_iterating_action(self):
+        return pymodd.actions.for_all_entities_in
+
+    def _get_iteration_object(self):
+        return SelectedEntity()
 
 
 class AllEntitiesCollidingWithLastRaycast(EntityGroup):
@@ -1729,7 +1633,7 @@ class AllEntitiesCollidingWithLastRaycast(EntityGroup):
         self.options = {}
 
 
-class AllEntitesInTheGame(EntityGroup):
+class AllEntitiesInTheGame(EntityGroup):
     def __init__(self):
         self.function = 'allEntities'
         self.options = {}
@@ -1769,7 +1673,11 @@ class AllEntitiesBetweenTwoPositions(EntityGroup):
 
 
 class UnitGroup(Group):
-    pass
+    def _get_iterating_action(self):
+        return pymodd.actions.for_all_units_in
+
+    def _get_iteration_object(self):
+        return SelectedUnit()
 
 
 class AllUnitsOwnedByPlayer(UnitGroup):
@@ -1824,7 +1732,11 @@ class AllUnitsInRegion(UnitGroup):
 
 
 class ProjectileGroup(Group):
-    pass
+    def _get_iterating_action(self):
+        return pymodd.actions.for_all_projectiles_in
+
+    def _get_iteration_object(self):
+        return SelectedProjectile()
 
 
 class AllProjectilesAttachedToUnit(ProjectileGroup):
@@ -1847,7 +1759,11 @@ class AllProjectilesInTheGame(ProjectileGroup):
 
 
 class ItemGroup(Group):
-    pass
+    def _get_iterating_action(self):
+        return pymodd.actions.for_all_items_in
+
+    def _get_iteration_object(self):
+        return SelectedItem()
 
 
 class AllItemsDroppedOnGround(ItemGroup):
@@ -1884,28 +1800,32 @@ class AllItemsOwnedByUnit(ItemGroup):
 
 
 class PlayerGroup(Group):
-    pass
+    def _get_iterating_action(self):
+        return pymodd.actions.for_all_players_in
+
+    def _get_iteration_object(self):
+        return SelectedPlayer()
 
 
-class AllHumanPlayers(PlayerGroup):
+class AllHumanPlayersInTheGame(PlayerGroup):
     def __init__(self):
         self.function = 'humanPlayers'
         self.options = {}
 
 
-class AllComputerPlayers(PlayerGroup):
+class AllComputerPlayersInTheGame(PlayerGroup):
     def __init__(self):
         self.function = 'computerPlayers'
         self.options = {}
 
 
-class AllPlayers(PlayerGroup):
+class AllPlayersInTheGame(PlayerGroup):
     def __init__(self):
         self.function = 'allPlayers'
         self.options = {}
 
 
-class AllBotPlayers(PlayerGroup):
+class AllBotPlayersInTheGame(PlayerGroup):
     def __init__(self):
         self.function = 'botPlayers'
         self.options = {}
@@ -1917,10 +1837,14 @@ class AllBotPlayers(PlayerGroup):
 
 
 class ItemTypeGroup(Group):
-    pass
+    def _get_iterating_action(self):
+        return pymodd.actions.for_all_item_types_in
+
+    def _get_iteration_object(self):
+        return SelectedItemType()
 
 
-class AllItemTypesInGame(ItemTypeGroup):
+class AllItemTypesInTheGame(ItemTypeGroup):
     def __init__(self):
         self.function = 'allItemTypesInGame'
         self.options = {}
@@ -1932,10 +1856,14 @@ class AllItemTypesInGame(ItemTypeGroup):
 
 
 class UnitTypeGroup(Group):
-    pass
+    def _get_iterating_action(self):
+        return pymodd.actions.for_all_unit_types_in
+
+    def _get_iteration_object(self):
+        return SelectedUnitType()
 
 
-class AllUnitTypesInGame(UnitTypeGroup):
+class AllUnitTypesInTheGame(UnitTypeGroup):
     def __init__(self):
         self.function = 'allUnitTypesInGame'
         self.options = {}
@@ -1947,10 +1875,14 @@ class AllUnitTypesInGame(UnitTypeGroup):
 
 
 class DebrisGroup(Group):
-    pass
+    def _get_iterating_action(self):
+        return pymodd.actions.for_all_debris_in
+
+    def _get_iteration_object(self):
+        return SelectedDebris()
 
 
-class AllDebris(DebrisGroup):
+class AllDebrisInTheGame(DebrisGroup):
     def __init__(self):
         self.function = 'allDebris'
         self.options = {}
@@ -1962,7 +1894,11 @@ class AllDebris(DebrisGroup):
 
 
 class RegionGroup(Group):
-    pass
+    def _get_iterating_action(self):
+        return pymodd.actions.for_all_regions_in
+
+    def _get_iteration_object(self):
+        return SelectedRegion()
 
 
 class AllRegionsInTheGame(RegionGroup):
@@ -1976,25 +1912,9 @@ class AllRegionsInTheGame(RegionGroup):
 # ---------------------------------------------------------------------------- #
 
 
-class Shop(Function):
-    def __init__(self, shop_id):
-        self.function = {
-            'direct': True,
-            'value': shop_id,
-        }
-
-
 # ---------------------------------------------------------------------------- #
 #                                  Animations                                  #
 # ---------------------------------------------------------------------------- #
-
-
-class AnimationType(Function):
-    def __init__(self, animation_type_id):
-        self.function = {
-            'direct': True,
-            'value': animation_type_id,
-        }
 
 
 # ---------------------------------------------------------------------------- #
@@ -2002,35 +1922,11 @@ class AnimationType(Function):
 # ---------------------------------------------------------------------------- #
 
 
-class Music(Function):
-    def __init__(self, music_id):
-        self.function = {
-            'direct': True,
-            'value': music_id,
-        }
-
-
 # ---------------------------------------------------------------------------- #
 #                                    Sounds                                    #
 # ---------------------------------------------------------------------------- #
 
 
-class Sound(Function):
-    def __init__(self, sound_id):
-        self.function = {
-            'direct': True,
-            'value': sound_id,
-        }
-
-
 # ---------------------------------------------------------------------------- #
 #                                   Dialogues                                  #
 # ---------------------------------------------------------------------------- #
-
-
-class Dialogue(Function):
-    def __init__(self, dialogue_id):
-        self.function = {
-            'direct': True,
-            'value': dialogue_id,
-        }

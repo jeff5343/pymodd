@@ -8,21 +8,32 @@ from pymodd import _pymodd_helper
 from pymodd.script import Game, EntityScripts
 
 
+VARIABLE_TYPE_CLASS_NAMES = [
+    'UnitTypes', 'PlayerTypes', 'ItemTypes', 'ProjectileTypes', 'Regions', 'Variables',
+    'EntityVariables', 'PlayerVariables', 'AnimationTypes', 'AttributeTypes', 'ItemTypeGroups',
+    'UnitTypeGroups', 'States', 'Shops', 'Dialogues', 'Musics', 'Sounds'
+]
+
+
 def generate_project(args):
     _pymodd_helper.generate_project_from_json_file_path(args.json_file_path)
 
 
 def compile_project(_args):
-    if not os.path.isfile('mapping.py'):
-        _pymodd_helper.log_error(
-            'mapping.py file not found: is your current working directory a pymodd project?')
-        return
+    required_files = ['mapping.py']
+    for file in required_files:
+        if not os.path.isfile(file):
+            _pymodd_helper.log_error(
+                f'{file} file not found: is your current working directory a pymodd project?')
+            return
+
     project_directory_name = os.getcwd().split(os.sep)[-1]
     _pymodd_helper.log_cli_start_message("Compiling", project_directory_name)
 
     sys.path.append(os.path.abspath(f'../{project_directory_name}/'))
-    mapping_file_data = runpy.run_path(f'mapping.py')
-    game_classes = find_game_classes_in_file_data(mapping_file_data)
+    project_data = runpy.run_path('mapping.py')
+
+    game_classes = find_game_classes_in_project_data(project_data)
     if len(game_classes) == 0:
         _pymodd_helper.log_error(
             'no class subclassing Game was found in mapping.py, one is required')
@@ -31,7 +42,10 @@ def compile_project(_args):
         _pymodd_helper.log_error(
             'more than one class subclassing Game was found in mapping.py, only one is required')
         return
-    game = game_classes[0]('utils/game.json')
+
+    variable_classes = find_variable_classes_in_project_data(
+        project_data)
+    game = game_classes[0]('utils/game.json', variable_classes, project_data)
 
     compiled_json_output_path = f'output/{game.name}.json'
     if not os.path.exists('output/'):
@@ -43,7 +57,7 @@ def compile_project(_args):
     _pymodd_helper.log_cli_end_message("compilation", True)
 
 
-def find_game_classes_in_file_data(file_data):
+def find_game_classes_in_project_data(project_data: dict):
     return list(filter(
         lambda object_data:
         # is a class
@@ -53,7 +67,17 @@ def find_game_classes_in_file_data(file_data):
         # is not the Game class
         object_data != Game and
         # does not subclass the EntityScripts class
-        not issubclass(object_data, EntityScripts), file_data.values()))
+        not issubclass(object_data, EntityScripts),
+        project_data.values()))
+
+
+def find_variable_classes_in_project_data(project_data: dict):
+    def is_class_data_of_variable_type(pair):
+        key, _value = pair
+        return key in VARIABLE_TYPE_CLASS_NAMES
+    return list(dict(filter(
+        is_class_data_of_variable_type,
+        project_data.items())).values())
 
 
 def main_cli():

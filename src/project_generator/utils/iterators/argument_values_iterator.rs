@@ -7,7 +7,7 @@ use crate::game_data::{
 
 impl Action {
     pub fn iter_flattened_argument_values(&self) -> ArgumentValuesIterator {
-        ArgumentValuesIterator::new(self)
+        ArgumentValuesIterator::new(&self.args)
     }
 }
 
@@ -16,10 +16,9 @@ pub struct ArgumentValuesIterator<'a> {
 }
 
 impl<'a> ArgumentValuesIterator<'a> {
-    fn new(action: &Action) -> ArgumentValuesIterator {
+    pub fn new(arguments: &Vec<Argument>) -> ArgumentValuesIterator {
         ArgumentValuesIterator {
-            stack: action
-                .args
+            stack: arguments
                 .iter()
                 .map(|arg| ArgumentValueIterItem::from_argument(arg))
                 .collect(),

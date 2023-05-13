@@ -1,5 +1,6 @@
-use crate::game_data::{
-    entity_types::EntityType, variable_categories::pymodd_class_name_of_category, GameData,
+use crate::{
+    game_data::{entity_types::EntityType, GameData},
+    project_generator::game_variables_file::pymodd_class_name_of_category,
 };
 
 use super::{

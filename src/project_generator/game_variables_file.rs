@@ -1,36 +1,36 @@
 use std::ops::Add;
 
-use crate::game_data::{
-    variable_categories::{
-        is_category_of_variable_type, pymodd_class_name_of_category, pymodd_class_type_of_category,
-        Variable,
-    },
-    GameData,
+use heck::ToPascalCase;
+
+use crate::{
+    game_data::{variable_categories::Variable, GameData},
+    project_generator::utils::surround_string_with_quotes,
 };
+
+use super::utils::to_pymodd_maps::VARIABLE_DATA_TYPES_TO_PYMODD_ENUM;
 
 pub struct GameVariablesFile {}
 
 impl GameVariablesFile {
     pub fn build_content(game_data: &GameData) -> String {
-        let mut importing_classes: Vec<String> = Vec::new();
         let mut file_content = String::new();
         game_data
             .categories_to_variables
             .iter()
             .for_each(|(category, variables)| {
-                let importing_class_for_category = pymodd_class_type_of_category(&category);
-                if variables.len() > 0 && !importing_classes.contains(&importing_class_for_category)
-                {
-                    importing_classes.push(importing_class_for_category);
-                }
                 file_content.push_str(
                     &build_class_content_of_category(&category, &variables).add("\n\n\n"),
                 );
             });
+        let classes_to_import = game_data
+            .categories_to_variables
+            .iter()
+            .map(|(category, _variables)| pymodd_class_type_of_category(&category))
+            .collect::<Vec<String>>();
 
         format!(
-            "from pymodd.functions import {}\n\n\n{}",
-            importing_classes.join(", "),
+            "from pymodd.variable_types import {}, DataType\n\n\n{}",
+            classes_to_import.join(", "),
             file_content,
         )
     }
@@ -58,22 +58,60 @@ fn build_class_variables_of_category(
         .iter()
         .map(|variable| {
             format!(
-                "{} = {}(\"{}\"{})",
+                "{} = {}({}{})",
                 variable.enum_name,
                 pymodd_class_type_of_category(&category),
-                variable.id,
-                if is_category_of_variable_type(&category) {
+                surround_string_with_quotes(&variable.id),
+                if variable_category_requires_data_type(&category) {
                     format!(
-                        ", variable_type='{}'",
-                        variable.data_type.as_ref().unwrap_or(&String::from("None"))
+                        ", {}",
+                        VARIABLE_DATA_TYPES_TO_PYMODD_ENUM
+                            .get(variable.data_type.as_ref().unwrap_or(&String::new()))
+                            .unwrap_or(&String::from("None"))
                     )
                 } else {
-                    String::new()
+                    format!(", name={}", surround_string_with_quotes(&variable.name))
                 }
             )
             .to_string()
         })
         .collect()
+}
+
+pub fn pymodd_class_name_of_category(category: &'static str) -> String {
+    let mut class_name = match category {
+        "entityTypeVariables" => "EntityVariables",
+        "playerTypeVariables" => "PlayerVariables",
+        _ => category,
+    }
+    .to_pascal_case()
+    .to_string();
+    if !class_name.ends_with("s") {
+        class_name.push('s')
+    }
+    class_name
+}
+
+fn pymodd_class_type_of_category(category: &'static str) -> String {
+    match category {
+        "itemTypeGroups" | "unitTypeGroups" | "regions" => String::from("Variable"),
+        _ => pymodd_class_name_of_category(&category)
+            .strip_suffix('s')
+            .unwrap()
+            .to_string(),
+    }
+}
+
+fn variable_category_requires_data_type(category: &'static str) -> bool {
+    [
+        "variables",
+        "entityTypeVariables",
+        "playerTypeVariables",
+        "itemTypeGroups",
+        "unitTypeGroups",
+        "regions",
+    ]
+    .contains(&category)
 }
 
 #[cfg(test)]
@@ -89,14 +127,14 @@ mod tests {
             build_class_content_of_category(
                 "itemTypes",
                 &vec![
-                    Variable::new("FW3513W", "APPLE", None),
-                    Variable::new("OE51DW2", "BANANA", None)
+                    Variable::new("FW3513W", "apple", "APPLE", None),
+                    Variable::new("OE51DW2", "banana", "BANANA", None)
                 ],
             ),
             String::from(
                 "class ItemTypes:\
-                    \n\tAPPLE = ItemType(\"FW3513W\")\
-                    \n\tBANANA = ItemType(\"OE51DW2\")"
+                    \n\tAPPLE = ItemType('FW3513W', name='apple')\
+                    \n\tBANANA = ItemType('OE51DW2', name='banana')"
             )
         );
     }

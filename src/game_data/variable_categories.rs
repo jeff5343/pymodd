@@ -1,6 +1,5 @@
 use std::collections::HashMap;
 
-use heck::ToPascalCase;
 use serde_json::{Map, Value};
 
 use crate::project_generator::utils::enum_name_of;
@@ -27,24 +26,32 @@ pub const SEPERATED_VARIABLE_CATEGORIES: [&str; 3] =
     ["regions", "itemTypeGroups", "unitTypeGroups"];
 
 const VARIABLE_CATEGORIES_ITERATION_ORDER: [&str; 17] = [
-    "unitTypes",
-    "playerTypes",
     "itemTypes",
     "projectileTypes",
-    "regions",
+    "unitTypes",
+    "playerTypes",
+    "itemTypeGroups",
+    "unitTypeGroups",
     "variables",
     "entityTypeVariables",
     "playerTypeVariables",
-    "animationTypes",
-    "attributeTypes",
-    "itemTypeGroups",
-    "unitTypeGroups",
-    "states",
+    "regions",
     "shops",
     "dialogues",
     "music",
     "sound",
+    "states",
+    "animationTypes",
+    "attributeTypes",
 ];
+
+#[derive(Debug, PartialEq, Eq)]
+pub struct Variable {
+    pub id: String,
+    pub name: String,
+    pub enum_name: String,
+    pub data_type: Option<String>,
+}
 
 pub struct CategoriesToVariables {
     pub categories_to_variables: HashMap<&'static str, Vec<Variable>>,
@@ -110,16 +117,18 @@ fn variables_from_category_data(category_data: &Value) -> Vec<Variable> {
         .as_object()
         .unwrap_or(&Map::new())
         .iter()
-        .map(|(var_id, var)| Variable {
-            id: var_id.clone(),
-            enum_name: enum_name_of(
-                var.get("name")
-                    .unwrap_or(&Value::String(var_id.clone()))
-                    .as_str()
-                    .unwrap(),
-            )
-            .to_string(),
-            data_type: parse_data_type(var.get("dataType")),
+        .map(|(var_id, var)| {
+            let var_name = var
+                .get("name")
+                .unwrap_or(&Value::Null)
+                .as_str()
+                .unwrap_or(var_id);
+            Variable {
+                id: var_id.clone(),
+                name: var_name.to_string(),
+                enum_name: enum_name_of(var_name).to_string(),
+                data_type: parse_data_type(var.get("dataType")),
+            }
         })
         .collect()
 }
@@ -183,43 +192,6 @@ fn seperated_variables_categories(
     seperated_category_to_variables
 }
 
-pub fn pymodd_class_name_of_category(category: &'static str) -> String {
-    let mut class_name = match category {
-        "entityTypeVariables" => "EntityVariables",
-        "playerTypeVariables" => "PlayerVariables",
-        _ => category,
-    }
-    .to_pascal_case()
-    .to_string();
-    if !class_name.ends_with("s") {
-        class_name.push('s')
-    }
-    class_name
-}
-
-pub fn pymodd_class_type_of_category(category: &'static str) -> String {
-    // in order to match with classes defined in pymodd/functions.py
-    if VARIABLES_CATEGORY_NAME == category || SEPERATED_VARIABLE_CATEGORIES.contains(&category) {
-        return String::from("Variable");
-    }
-    pymodd_class_name_of_category(&category)
-        .strip_suffix('s')
-        .unwrap()
-        .to_string()
-}
-
-pub fn is_category_of_variable_type(category: &'static str) -> bool {
-    category.to_lowercase().contains("variables")
-        || SEPERATED_VARIABLE_CATEGORIES.contains(&category)
-}
-
-#[derive(Debug, PartialEq, Eq)]
-pub struct Variable {
-    pub id: String,
-    pub enum_name: String,
-    pub data_type: Option<String>,
-}
-
 #[cfg(test)]
 mod tests {
     use std::collections::HashMap;
@@ -234,9 +206,10 @@ mod tests {
     };
 
     impl Variable {
-        pub fn new(id: &str, enum_name: &str, data_type: Option<&str>) -> Variable {
+        pub fn new(id: &str, name: &str, enum_name: &str, data_type: Option<&str>) -> Variable {
             Variable {
                 id: id.to_string(),
+                name: name.to_string(),
                 enum_name: enum_name.to_string(),
                 data_type: data_type.map(|val| val.to_string()),
             }
@@ -257,11 +230,16 @@ mod tests {
             CategoriesToVariables::new(HashMap::from([
                 (
                     "unitTypeGroups",
-                    vec![Variable::new("O23FJW2", "BANANA", Some("unitTypeGroup"))]
+                    vec![Variable::new(
+                        "O23FJW2",
+                        "banana",
+                        "BANANA",
+                        Some("unitTypeGroup")
+                    )]
                 ),
                 (
                     "regions",
-                    vec![Variable::new("WDWI313", "WATER", Some("region"))]
+                    vec![Variable::new("WDWI313", "water", "WATER", Some("region"))]
                 ),
                 ("variables", vec![]),
             ]))
@@ -269,7 +247,7 @@ mod tests {
             .unwrap(),
             (
                 "regions",
-                &Variable::new("WDWI313", "WATER", Some("region"))
+                &Variable::new("WDWI313", "water", "WATER", Some("region"))
             )
         );
     }
@@ -284,9 +262,9 @@ mod tests {
             }))
             .as_slice(),
             [
-                Variable::new("FW3513W", "APPLE", None),
-                Variable::new("O23FJW2", "BANANA", None),
-                Variable::new("WDWI313", "WATER", Some("region")),
+                Variable::new("FW3513W", "apple", "APPLE", None),
+                Variable::new("O23FJW2", "banana", "BANANA", None),
+                Variable::new("WDWI313", "water", "WATER", Some("region")),
             ]
         );
     }
@@ -295,15 +273,15 @@ mod tests {
     fn ensure_no_duplicated_enum_names() {
         assert_eq!(
             resolve_duplicate_variable_enum_names(vec![
-                Variable::new("FW3513W", "APPLE", None),
-                Variable::new("O23FJW2", "APPLE", None),
-                Variable::new("WDWI313", "APPLE", None),
+                Variable::new("FW3513W", "apple", "APPLE", None),
+                Variable::new("O23FJW2", "apple", "APPLE", None),
+                Variable::new("WDWI313", "apple", "APPLE", None),
             ])
             .as_slice(),
             [
-                Variable::new("FW3513W", "APPLE", None),
-                Variable::new("O23FJW2", "APPLE_1", None),
-                Variable::new("WDWI313", "APPLE_2", None),
+                Variable::new("FW3513W", "apple", "APPLE", None),
+                Variable::new("O23FJW2", "apple", "APPLE_1", None),
+                Variable::new("WDWI313", "apple", "APPLE_2", None),
             ]
         );
     }
@@ -319,15 +297,25 @@ mod tests {
             HashMap::from([
                 (
                     "itemTypeGroups",
-                    vec![Variable::new("FW3513W", "APPLE", Some("itemTypeGroup"))]
+                    vec![Variable::new(
+                        "FW3513W",
+                        "apple",
+                        "APPLE",
+                        Some("itemTypeGroup")
+                    )]
                 ),
                 (
                     "unitTypeGroups",
-                    vec![Variable::new("O23FJW2", "BANANA", Some("unitTypeGroup"))]
+                    vec![Variable::new(
+                        "O23FJW2",
+                        "banana",
+                        "BANANA",
+                        Some("unitTypeGroup")
+                    )]
                 ),
                 (
                     "regions",
-                    vec![Variable::new("WDWI313", "WATER", Some("region"))]
+                    vec![Variable::new("WDWI313", "water", "WATER", Some("region"))]
                 ),
                 ("variables", vec![]),
             ])

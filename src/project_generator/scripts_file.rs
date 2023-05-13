@@ -1,39 +1,44 @@
 use std::ops::Add;
 
+use heck::{ToSnakeCase, ToUpperCamelCase};
 use serde_json::Value;
 
 use crate::game_data::{
     actions::Action,
     directory::{Directory, Script},
-    variable_categories::{pymodd_class_name_of_category, CategoriesToVariables},
+    variable_categories::CategoriesToVariables,
     GameData,
 };
 
-use super::utils::{
-    iterators::{
-        argument_values_iterator::{ArgumentValueIterItem, ArgumentValuesIterator, Operation},
-        directory_iterator::DirectoryIterItem,
+use super::{
+    game_variables_file::pymodd_class_name_of_category,
+    utils::{
+        iterators::{
+            argument_values_iterator::{ArgumentValueIterItem, ArgumentValuesIterator, Operation},
+            directory_iterator::DirectoryIterItem,
+        },
+        surround_string_with_quotes,
     },
-    surround_string_with_quotes,
 };
 
 pub struct ScriptsFile {}
 
 impl ScriptsFile {
     pub fn build_content(game_data: &GameData) -> String {
-        let content = format!(
+        format!(
             "from pymodd.actions import *\n\
             from pymodd.functions import *\n\
             from pymodd.script import Trigger, UiTarget, Flip, script\n\n\
-            from game_variables import *\n\n\n"
-        );
-        content.add(&build_directory_content(
-            &game_data.root_directory,
-            &ScriptsContentBuilder::new(
-                &game_data.categories_to_variables,
+            from game_variables import *\n\n\n\
+            {}\n\n",
+            &build_directory_content(
                 &game_data.root_directory,
-            ),
-        ))
+                &ScriptsContentBuilder::new(
+                    &game_data.categories_to_variables,
+                    &game_data.root_directory,
+                ),
+            )
+        )
     }
 }
 
@@ -85,20 +90,21 @@ impl<'a> ScriptsContentBuilder<'a> {
             "@script(triggers=[{}]{})\n\
             class {class_name}():\n\
             \tdef _build(self):\n\
-                \t\tself.actions = [\n\
-                {}\
-                \t\t\t\n\
-                \t\t]\n",
+                {}",
             script.triggers_into_pymodd_enums().join(", "),
-            if !script.name.is_ascii() {
-                format!(", name={}", surround_string_with_quotes(&script.name))
-            } else {
+            if script.name.is_ascii() {
                 String::new()
+            } else {
+                format!(", name={}", surround_string_with_quotes(&script.name))
             },
-            self.build_actions_content(&script.actions)
-                .lines()
-                .map(|action| format!("{}{action}\n", "\t".repeat(3)))
-                .collect::<String>(),
+            if script.actions.len() > 0 {
+                self.build_actions_content(&script.actions)
+                    .lines()
+                    .map(|action| format!("{}{action}\n", "\t".repeat(2)))
+                    .collect::<String>()
+            } else {
+                String::from("\t\tpass\n")
+            }
         )
     }
 
@@ -110,10 +116,88 @@ impl<'a> ScriptsContentBuilder<'a> {
     }
 
     fn build_action_content(&self, action: &Action) -> String {
+        // for use while converting arguments of special actions
+        let (none, pass) = (String::from("None"), String::from("\t\tpass\n"));
         match action.name.as_str() {
+            // convert break, continue, and return actions into keywords
+            "break" | "continue" | "return" => format!("{}\n", &action.name),
+
+            // convert condition actions into if statements
+            "condition" => {
+                let args = self.build_arguments_of_action_seperately(action);
+                let (condition, then_actions, else_actions) = (
+                    args.get(0).unwrap_or(&none),
+                    args.get(1).unwrap_or(&pass),
+                    args.get(2).unwrap_or(&pass),
+                );
+                format!(
+                    "if {condition}:{}{}",
+                    then_actions.strip_suffix("\n").unwrap(),
+                    if else_actions != "\n\tpass\n" {
+                        format!("\nelse:{else_actions}")
+                    } else {
+                        String::from("\n")
+                    }
+                )
+            }
+
+            // convert variable for loop actions into for loops
+            "for" => {
+                let args = self.build_arguments_of_action_seperately(action);
+                let (variable, start, stop, actions) = (
+                    args.get(0).unwrap_or(&none),
+                    args.get(1).unwrap_or(&none),
+                    args.get(2).unwrap_or(&none),
+                    args.get(3).unwrap_or(&pass),
+                );
+                format!("for {variable} in range({start}, {stop}):{actions}")
+            }
+
+            // convert for each type in function/variable actions into for loops
+            "forAllEntities" | "forAllProjectiles" | "forAllItems" | "forAllUnits"
+            | "forAllPlayers" | "forAllItemTypes" | "forAllUnitTypes" | "forAllRegions"
+            | "forAllDebris" => {
+                let args = self.build_arguments_of_action_seperately(action);
+                let (group, actions) = (args.get(0).unwrap_or(&none), args.get(1).unwrap_or(&pass));
+                let group_type = match action
+                    .name
+                    .strip_prefix("forAll")
+                    .unwrap()
+                    .to_snake_case()
+                    .strip_suffix("s")
+                    .unwrap()
+                {
+                    "entitie" => "entity",
+                    "debri" => "debris",
+                    group_type => group_type,
+                }
+                .to_string();
+                // use the variable provided by the for loop instead of functions
+                let actions = actions.replace(
+                    &format!("Selected{}()", group_type.to_upper_camel_case()),
+                    &group_type,
+                );
+                format!("for {group_type} in {group}:{actions}")
+            }
+
+            // convert repeat actions into for loops
+            "repeat" => {
+                let args = self.build_arguments_of_action_seperately(action);
+                let (count, actions) = (args.get(0).unwrap_or(&none), args.get(1).expect(&pass));
+                format!("for _ in repeat({count}):{actions}")
+            }
+
+            // convert while actions into while loops
+            "while" => {
+                let args = self.build_arguments_of_action_seperately(action);
+                let (condition, actions) =
+                    (args.get(0).unwrap_or(&none), args.get(1).unwrap_or(&pass));
+                format!("while {condition}:{actions}")
+            }
+
             "comment" => {
                 format!(
-                    "{}({}{}),\n",
+                    "{}({}{})\n",
                     action.pymodd_class_name(),
                     // set argument manually for comments
                     surround_string_with_quotes(
@@ -126,12 +210,11 @@ impl<'a> ScriptsContentBuilder<'a> {
                         .collect::<String>(),
                 )
             }
+
             _ => format!(
-                "{}({}",
+                "{}({}{})\n",
                 action.pymodd_class_name(),
-                self.build_arguments_content(action.iter_flattened_argument_values())
-            )
-            .add(
+                self.build_arguments_content(action.iter_flattened_argument_values()),
                 &self
                     .build_optional_arguments_contents(&action)
                     .into_iter()
@@ -144,9 +227,19 @@ impl<'a> ScriptsContentBuilder<'a> {
                         }
                     })
                     .collect::<String>(),
-            )
-            .add("),\n"),
+            ),
         }
+    }
+
+    /// used while parsing if statements, for loops, and while loops
+    fn build_arguments_of_action_seperately(&self, action: &Action) -> Vec<String> {
+        action
+            .args
+            .iter()
+            .map(|arg| {
+                self.build_arguments_content(ArgumentValuesIterator::new(&vec![arg.clone()]))
+            })
+            .collect::<Vec<String>>()
     }
 
     fn build_arguments_content(&self, args_iter: ArgumentValuesIterator) -> String {
@@ -158,11 +251,25 @@ impl<'a> ScriptsContentBuilder<'a> {
                     + &format!(
                         "{}{}",
                         String::from(if include_seperator { ", " } else { "" }),
-                        match arg {
-                            // surround entire condition with parenthesis
-                            ArgumentValueIterItem::Condition(_) =>
-                                format!("({})", self.build_argument_content(arg)),
-                            _ => self.build_argument_content(arg),
+                        {
+                            // remove parentheses surrounding the outermost layer of conditions
+                            if let ArgumentValueIterItem::Condition(_) = arg {
+                                let condition_content = self.build_argument_content(arg);
+                                if condition_content.starts_with("(")
+                                    && condition_content.ends_with(")")
+                                {
+                                    condition_content
+                                        .strip_prefix("(")
+                                        .unwrap()
+                                        .strip_suffix(")")
+                                        .unwrap()
+                                        .to_string()
+                                } else {
+                                    condition_content
+                                }
+                            } else {
+                                self.build_argument_content(arg)
+                            }
                         }
                     )
             })
@@ -178,11 +285,15 @@ impl<'a> ScriptsContentBuilder<'a> {
             }
             ArgumentValueIterItem::Actions(actions) => {
                 format!(
-                    "[\n{}\t\n]",
-                    self.build_actions_content(actions)
-                        .lines()
-                        .map(|line| format!("\t{line}\n"))
-                        .collect::<String>()
+                    "\n{}",
+                    if actions.len() > 0 {
+                        self.build_actions_content(actions)
+                            .lines()
+                            .map(|line| format!("\t{line}\n"))
+                            .collect::<String>()
+                    } else {
+                        String::from("\tpass\n")
+                    }
                 )
             }
             ArgumentValueIterItem::Value(value) => match value {
@@ -233,22 +344,30 @@ impl<'a> ScriptsContentBuilder<'a> {
             ArgumentValueIterItem::from_argument(&operator.item_b),
         );
 
-        format!(
+        let operator = if let ArgumentValueIterItem::Value(operator_val) = operator {
+            into_operator(operator_val.as_str().unwrap_or("")).unwrap_or("")
+        } else {
+            ""
+        };
+
+        let content = format!(
             "{} {} {}",
             self.build_operation_item_content(item_a),
-            if let ArgumentValueIterItem::Value(operator_value) = operator {
-                into_operator(operator_value.as_str().unwrap_or("")).unwrap_or("")
-            } else {
-                ""
-            },
+            operator,
             self.build_operation_item_content(item_b)
-        )
+        );
+        // surround `and` and `or` conditions with parentheses
+        if ["and", "or"].contains(&operator) {
+            format!("({content})")
+        } else {
+            content
+        }
     }
 
     fn build_operation_item_content(&self, operation_item: ArgumentValueIterItem) -> String {
         match operation_item {
-            // only surround conditions and calculations with parenthesis
-            ArgumentValueIterItem::Condition(_) | ArgumentValueIterItem::Calculation(_) => {
+            // surround calculations with parentheses
+            ArgumentValueIterItem::Calculation(_) => {
                 format!("({})", self.build_argument_content(operation_item))
             }
             ArgumentValueIterItem::StartOfFunction(_) => self.build_arguments_content(
@@ -281,8 +400,8 @@ fn into_operator(string: &str) -> Option<&str> {
         return Some(string);
     }
     match string.to_lowercase().as_str() {
-        "and" => Some("&"),
-        "or" => Some("|"),
+        "and" => Some("and"),
+        "or" => Some("or"),
         _ => None,
     }
 }
@@ -318,9 +437,7 @@ mod tests {
                 "@script(triggers=[Trigger.GAME_START])\n\
                 class Initialize():\n\
                     \tdef _build(self):\n\
-                        \t\tself.actions = [\n\
-                        \t\t\t\n\
-                        \t\t]\n",
+                        \t\tpass\n",
             ))
         );
     }
@@ -342,9 +459,7 @@ mod tests {
                 "@script(triggers=[Trigger.GAME_START], name='【 𝚒𝚗𝚒𝚝𝚒𝚊𝚕𝚒𝚣𝚎 イ】')\n\
                 class q():\n\
                     \tdef _build(self):\n\
-                        \t\tself.actions = [\n\
-                        \t\t\t\n\
-                        \t\t]\n",
+                        \t\tpass\n",
             ))
         );
     }
@@ -355,7 +470,7 @@ mod tests {
             ScriptsContentBuilder::new(
                 &CategoriesToVariables::new(HashMap::from([(
                     "shops",
-                    vec![Variable::new("OJbEQyc7is", "WEAPONS", None)]
+                    vec![Variable::new("OJbEQyc7is", "weapons", "WEAPONS", None)]
                 )])),
                 &Directory::new("root", "null", Vec::new())
             )
@@ -365,10 +480,7 @@ mod tests {
                         "type": "openShopForPlayer",
                             "player": {
                                 "function": "getOwner",
-                                "entity": {
-                                    "function": "getLastCastingUnit",
-                                    "vars": []
-                                },
+                                "entity": { "function": "getLastCastingUnit", "vars": [] },
                                 "vars": []
                             },
                         "shop": "OJbEQyc7is",
@@ -378,7 +490,7 @@ mod tests {
                 .as_array()
                 .unwrap()
             )),
-            "open_shop_for_player(Shops.WEAPONS, OwnerOfEntity(LastCastingUnit())),\n"
+            "open_shop_for_player(Shops.WEAPONS, OwnerOfEntity(LastCastingUnit()))\n"
         )
     }
 
@@ -393,9 +505,7 @@ mod tests {
                 &json!([
                     {
                         "type": "startUsingItem",
-                        "entity": {
-                            "function": "getTriggeringItem"
-                        },
+                        "entity": { "function": "getTriggeringItem" },
                         "comment": "hi!",
                         "runOnClient": true,
                         "disabled": true,
@@ -404,7 +514,7 @@ mod tests {
                 .as_array()
                 .unwrap()
             )),
-            "use_item_continuously_until_stopped(LastTriggeringItem(), comment='hi!', disabled=True, run_on_client=True),\n"
+            "use_item_continuously_until_stopped(LastTriggeringItem(), comment='hi!', disabled=True, run_on_client=True)\n"
         )
     }
 
@@ -417,17 +527,12 @@ mod tests {
             )
             .build_actions_content(&parse_actions(
                 &json!([
-                    {
-                        "type": "return",
-                        "comment": "hi!",
-                        "runOnClient": true,
-                        "disabled": false,
-                    }
+                    { "type": "stopMusic", "comment": "hi!", "runOnClient": true, "disabled": false, }
                 ])
                 .as_array()
                 .unwrap()
             )),
-            "return_loop(comment='hi!', run_on_client=True),\n"
+            "stop_music_for_everyone(comment='hi!', run_on_client=True)\n"
         )
     }
 
@@ -440,16 +545,12 @@ mod tests {
             )
             .build_actions_content(&parse_actions(
                 &json!([
-                    {
-                        "type": "updateUiTextForEveryone",
-                        "target": "top",
-                        "value": "Hello!"
-                    }
+                    { "type": "updateUiTextForEveryone", "target": "top", "value": "Hello!" }
                 ])
                 .as_array()
                 .unwrap()
             )),
-            "update_ui_text_for_everyone(UiTarget.TOP, 'Hello!'),\n"
+            "update_ui_text_for_everyone(UiTarget.TOP, 'Hello!')\n"
         )
     }
 
@@ -462,15 +563,30 @@ mod tests {
             )
             .build_actions_content(&parse_actions(
                 &json!([
-                    {
-                        "type": "comment",
-                        "comment": "hey there",
-                    }
+                    { "type": "comment", "comment": "hey there", }
                 ])
                 .as_array()
                 .unwrap()
             )),
-            "comment('hey there'),\n"
+            "comment('hey there')\n"
+        );
+    }
+
+    #[test]
+    fn parse_keyword_actions_into_pymodd() {
+        assert_eq!(
+            ScriptsContentBuilder::new(
+                &CategoriesToVariables::new(HashMap::new()),
+                &Directory::new("root", "null", Vec::new())
+            )
+            .build_actions_content(&parse_actions(
+                &json!([ { "type": "break" }, { "type": "continue" }, { "type": "return" } ])
+                    .as_array()
+                    .unwrap()
+            )),
+            "break\n\
+            continue\n\
+            return\n"
         );
     }
 
@@ -504,7 +620,7 @@ mod tests {
                     .as_array()
                     .unwrap()
                 )),
-            "increase_variable_by_number(None, RandomNumberBetween(0, 5) * ((CurrentUnixTimeStamp() ** 2) + 3)),\n"
+            "increase_variable_by_number(None, RandomNumberBetween(0, 5) * ((CurrentUnixTimeStamp() ** 2) + 3))\n"
         );
     }
 
@@ -526,9 +642,7 @@ mod tests {
                                     "function": "concat",
                                     "textA": {
                                         "function": "getPlayerId",
-                                        "player": {
-                                            "function": "getTriggeringPlayer"
-                                        }
+                                        "player": { "function": "getTriggeringPlayer" }
                                     },
                                     "textB": " player!"
                                 }
@@ -538,7 +652,7 @@ mod tests {
                     .as_array()
                     .unwrap()
                 )),
-            "send_chat_message_to_everyone('hi ' + IdOfPlayer(LastTriggeringPlayer()) + ' player!'),\n"
+            "send_chat_message_to_everyone('hi ' + IdOfPlayer(LastTriggeringPlayer()) + ' player!')\n"
         );
     }
 
@@ -553,56 +667,39 @@ mod tests {
                 json!([
                      {
                         "type": "condition",
-                        "conditions": [
-                            { "operandType": "boolean", "operator": "==" },
-                            true,
-                            true
-                        ],
+                        "conditions": [ { "operandType": "boolean", "operator": "==" }, true, true ],
                         "then": [
                             {
                                 "type": "condition",
-                                "conditions": [
-                                    { "operandType": "boolean", "operator": "==" },
-                                    true,
-                                    true
-                                ],
+                                "conditions": [ { "operandType": "boolean", "operator": "==" }, true, true ],
                                 "then": [
                                     {
                                         "type": "condition",
-                                        "conditions": [
-                                            { "operandType": "boolean", "operator": "==" },
-                                            true,
-                                            true
-                                        ],
-                                        "then": [],
-                                        "else": []
+                                        "conditions": [ { "operandType": "boolean", "operator": "==" }, true, true ],
+                                        "then": [ { "type": "sendChatMessage", "message": "hi" } ],
+                                        "else": [ { "type": "sendChatMessage", "message": "hi" } ]
                                     }
                                 ],
-                                "else": []
-                               }
-                          ],
-                          "else": []
+                                "else": [ { "type": "sendChatMessage", "message": "hi" } ]
+                            }
+                        ],
+                        "else": [ { "type": "sendChatMessage", "message": "hi" } ]
                      }
                 ])
                 .as_array()
                 .unwrap(),
             ))
             .as_str(),
-            "if_else((True == True), [\n\
-                \tif_else((True == True), [\n\
-    		        \t\tif_else((True == True), [\n\
-		                \t\t\t\n\
-		            \t\t], [\n\
-		                \t\t\t\n\
-		            \t\t]),\n\
-                    \t\t\n\
-                \t], [\n\
-                    \t\t\n\
-                \t]),\n\
-                \t\n\
-            ], [\n\
-                \t\n\
-            ]),\n"
+            "if True == True:\n\
+                \tif True == True:\n\
+    		        \t\tif True == True:\n\
+		                \t\t\tsend_chat_message_to_everyone('hi')\n\
+                    \t\telse:\n\
+		                \t\t\tsend_chat_message_to_everyone('hi')\n\
+                \telse:\n\
+		            \t\tsend_chat_message_to_everyone('hi')\n\
+            else:\n\
+                \tsend_chat_message_to_everyone('hi')\n"
         )
     }
 
@@ -613,36 +710,175 @@ mod tests {
                 &CategoriesToVariables::new(HashMap::new()),
                 &Directory::new("root", "null", Vec::new())
             )
-                .build_actions_content(&parse_actions(
-                    json!([
-                         {
-                            "type": "condition",
-                            "conditions": [
-                                { "operandType": "and", "operator": "AND" },
-                                [
-                                    { "operandType": "boolean", "operator": "==" },
-                                    { "function": "getNumberOfUnitsOfUnitType", "unitType": "oTDQ3jlcMa" },
-                                    5
-                                ],
-                                [
-                                    { "operandType": "boolean", "operator": "==" },
-                                    true,
-                                    true
-                                ]
-                            ],
-                            "then": [],
-                            "else": []
-                         }
-                    ])
-                    .as_array()
-                    .unwrap(),
-                ))
-                .as_str(),
-            "if_else(((NumberOfUnitsOfUnitType('oTDQ3jlcMa') == 5) & (True == True)), [\n\
-                \t\n\
-            ], [\n\
-                \t\n\
-            ]),\n"
+            .build_actions_content(&parse_actions(
+                json!([
+                    {
+                        "type": "condition",
+                        "conditions": [
+                              { "operandType": "and", "operator": "AND" },
+                              [ { "operandType": "boolean", "operator": "==" }, true, true ],
+                              [
+                                   { "operandType": "or", "operator": "OR" },
+                                   [ { "operandType": "boolean", "operator": "==" }, true, true ],
+                                   [ { "operandType": "boolean", "operator": "==" }, true, true ]
+                              ]
+                         ],
+                         "then": [],
+                         "else": []
+                }])
+                .as_array()
+                .unwrap(),
+            ))
+            .as_str(),
+            "if True == True and (True == True or True == True):\n\
+                \tpass\n"
+        );
+    }
+
+    #[test]
+    fn parse_variable_for_loop_into_pymodd() {
+        assert_eq!(
+            ScriptsContentBuilder::new(
+                &CategoriesToVariables::new(HashMap::from([(
+                    "variables",
+                    vec![Variable::new("i", "i", "I", Some("number"))]
+                )])),
+                &Directory::new("root", "null", Vec::new())
+            )
+            .build_actions_content(&parse_actions(
+                json!([
+                    { "type": "for", "variableName": "i", "start": 0, "stop": 5, "actions": [] }
+                ])
+                .as_array()
+                .unwrap(),
+            ))
+            .as_str(),
+            "for Variables.I in range(0, 5):\n\
+                \tpass\n"
+        );
+    }
+
+    #[test]
+    fn parse_for_each_type_in_function_action_into_pymodd() {
+        assert_eq!(
+            ScriptsContentBuilder::new(
+                &CategoriesToVariables::new(HashMap::new()),
+                &Directory::new("root", "null", Vec::new())
+            )
+            .build_actions_content(&parse_actions(
+                json!([
+                    { "type": "forAllEntities", "entityGroup": { "function": "allEntities" }, "actions": [
+                        { "type": "destroyEntity", "entity": { "function": "getSelectedEntity" } }
+                    ] }
+                ])
+                .as_array()
+                .unwrap(),
+            ))
+            .as_str(),
+            "for entity in AllEntitiesInTheGame():\n\
+                \tdestroy_entity(entity)\n"
+        );
+    }
+
+    #[test]
+    fn parse_for_each_type_in_variable_action_into_pymodd() {
+        assert_eq!(
+            ScriptsContentBuilder::new(
+                &CategoriesToVariables::new(HashMap::from([(
+                    "itemTypeGroups",
+                    vec![Variable::new("specialItemTypes", "specialItemTypes", "SPECIAL_ITEM_TYPES", None)]
+                )])),
+                &Directory::new("root", "null", Vec::new())
+            )
+            .build_actions_content(&parse_actions(
+                json!([
+                    {
+                        "type": "forAllItemTypes",
+                        "itemTypeGroup": { "function": "getVariable", "variableName": "specialItemTypes" },
+                        "actions": []
+                     }
+                ])
+                .as_array()
+                .unwrap(),
+            ))
+            .as_str(),
+            "for item_type in ItemTypeGroups.SPECIAL_ITEM_TYPES:\n\
+                \tpass\n"
+        );
+    }
+
+    #[test]
+    fn parse_for_each_type_in_multi_arg_function_action_into_pymodd() {
+        assert_eq!(
+            ScriptsContentBuilder::new(
+                &CategoriesToVariables::new(HashMap::new()),
+                &Directory::new("root", "null", Vec::new())
+            )
+            .build_actions_content(&parse_actions(
+                json!([
+                    {
+                        "type": "forAllUnits",
+                        "unitGroup": { "function": "allUnitsInRegion", "region": {
+                                "function": "dynamicRegion",
+                                "x": 0, "y": 0, "width": 5, "height": 5 }
+                        },
+                        "actions": []
+                    }
+                ])
+                .as_array()
+                .unwrap(),
+            ))
+            .as_str(),
+            "for unit in AllUnitsInRegion(DynamicRegion(0, 0, 5, 5)):\n\
+                \tpass\n"
+        );
+    }
+
+    #[test]
+    fn parse_repeat_action_into_python() {
+        assert_eq!(
+            ScriptsContentBuilder::new(
+                &CategoriesToVariables::new(HashMap::new()),
+                &Directory::new("root", "null", Vec::new())
+            )
+            .build_actions_content(&parse_actions(
+                json!([
+                    { "type": "repeat", "count": 5, "actions": [] }
+                ])
+                .as_array()
+                .unwrap(),
+            ))
+            .as_str(),
+            "for _ in repeat(5):\n\
+                \tpass\n"
+        );
+    }
+
+    #[test]
+    fn parse_while_action_into_python() {
+        assert_eq!(
+            ScriptsContentBuilder::new(
+                &CategoriesToVariables::new(HashMap::new()),
+                &Directory::new("root", "null", Vec::new())
+            )
+            .build_actions_content(&parse_actions(
+                json!([
+                    {
+                        "type": "while",
+                        "conditions": [
+                            { "operandType": "boolean", "operator": "==" },
+                            { "function": "entityExists", "entity": { "function": "getTriggeringUnit" } },
+                            true
+                        ],
+                        "actions": []
+                    }
+                ])
+                .as_array()
+                .unwrap(),
+            ))
+            .as_str(),
+            "while EntityExists(LastTriggeringUnit()) == True:\n\
+                \tpass\n"
         );
     }
 
@@ -677,7 +913,7 @@ mod tests {
                 .unwrap(),
             ))
             .as_str(),
-            "run_script(SpawnBoss()),\n"
+            "run_script(SpawnBoss())\n"
         )
     }
 }

@@ -1,28 +1,67 @@
+import ast
+import inspect
 import json
 import random
 import string
+import textwrap
+from _ast import AnnAssign, Assign, Delete
 from enum import Enum
 
 from caseconverter import camelcase, snakecase
 
+import pymodd
+from pymodd import _pymodd_helper
+
 
 class Base():
     def to_dict(self):
-        raise NotImplementedError("to_dict method not implemented")
+        raise NotImplementedError('to_dict method not implemented')
 
 
 class Game(Base):
-    def __init__(self, json_file):
-        with open(json_file, 'r') as file:
+    def __init__(self, json_file_path, game_variable_classes, project_globals_data):
+        self.project_globals_data = project_globals_data
+        with open(json_file_path, 'r') as file:
             data = json.load(file)
         self.name = data.get('title')
         self.data = data
         self.entity_scripts = []
         self.scripts = []
+        self._update_data_with_variable_classes(game_variable_classes)
         self._build()
         # set position of scripts inside game
         for i, script in enumerate(self.scripts):
             script.set_position(i, None)
+
+    def _update_data_with_variable_classes(self, variable_classes):
+        # pull variable objects out from each class and place them in categories
+        variable_category_to_variables = {}
+        for klass in variable_classes:
+            variable_category = variable_category_name_from_variable_class_name(
+                klass.__name__)
+            variable_category_to_variables.setdefault(variable_category, [])
+            class_vars = [item for item in vars(klass)
+                          if not item.startswith('_') and not callable(item)]
+            for var in class_vars:
+                variable_category_to_variables[variable_category].append(getattr(
+                    klass, var))
+
+        # update game data with modified variable objects
+        for variable_category, variables in variable_category_to_variables.items():
+            if variable_category not in self.data['data'].keys():
+                continue
+            category_data = self.data['data'][variable_category]
+            unincluded_category_variable_ids = list(
+                category_data.keys())
+            for variable in variables:
+                category_contains_variable = variable.id in category_data.keys()
+                category_data[variable.id] = variable.updated_data_with_user_provided_values(
+                    category_data[variable.id] if category_contains_variable else variable.get_template_data())
+                if variable.id in unincluded_category_variable_ids:
+                    unincluded_category_variable_ids.remove(variable.id)
+            # remove variables no longer included
+            for unincluded_variable_id in unincluded_category_variable_ids:
+                category_data.pop(unincluded_variable_id)
 
     def _build():
         pass
@@ -31,17 +70,17 @@ class Game(Base):
         # replace game scripts with scripts defined in self.scripts
         self.data['data']['scripts'] = self.flatten_scripts_data(self.scripts)
         for script in self.entity_scripts:
-            entity_type_category, entity_type_id = f'{camelcase(script.entity_type.__class__.__name__)}s', script.entity_type_id
+            entity_type_category, entity_type_id = f'{camelcase(script.entity_type.__class__.__name__)}s', script.entity_type.id
             self.data['data'][entity_type_category][entity_type_id]['scripts'] = self.flatten_scripts_data(
                 script.scripts)
         return self.data
 
     def flatten_scripts_data(self, scripts):
-        """Takes all scripts out of folders, transforms them into json, and put them all into one dictionary with the rest of the game's scripts
+        '''Takes all scripts out of folders, transforms them into json, and put them all into one dictionary with the rest of the game's scripts
 
         Returns:
             dict: keys are the script's key, values are the script's data
-        """
+        '''
         flattened_scripts = {}
         scripts_queue = scripts.copy()
         while len(scripts_queue) > 0:
@@ -49,17 +88,22 @@ class Game(Base):
             # add folder's scripts to the queue
             if isinstance(script, Folder):
                 scripts_queue += script.scripts
-            script_data = script.to_dict()
+            script_data = script.to_dict(self.project_globals_data)
             flattened_scripts[script_data['key']] = script_data
         return flattened_scripts
 
-    def variables_from_class(self, variable_class):
-        variables = []
-        for enum_name, variable in vars(variable_class).items():
-            if enum_name.startswith('__'):
-                continue
-            variables.append(variable)
-        return variables
+
+def variable_category_name_from_variable_class_name(variable_class_name):
+    if variable_class_name == 'EntityVariables':
+        return 'entityTypeVariables'
+    elif variable_class_name == 'PlayerVariables':
+        return 'playerTypeVariables'
+    elif variable_class_name == 'Musics':
+        return 'music'
+    elif variable_class_name in ['Regions', 'ItemTypeGroups', 'UnitTypeGroups']:
+        return 'variables'
+    else:
+        return camelcase(variable_class_name)
 
 
 class EntityScripts(Game):
@@ -70,10 +114,6 @@ class EntityScripts(Game):
         # set position of scripts inside entity_scripts
         for i, script in enumerate(self.scripts):
             script.set_position(i, None)
-        self.entity_type_id = self.get_entity_type_id()
-
-    def get_entity_type_id(self):
-        return self.entity_type.function.get('value')
 
     def to_dict(self):
         self.flatten_scripts_data(self.scripts)
@@ -126,16 +166,31 @@ class Script(File):
         self.key = Script._class_to_key[self.__class__]
         self.triggers = []
         self.actions = []
+        self.build_func_source_code = None
+        self.build_func_source_starting_line_num = None
+        self.build_func_source_file = None
 
     def _build(self):
         pass
 
-    def to_dict(self):
-        self._build()
+    def to_dict(self, project_globals_data):
+        script_actions_compiler = ScriptActionsCompiler(project_globals_data)
+        actions_data = None
+        try:
+            actions_data = script_actions_compiler.compile_script(self)
+        except ScriptActionsCompileError as compile_error:
+            print()
+            _pymodd_helper.log_error('Compile error!\n')
+            print(f''' File "{self.build_func_source_file}", line {self.build_func_source_starting_line_num + compile_error.error_line_num - 1}''',
+                  f'   {compile_error.error_line_code}\n',
+                  f'{type(compile_error.error).__name__}: {compile_error.error}\n',
+                  sep='\n')
+            import sys
+            sys.exit(1)
         return {
             'triggers': [{'type': trigger.value} for trigger in self.triggers],
             'conditions': [{'operator': '==', 'operandType': 'boolean'}, True, True],
-            'actions': self.actions,
+            'actions': actions_data,
             'name': self.name,
             'parent': self.parent,
             'key': self.key,
@@ -144,11 +199,13 @@ class Script(File):
 
 
 def script(triggers=[], name=None):
-    """
+    '''turn a class into a script
+
     Args:
         triggers (list, optional): triggers for the script. Defaults to [].
+
         name (str, optional): name to override the default name of the script. Defaults to the class name of the script.
-    """
+    '''
     def wrapper_script(cls):
         class NewScript(Script):
             def __init__(self):
@@ -158,12 +215,203 @@ def script(triggers=[], name=None):
                     self.name = name
                 else:
                     self.name = snakecase(cls.__name__).replace('_', ' ')
+                sourcelines = inspect.getsourcelines(cls._build)
+                self.build_func_source_code = ''.join(sourcelines[0])
+                self.build_func_source_starting_line_num = sourcelines[1]
+                self.build_func_source_file = inspect.getsourcefile(cls._build)
 
             def _build(self):
                 cls._build(self)
 
         return NewScript
     return wrapper_script
+
+
+class ScriptActionsCompileError(Exception):
+    '''Exception raised for errors while compiling script actions'''
+
+    def __init__(self, error_line_num, error_line_code, error) -> None:
+        self.error_line_num = error_line_num
+        self.error_line_code = error_line_code
+        self.error = error
+        # handle recursive errors
+        if isinstance(error, ScriptActionsCompileError):
+            self.error_line_num = error.error_line_num
+            self.error_line_code = error.error_line_code
+            self.error = error.error
+
+
+class ScriptActionsCompiler(ast.NodeVisitor):
+    def __init__(self, project_globals_data):
+        self.project_globals_data = project_globals_data
+
+    def compile_script(self, script: Script):
+        self.depth = 0
+        self.depth_to_locals_data = {0: {}}
+        self.actions_data = []
+        tree = ast.parse(textwrap.dedent(script.build_func_source_code))
+        self.visit(tree)
+        return self.actions_data
+
+    def visit(self, node: ast.AST):
+        '''Visit a node.'''
+        method = 'visit_' + node.__class__.__name__
+        visitor = getattr(self, method, self.generic_visit)
+
+        try:
+            if visitor == self.generic_visit or visitor in [self.visit_Assign, self.visit_AnnAssign, self.visit_Delete]:
+                return visitor(node)
+
+            if visitor in [self.visit_If, self.visit_While, self.visit_For]:
+                self.depth += 1
+                self.depth_to_locals_data[self.depth] = {}
+                action_data = visitor(node)
+                self.depth_to_locals_data.pop(self.depth)
+                self.depth -= 1
+            else:
+                action_data = visitor(node)
+            if self.depth == 0:
+                self.actions_data.append(action_data)
+            return action_data
+        except Exception as error:
+            raise ScriptActionsCompileError(
+                node.lineno if 'lineno' in node._attributes else 1,
+                ast.unparse(node).splitlines()[0],
+                error
+            )
+
+    def visit_Expr(self, node: ast.Expr):
+        action = self.eval_node(node.value)
+        return action
+
+    def visit_If(self, node: ast.If):
+        then_actions_data = self.parse_actions_of_node_body(node.body)
+        else_actions_data = self.parse_actions_of_node_body(node.orelse)
+        if_action_data = pymodd.actions.if_else(
+            self.eval_condition(node.test), then_actions_data, else_actions_data)
+        return if_action_data
+
+    def visit_While(self, node: ast.While):
+        actions_data = self.parse_actions_of_node_body(node.body)
+        return pymodd.actions.while_do(self.eval_condition(node.test), actions_data)
+
+    def visit_For(self, node: ast.For):
+        evaled_iter = self.eval_node(node.iter)
+        # repeat action
+        if isinstance((repeat_action_data := evaled_iter), dict) and repeat_action_data.get('type') == 'repeat':
+            repeat_action_data['actions'] = self.parse_actions_of_node_body(
+                node.body)
+            return repeat_action_data
+        # for _ in group_function action
+        elif isinstance((group_function := evaled_iter), pymodd.functions.Function):
+            if not isinstance(group_function, pymodd.functions.Group):
+                raise TypeError(
+                    f"'{ast.unparse(node.iter)}' is not iterable"
+                )
+            if isinstance(node.target, ast.Name):
+                self.add_local_var_to_curr_depth_locals_data(
+                    node.target.id, group_function._get_iteration_object())
+            action = group_function._get_iterating_action()
+            return action(group_function, self.parse_actions_of_node_body(node.body))
+        # for _ in group_variable action
+        elif isinstance((variable := evaled_iter), pymodd.variable_types.Variable):
+            if variable.data_type not in [pymodd.variable_types.DataType.ITEM_GROUP, pymodd.variable_types.DataType.UNIT_GROUP,
+                                          pymodd.variable_types.DataType.PLAYER_GROUP, pymodd.variable_types.DataType.ITEM_TYPE_GROUP,
+                                          pymodd.variable_types.DataType.UNIT_TYPE_GROUP]:
+                raise TypeError(
+                    f"DataType of '{ast.unparse(node.iter)}' must be DataType.ITEM_GROUP, UNIT_GROUP, PLAYER_GROUP, ITEM_TYPE_GROUP, or UNIT_TYPE_GROUP"
+                )
+            if isinstance(node.target, ast.Name):
+                self.add_local_var_to_curr_depth_locals_data(
+                    node.target.id, variable._get_iteration_object())
+            action = variable._get_iterating_action()
+            return action(variable, self.parse_actions_of_node_body(node.body))
+        # for loop action
+        elif isinstance((range_function := evaled_iter), range):
+            for_loop_var = self.eval_code(ast.unparse(node.target))
+            if for_loop_var.data_type != pymodd.variable_types.DataType.NUMBER:
+                raise TypeError(
+                    f"DataType of '{ast.unparse(node.iter)}' must be DataType.NUMBER"
+                )
+            return pymodd.actions.for_range(for_loop_var, range_function.start, range_function.stop, self.parse_actions_of_node_body(node.body))
+
+    def visit_Break(self, node: ast.Break):
+        return pymodd.actions.break_loop()
+
+    def visit_Continue(self, node: ast.Continue):
+        return pymodd.actions.continue_loop()
+
+    def visit_Return(self, node: ast.Return):
+        return pymodd.actions.return_loop()
+
+    def visit_Assign(self, node: Assign):
+        for target in node.targets:
+            if isinstance(target, ast.Name):
+                self.add_local_var_to_curr_depth_locals_data(
+                    target.id, self.eval_node(node.value))
+            elif isinstance(target, ast.Tuple):
+                for tuple_target in target.elts:
+                    self.add_local_var_to_curr_depth_locals_data(
+                        tuple_target.id, self.eval_node(node.value))
+
+    def visit_AnnAssign(self, node: AnnAssign):
+        if isinstance(node.target, ast.Name):
+            self.add_local_var_to_curr_depth_locals_data(
+                node.target.id, self.eval_node(node.value))
+
+    def visit_Delete(self, node: Delete):
+        for target in node.targets:
+            if isinstance(target, ast.Name):
+                self.depth_to_locals_data[self.depth].pop(target.id)
+
+    def parse_actions_of_node_body(self, node_body):
+        actions_data = []
+        for node in node_body:
+            action_data = self.visit(node)
+            if action_data is not None:
+                actions_data.append(action_data)
+        return actions_data
+
+    def get_current_locals_data(self):
+        locals_data = {}
+        for value in self.depth_to_locals_data.values():
+            locals_data.update(value)
+        return locals_data
+
+    def add_local_var_to_curr_depth_locals_data(self, var_name, var_value):
+        self.depth_to_locals_data[self.depth][var_name] = var_value
+
+    def eval_condition(self, condition_node: ast.AST):
+        if isinstance(condition_node, ast.BoolOp):
+            return pymodd.functions.Condition(
+                self.eval_condition(condition_node.values[0]),
+                'AND' if isinstance(condition_node.op, ast.And) else 'OR',
+                self.eval_condition(condition_node.values[1]))
+
+        if isinstance(condition_node, ast.Compare):
+            ast_operator_to_string = {
+                ast.Eq: '==', ast.NotEq: '!=',
+                ast.Gt: '>', ast.Lt: '<',
+                ast.GtE: '>=', ast.LtE: '<='
+            }
+            if len(condition_node.ops) == 0 or (operator := ast_operator_to_string.get(type(condition_node.ops[0]))) is None:
+                raise ValueError(
+                    f"Condition '{ast.unparse(condition_node)}' contains an invalid comparison operator"
+                )
+            return pymodd.functions.Condition(
+                self.eval_node(condition_node.left),
+                operator,
+                self.eval_node(condition_node.comparators[0]))
+
+        raise ValueError(
+            f"Condition '{ast.unparse(condition_node)}' must include a comparison operator"
+        )
+
+    def eval_node(self, node: ast.AST):
+        return self.eval_code(compile(ast.Expression(body=node), filename='<ast>', mode='eval'))
+
+    def eval_code(self, code):
+        return eval(code, self.project_globals_data, self.get_current_locals_data())
 
 
 def generate_random_key():
