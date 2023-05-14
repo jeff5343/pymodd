@@ -124,7 +124,7 @@ class EntityScripts(Game):
 
 class KeyBehavior(Base):
     def __init__(self, key_down_script=None, key_up_script=None):
-        self.key_down_script_key, self.is_key_down_script_entity_script = None, False
+        self.key_down_script_key, self.is_key_down_script_entity_script = "", False
         self.key_up_script_key, self.is_key_up_script_entity_script = "", False
         if key_down_script is not None:
             self.key_down_script_key = key_down_script.key

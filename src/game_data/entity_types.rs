@@ -82,6 +82,7 @@ impl EntityType {
     }
 }
 
+#[derive(Debug)]
 pub struct Keybinding {
     pub key: String,
     pub key_down_script_key: Option<String>,
@@ -99,11 +100,11 @@ impl Keybinding {
             .map(|(key, data)| {
                 let empty_map = Map::new();
                 let (key_down_data, key_up_data) = (
-                    data.get("keydown")
+                    data.get("keyDown")
                         .unwrap_or(&Value::Null)
                         .as_object()
                         .unwrap_or(&empty_map),
-                    data.get("keydown")
+                    data.get("keyUp")
                         .unwrap_or(&Value::Null)
                         .as_object()
                         .unwrap_or(&empty_map),
