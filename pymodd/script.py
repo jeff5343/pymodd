@@ -52,32 +52,47 @@ class Game(Base):
             if variable_category not in self.data['data'].keys():
                 continue
             category_data = self.data['data'][variable_category]
-            unincluded_category_variable_ids = list(
+            unincluded_variable_ids = list(
                 category_data.keys())
             for variable in variables:
                 category_contains_variable = variable.id in category_data.keys()
                 category_data[variable.id] = variable.updated_data_with_user_provided_values(
                     category_data[variable.id] if category_contains_variable else variable.get_template_data())
-                if variable.id in unincluded_category_variable_ids:
-                    unincluded_category_variable_ids.remove(variable.id)
+                if variable.id in unincluded_variable_ids:
+                    unincluded_variable_ids.remove(variable.id)
             # remove variables no longer included
-            for unincluded_variable_id in unincluded_category_variable_ids:
+            for unincluded_variable_id in unincluded_variable_ids:
                 category_data.pop(unincluded_variable_id)
 
     def _build():
         pass
 
     def to_dict(self):
+        # update global scripts
         self.data['data']['scripts'] = self.flatten_scripts_data(self.scripts)
+
+        # update data of each entity_type
         for entity_script in self.entity_scripts:
             entity_category, entity_id = f'{camelcase(entity_script.entity_type.__class__.__name__)}s', entity_script.entity_type.id
             entity_data = self.data['data'][entity_category][entity_id]
+
+            # update entity scripts
             entity_data['scripts'] = self.flatten_scripts_data(
                 entity_script.scripts)
+
+            # update entity keybindings
             entity_keybindings_data = entity_data['controls']['abilities']
+            unincluded_keys = list(entity_keybindings_data.keys())
             for (key, scripts) in entity_script.keybindings.items():
                 entity_keybindings_data[key.value] = scripts.to_dict(
                     entity_keybindings_data.get(key.value))
+                if key.value in unincluded_keys:
+                    unincluded_keys.remove(key.value)
+            # remove keybindings no longer included
+            for unincluded_key in unincluded_keys:
+                if unincluded_key in ['lookWheel', 'movementWheel']:
+                    continue
+                entity_keybindings_data.pop(unincluded_key)
         return self.data
 
     def flatten_scripts_data(self, scripts):
