@@ -123,35 +123,35 @@ class EntityScripts(Game):
 
 
 class KeyBehavior(Base):
-    def __init__(self, key_up_script=None, key_down_script=None):
-        self.key_up_script_key, self.is_key_up_script_entity_script = "", False
+    def __init__(self, key_down_script=None, key_up_script=None):
         self.key_down_script_key, self.is_key_down_script_entity_script = None, False
-        if key_up_script is not None:
-            self.key_up_script_key = key_up_script.key
-            self.is_key_up_script_entity_script = os.path.split(
-                key_up_script.build_func_source_file)[-1] == 'entity_scripts.py'
+        self.key_up_script_key, self.is_key_up_script_entity_script = "", False
         if key_down_script is not None:
             self.key_down_script_key = key_down_script.key
             self.is_key_down_script_entity_script = os.path.split(
                 key_down_script.build_func_source_file)[-1] == 'entity_scripts.py'
+        if key_up_script is not None:
+            self.key_up_script_key = key_up_script.key
+            self.is_key_up_script_entity_script = os.path.split(
+                key_up_script.build_func_source_file)[-1] == 'entity_scripts.py'
 
     def to_dict(self, old_data: None):
         # update the old data with new data if it is provided
         data = old_data if old_data is not None else self.get_template_data()
-        data['keyUp']['scriptName'] = self.key_up_script_key
-        data['keyUp']['isEntityScript'] = self.is_key_up_script_entity_script
         data['keyDown']['scriptName'] = self.key_down_script_key
         data['keyDown']['isEntityScript'] = self.is_key_down_script_entity_script
+        data['keyUp']['scriptName'] = self.key_up_script_key
+        data['keyUp']['isEntityScript'] = self.is_key_up_script_entity_script
         return data
 
     def get_template_data(self):
         return {
-            "keyUp": {
+            "keyDown": {
                 "scriptName": "",
                 "isEntityScript": False,
                 "cost": {},
             },
-            "keyDown": {
+            "keyUp": {
                 "scriptName": "",
                 "isEntityScript": False,
                 "cost": {},

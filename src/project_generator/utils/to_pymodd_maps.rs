@@ -14,6 +14,7 @@ lazy_static! {
     // enum maps
     pub static ref TRIGGERS_TO_PYMODD_ENUM: HashMap<String, String> = generate_to_pymodd_enums_map_for_type("Trigger", PYMODD_SCRIPT_FILE_CONTENT);
     pub static ref VARIABLE_DATA_TYPES_TO_PYMODD_ENUM: HashMap<String, String> = generate_to_pymodd_enums_map_for_type("DataType", PYMODD_VARIABLE_TYPES_FILE_CONTENT);
+    pub static ref KEYS_TO_PYMODD_ENUM: HashMap<String, String> = generate_to_pymodd_enums_map_for_type("Key", PYMODD_SCRIPT_FILE_CONTENT);
     pub static ref UI_TARGET_CONSTANTS_TO_PYMODD_ENUM:HashMap<String, String> = generate_to_pymodd_enums_map_for_type("UiTarget", PYMODD_SCRIPT_FILE_CONTENT);
     pub static ref FLIP_CONSTANTS_TO_PYMODD_ENUM:HashMap<String, String> = generate_to_pymodd_enums_map_for_type("Flip", PYMODD_SCRIPT_FILE_CONTENT);
 
@@ -49,7 +50,7 @@ fn generate_to_pymodd_enums_map_for_type(
     file_content: &str,
 ) -> HashMap<String, String> {
     let mut modd_names_to_pymodd_enums: HashMap<String, String> = HashMap::new();
-    parse_class_content_from_file(type_name, file_content)
+    parse_enum_class_content_from_file(type_name, file_content)
         .lines()
         .for_each(|line| match line.split_once("=") {
             Some((enum_name, modd_name)) => {
@@ -200,10 +201,10 @@ fn parse_class_name(class_content: &str) -> String {
         .to_string()
 }
 
-fn parse_class_content_from_file(class_name: &str, file_content: &str) -> String {
+fn parse_enum_class_content_from_file(class_name: &str, file_content: &str) -> String {
     file_content
         .lines()
-        .skip_while(|line| !line.starts_with(&format!("class {class_name}")))
+        .skip_while(|line| !line.starts_with(&format!("class {class_name}(Enum):")))
         .skip(1)
         .take_while(|line| !line.starts_with("class"))
         .map(|line| format!("{line}\n"))
