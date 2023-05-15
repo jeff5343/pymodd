@@ -1,4 +1,5 @@
-from pymodd.script import EntityScripts, Folder, Key, KeyBehavior
+from pymodd.game import Folder
+from pymodd.entity_script import EntityScripts, Key, KeyBehavior
 
 from scripts import *
 

@@ -12,7 +12,7 @@ impl MappingFile {
     pub fn build_content(game_data: &GameData) -> String {
         let game_class_name = game_data.name.to_pascal_case().to_string();
         let mut content = format!(
-            "from pymodd.script import Game, Folder\n\n\
+            "from pymodd.game import Game, Folder\n\n\
             from scripts import *\n\
             from entity_scripts import * \n\n\n\
             class {game_class_name}(Game):\n\
@@ -136,7 +136,7 @@ mod tests {
                 }
             }
         }"#.to_string()).unwrap()), 
-        "from pymodd.script import Game, Folder\n\n\
+        "from pymodd.game import Game, Folder\n\n\
         from scripts import *\n\
         from entity_scripts import * \n\n\n\
         class TestGame(Game):\n\

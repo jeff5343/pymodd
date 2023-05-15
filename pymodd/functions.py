@@ -61,7 +61,7 @@ class Function(Base):
 
 # only subclasses of Function requires these types
 # (also prevents a circular import)
-from .variable_types import (AttributeType, EntityVariable, ItemType, PlayerType, PlayerVariable,
+from .variable_types import (VariableType, AttributeType, EntityVariable, ItemType, PlayerType, PlayerVariable,
                              ProjectileType, State, UnitType, Variable)
 
 
@@ -83,6 +83,11 @@ def type_of_item(item):
         return primitive
     if isinstance(item, Variable):
         return item.data_type.value
+    if isinstance(item, VariableType):
+        base_classes = item.__class__.mro()
+        for i, base_class in enumerate(base_classes):
+            if base_class.__name__ == 'VariableType':
+                return camelcase(base_classes[i-1].__name__)
     if isinstance(item, Function):
         base_classes = item.__class__.mro()
         for i, base_class in enumerate(base_classes):

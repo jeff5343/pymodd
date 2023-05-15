@@ -1,4 +1,4 @@
-from pymodd.script import Game, Folder
+from pymodd.game import Game, Folder
 
 from scripts import *
 from entity_scripts import * 

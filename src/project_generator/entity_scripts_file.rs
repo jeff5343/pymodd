@@ -17,7 +17,8 @@ pub struct EntityScriptsFile {}
 impl EntityScriptsFile {
     pub fn build_content(game_data: &GameData) -> String {
         let mut content = format!(
-            "from pymodd.script import EntityScripts, Folder, Key, KeyBehavior\n\n\
+            "from pymodd.game import Folder\n\
+            from pymodd.entity_script import EntityScripts, Key, KeyBehavior\n\n\
             from scripts import *\n\n\n"
         );
         let scripts_class_content_builder = ScriptsContentBuilder::new(
