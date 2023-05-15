@@ -5,7 +5,8 @@ import runpy
 from argparse import ArgumentParser
 
 from pymodd import _pymodd_helper
-from pymodd.script import Game, EntityScripts
+from pymodd.game import Game
+from pymodd.entity_script import EntityScripts
 
 
 VARIABLE_TYPE_CLASS_NAMES = [
