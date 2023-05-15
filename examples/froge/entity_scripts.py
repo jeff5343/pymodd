@@ -1,13 +1,16 @@
-from pymodd.actions import *
-from pymodd.functions import *
-from pymodd.script import EntityScripts, Folder, Trigger, UiTarget, Flip, script
+from pymodd.script import EntityScripts, Folder, Key, KeyBehavior
 
-from game_variables import *
+from scripts import *
 
 
 class Pooper(EntityScripts):
 	def _build(self):
 		self.entity_type = UnitTypes.POOPER
+		self.keybindings = {
+			Key.LEFT_CLICK: KeyBehavior(self.UseItem(), self.StopUsingItem()),
+			Key.B: KeyBehavior(OpenShop(), None),
+			
+		}
 		self.scripts = [
 			self.UseItem(),
 			self.StopUsingItem(),
@@ -28,6 +31,9 @@ class Pooper(EntityScripts):
 class Frog(EntityScripts):
 	def _build(self):
 		self.entity_type = UnitTypes.FROG
+		self.keybindings = {
+			
+		}
 		self.scripts = [
 			self.NewScript(),
 			

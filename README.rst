@@ -4,7 +4,7 @@ pymodd
 
 |Build| |Version| |License|
 
-pymodd is a python package used for creating modd.io games in python
+pymodd is a python package for creating modd.io games in python
 
 .. |Build| image:: https://img.shields.io/github/actions/workflow/status/jeff5343/pymodd/CI.yml?label=CI&logo=github&style=plastic
    :alt: GitHub Workflow Status
@@ -49,7 +49,7 @@ Export your modd game json file from the website and then generate a pymodd proj
 Quick Script Example
 --------------------
 
-view the ``examples/froge directory`` for a generated pymodd project
+view the ``examples/froge`` directory for an example of a pymodd project
 
 .. code:: py
 

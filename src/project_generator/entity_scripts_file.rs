@@ -1,12 +1,15 @@
 use crate::{
-    game_data::{entity_types::EntityType, GameData},
-    project_generator::game_variables_file::pymodd_class_name_of_category,
+    game_data::{directory::Directory, entity_types::EntityType, GameData},
+    project_generator::{
+        game_variables_file::pymodd_class_name_of_category,
+        utils::to_pymodd_maps::KEYS_TO_PYMODD_ENUM,
+    },
 };
 
 use super::{
     mapping_file::build_directory_items_contents,
     scripts_file::{build_directory_content, ScriptsContentBuilder},
-    utils::enum_name_of,
+    utils::{enum_name_of, iterators::directory_iterator::DirectoryIterItem},
 };
 
 pub struct EntityScriptsFile {}
@@ -14,10 +17,8 @@ pub struct EntityScriptsFile {}
 impl EntityScriptsFile {
     pub fn build_content(game_data: &GameData) -> String {
         let mut content = format!(
-            "from pymodd.actions import *\n\
-            from pymodd.functions import *\n\
-            from pymodd.script import EntityScripts, Folder, Trigger, UiTarget, Flip, script\n\n\
-            from game_variables import *\n\n\n"
+            "from pymodd.script import EntityScripts, Folder, Key, KeyBehavior\n\n\
+            from scripts import *\n\n\n"
         );
         let scripts_class_content_builder = ScriptsContentBuilder::new(
             &game_data.categories_to_variables,
@@ -34,7 +35,11 @@ impl EntityScriptsFile {
                     .for_each(|entity_type| {
                         content.push_str(&format!(
                             "{}\n{}\n\n",
-                            build_class_content_of_entity_type_in_category(&entity_type, category),
+                            build_class_content_of_entity_type_in_category(
+                                &entity_type,
+                                category,
+                                &game_data.root_directory,
+                            ),
                             build_directory_content(
                                 &entity_type.directory,
                                 &scripts_class_content_builder
@@ -54,6 +59,7 @@ impl EntityScriptsFile {
 fn build_class_content_of_entity_type_in_category(
     entity_type: &EntityType,
     category: &'static str,
+    game_directory: &Directory,
 ) -> String {
     let (entity_type_class_name, category_class_name) = (
         entity_type.pymodd_class_name(),
@@ -63,16 +69,94 @@ fn build_class_content_of_entity_type_in_category(
         "class {entity_type_class_name}(EntityScripts):\n\
             \tdef _build(self):\n\
                 \t\tself.entity_type = {category_class_name}.{}\n\
+                \t\tself.keybindings = {{\n\
+                    {}\
+                \t\t\t\n\
+                \t\t}}\n\
                 \t\tself.scripts = [\n\
-                {}\
+                    {}\
                 \t\t\t\n\
                 \t\t]\n",
         enum_name_of(&entity_type.name),
+        build_keybindings_dictionary_elements_for_entity_type(&entity_type, game_directory)
+            .into_iter()
+            .map(|element| format!("{}{element},\n", "\t".repeat(3)))
+            .collect::<String>(),
         build_directory_elements_for_entity_type(&entity_type)
             .into_iter()
             .map(|element| format!("{}{element}\n", "\t".repeat(3)))
             .collect::<String>()
     )
+}
+
+fn build_keybindings_dictionary_elements_for_entity_type(
+    entity_type: &EntityType,
+    game_directory: &Directory,
+) -> Vec<String> {
+    let mut keybindings = entity_type.keybindings.clone();
+    keybindings.sort_by(|a, b| {
+        if a.key.len() <= 1 && b.key.len() <= 1 {
+            // sort by the first character
+            a.key
+                .chars()
+                .next()
+                .unwrap_or(' ')
+                .to_digit(10)
+                .cmp(&b.key.chars().next().unwrap_or(' ').to_digit(10))
+        } else {
+            // sort by length
+            a.key.len().cmp(&b.key.len()).reverse()
+        }
+    });
+    keybindings
+        .iter()
+        .map(|keybinding| {
+            format!(
+                "{}: KeyBehavior({}, {})",
+                KEYS_TO_PYMODD_ENUM
+                    .get(&keybinding.key)
+                    .unwrap_or(&String::from("None")),
+                build_content_of_script_with_key(
+                    &keybinding.key_down_script_key,
+                    keybinding.is_key_down_script_entity_script,
+                    game_directory,
+                    &entity_type.directory
+                ),
+                build_content_of_script_with_key(
+                    &keybinding.key_up_script_key,
+                    keybinding.is_key_up_script_entity_script,
+                    game_directory,
+                    &entity_type.directory
+                )
+            )
+        })
+        .collect()
+}
+
+fn build_content_of_script_with_key(
+    key: &Option<String>,
+    is_entity_type_script: bool,
+    game_directory: &Directory,
+    entity_type_directory: &Directory,
+) -> String {
+    if let Some(key) = key {
+        if is_entity_type_script {
+            if let DirectoryIterItem::Script(script) = entity_type_directory
+                .find_item_with_key(&key)
+                .unwrap_or(DirectoryIterItem::DirectoryEnd)
+            {
+                return format!("self.{}()", script.pymodd_class_name());
+            };
+        } else {
+            if let DirectoryIterItem::Script(script) = game_directory
+                .find_item_with_key(&key)
+                .unwrap_or(DirectoryIterItem::DirectoryEnd)
+            {
+                return format!("{}()", script.pymodd_class_name());
+            };
+        };
+    }
+    String::from("None")
 }
 
 fn build_directory_elements_for_entity_type(entity_type: &EntityType) -> Vec<String> {
@@ -93,9 +177,30 @@ mod tests {
     use serde_json::json;
 
     use crate::{
-        game_data::{directory::Directory, entity_types::EntityType},
+        game_data::{
+            directory::{Directory, DirectoryItem, Script},
+            entity_types::{EntityType, Keybinding},
+        },
         project_generator::entity_scripts_file::build_class_content_of_entity_type_in_category,
     };
+
+    impl Keybinding {
+        fn new(
+            key: &str,
+            key_down_script_key: Option<&str>,
+            is_key_down_script_entity_script: bool,
+            key_up_script_key: Option<&str>,
+            is_key_up_script_entity_script: bool,
+        ) -> Keybinding {
+            Keybinding {
+                key: key.to_string(),
+                key_down_script_key: key_down_script_key.map(|s| s.to_string()),
+                is_key_down_script_entity_script,
+                key_up_script_key: key_up_script_key.map(|s| s.to_string()),
+                is_key_up_script_entity_script,
+            }
+        }
+    }
 
     #[test]
     fn simple_entity_scripts_class_content() {
@@ -111,19 +216,74 @@ mod tests {
                             "key": "31IAD2B", "parent": null, "order": 2 },
                         "SDUW31W": { "triggers": [], "name": "change_state",
                             "key": "SDUW31W", "actions": [], "parent": "31IAD2B", "order": 1 }
-                    }))
+                    })),
+                    keybindings: Vec::new()
                 },
-                "unitTypes"
+                "unitTypes",
+                &Directory::new("root", "null", Vec::new()),
             )
             .as_str(),
             "class Bob(EntityScripts):\n\
                 \tdef _build(self):\n\
                     \t\tself.entity_type = UnitTypes.BOB\n\
+                    \t\tself.keybindings = {\n\
+                        \t\t\t\n\
+                    \t\t}\n\
                     \t\tself.scripts = [\n\
                         \t\t\tself.Initialize(),\n\
                         \t\t\tFolder('utils', [\n\
                             \t\t\t\tself.ChangeState(),\n\
                         \t\t\t]),\n\
+                        \t\t\t\n\
+                    \t\t]\n"
+        );
+    }
+
+    #[test]
+    fn keybindings_field_of_entity_scripts_class() {
+        assert_eq!(
+            build_class_content_of_entity_type_in_category(
+                &EntityType {
+                    name: "bob".to_string(),
+                    directory: Directory::parse(&json!({
+                        "DF31W32": { "triggers": [], "name": "use item",
+                            "key": "DF31W32", "actions": [], "parent": null, "order": 1 },
+                        "SDUW31W": { "triggers": [], "name": "stop using item",
+                            "key": "SDUW31W", "actions": [], "parent": null, "order": 2 }
+                    })),
+                    keybindings: vec![
+                        Keybinding::new("q", Some("DF31W32"), true, Some("3FJ31WD"), false),
+                        Keybinding::new("r", Some("3FJ31WD"), false, None, false),
+                        Keybinding::new("button1", Some("DF31W32"), true, Some("SDUW31W"), true),
+                        Keybinding::new("z", None, false, None, false)
+                    ]
+                },
+                "unitTypes",
+                &Directory::new(
+                    "root",
+                    "null",
+                    vec![DirectoryItem::Script(Script {
+                        name: String::from("EndGame"),
+                        key: String::from("3FJ31WD"),
+                        triggers: Vec::new(),
+                        actions: Vec::new(),
+                    })]
+                )
+            )
+            .as_str(),
+            "class Bob(EntityScripts):\n\
+                \tdef _build(self):\n\
+                    \t\tself.entity_type = UnitTypes.BOB\n\
+                    \t\tself.keybindings = {\n\
+                        \t\t\tKey.LEFT_CLICK: KeyBehavior(self.UseItem(), self.StopUsingItem()),\n\
+                        \t\t\tKey.Q: KeyBehavior(self.UseItem(), EndGame()),\n\
+                        \t\t\tKey.R: KeyBehavior(EndGame(), None),\n\
+                        \t\t\tKey.Z: KeyBehavior(None, None),\n\
+                        \t\t\t\n\
+                    \t\t}\n\
+                    \t\tself.scripts = [\n\
+                        \t\t\tself.UseItem(),\n\
+                        \t\t\tself.StopUsingItem(),\n\
                         \t\t\t\n\
                     \t\t]\n"
         );

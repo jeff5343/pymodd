@@ -1,3 +1,4 @@
+import os
 import ast
 import inspect
 import json
@@ -51,35 +52,54 @@ class Game(Base):
             if variable_category not in self.data['data'].keys():
                 continue
             category_data = self.data['data'][variable_category]
-            unincluded_category_variable_ids = list(
+            unincluded_variable_ids = list(
                 category_data.keys())
             for variable in variables:
                 category_contains_variable = variable.id in category_data.keys()
                 category_data[variable.id] = variable.updated_data_with_user_provided_values(
                     category_data[variable.id] if category_contains_variable else variable.get_template_data())
-                if variable.id in unincluded_category_variable_ids:
-                    unincluded_category_variable_ids.remove(variable.id)
+                if variable.id in unincluded_variable_ids:
+                    unincluded_variable_ids.remove(variable.id)
             # remove variables no longer included
-            for unincluded_variable_id in unincluded_category_variable_ids:
+            for unincluded_variable_id in unincluded_variable_ids:
                 category_data.pop(unincluded_variable_id)
 
     def _build():
         pass
 
     def to_dict(self):
-        # replace game scripts with scripts defined in self.scripts
+        # update global scripts
         self.data['data']['scripts'] = self.flatten_scripts_data(self.scripts)
-        for script in self.entity_scripts:
-            entity_type_category, entity_type_id = f'{camelcase(script.entity_type.__class__.__name__)}s', script.entity_type.id
-            self.data['data'][entity_type_category][entity_type_id]['scripts'] = self.flatten_scripts_data(
-                script.scripts)
+
+        # update data of each entity_type
+        for entity_script in self.entity_scripts:
+            entity_category, entity_id = f'{camelcase(entity_script.entity_type.__class__.__name__)}s', entity_script.entity_type.id
+            entity_data = self.data['data'][entity_category][entity_id]
+
+            # update entity scripts
+            entity_data['scripts'] = self.flatten_scripts_data(
+                entity_script.scripts)
+
+            # update entity keybindings
+            entity_keybindings_data = entity_data['controls']['abilities']
+            unincluded_keys = list(entity_keybindings_data.keys())
+            for (key, scripts) in entity_script.keybindings.items():
+                entity_keybindings_data[key.value] = scripts.to_dict(
+                    entity_keybindings_data.get(key.value))
+                if key.value in unincluded_keys:
+                    unincluded_keys.remove(key.value)
+            # remove keybindings no longer included
+            for unincluded_key in unincluded_keys:
+                if unincluded_key in ['lookWheel', 'movementWheel']:
+                    continue
+                entity_keybindings_data.pop(unincluded_key)
         return self.data
 
     def flatten_scripts_data(self, scripts):
-        '''Takes all scripts out of folders, transforms them into json, and put them all into one dictionary with the rest of the game's scripts
+        '''Takes all scripts out of folders, transforms them into json, and returns one dictionary with all of the game's script
 
         Returns:
-            dict: keys are the script's key, values are the script's data
+            dict(str, dict): keys are script keys, values are datas of scripts
         '''
         flattened_scripts = {}
         scripts_queue = scripts.copy()
@@ -109,15 +129,49 @@ def variable_category_name_from_variable_class_name(variable_class_name):
 class EntityScripts(Game):
     def __init__(self):
         self.entity_type = None
+        self.keybindings = {}  # dict of Keys to KeyBehavior
         self.scripts = []
         self._build()
         # set position of scripts inside entity_scripts
         for i, script in enumerate(self.scripts):
             script.set_position(i, None)
 
-    def to_dict(self):
-        self.flatten_scripts_data(self.scripts)
-        return self.data
+
+class KeyBehavior(Base):
+    def __init__(self, key_down_script=None, key_up_script=None):
+        self.key_down_script_key, self.is_key_down_script_entity_script = "", False
+        self.key_up_script_key, self.is_key_up_script_entity_script = "", False
+        if key_down_script is not None:
+            self.key_down_script_key = key_down_script.key
+            self.is_key_down_script_entity_script = os.path.split(
+                key_down_script.build_func_source_file)[-1] == 'entity_scripts.py'
+        if key_up_script is not None:
+            self.key_up_script_key = key_up_script.key
+            self.is_key_up_script_entity_script = os.path.split(
+                key_up_script.build_func_source_file)[-1] == 'entity_scripts.py'
+
+    def to_dict(self, old_data: None):
+        # update the old data with new data if it is provided
+        data = old_data if old_data is not None else self.get_template_data()
+        data['keyDown']['scriptName'] = self.key_down_script_key
+        data['keyDown']['isEntityScript'] = self.is_key_down_script_entity_script
+        data['keyUp']['scriptName'] = self.key_up_script_key
+        data['keyUp']['isEntityScript'] = self.is_key_up_script_entity_script
+        return data
+
+    def get_template_data(self):
+        return {
+            "keyDown": {
+                "scriptName": "",
+                "isEntityScript": False,
+                "cost": {},
+            },
+            "keyUp": {
+                "scriptName": "",
+                "isEntityScript": False,
+                "cost": {},
+            }
+        }
 
 
 class File(Base):
@@ -510,3 +564,41 @@ class Flip(Enum):
     HORIZONTAL = 'horizontal'
     VERTICAL = 'vertical'
     BOTH = 'both'
+
+
+class Key(Enum):
+    LEFT_CLICK = 'button1'
+    RIGHT_CLICK = 'button3'
+    SPACE = 'space'
+    ENTER = 'enter'
+    ESCAPE = 'escape'
+    UP = 'up'
+    DOWN = 'down'
+    RIGHT = 'right'
+    LEFT = 'left'
+    A = 'a'
+    B = 'b'
+    C = 'c'
+    D = 'd'
+    E = 'e'
+    F = 'f'
+    G = 'g'
+    H = 'h'
+    I = 'i'
+    J = 'j'
+    K = 'k'
+    L = 'l'
+    M = 'm'
+    N = 'n'
+    O = 'o'
+    P = 'p'
+    Q = 'q'
+    R = 'r'
+    S = 's'
+    T = 't'
+    U = 'u'
+    V = 'v'
+    W = 'w'
+    X = 'x'
+    Y = 'y'
+    Z = 'z'
