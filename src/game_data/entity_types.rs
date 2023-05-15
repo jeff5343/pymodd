@@ -82,7 +82,7 @@ impl EntityType {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Keybinding {
     pub key: String,
     pub key_down_script_key: Option<String>,

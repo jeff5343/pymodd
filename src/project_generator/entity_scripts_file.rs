@@ -93,8 +93,22 @@ fn build_keybindings_dictionary_elements_for_entity_type(
     entity_type: &EntityType,
     game_directory: &Directory,
 ) -> Vec<String> {
-    entity_type
-        .keybindings
+    let mut keybindings = entity_type.keybindings.clone();
+    keybindings.sort_by(|a, b| {
+        if a.key.len() <= 1 && b.key.len() <= 1 {
+            // sort by the first character
+            a.key
+                .chars()
+                .next()
+                .unwrap_or(' ')
+                .to_digit(10)
+                .cmp(&b.key.chars().next().unwrap_or(' ').to_digit(10))
+        } else {
+            // sort by length
+            a.key.len().cmp(&b.key.len()).reverse()
+        }
+    });
+    keybindings
         .iter()
         .map(|keybinding| {
             format!(
@@ -167,7 +181,7 @@ mod tests {
             directory::{Directory, DirectoryItem, Script},
             entity_types::{EntityType, Keybinding},
         },
-        project_generator::{entity_scripts_file::build_class_content_of_entity_type_in_category, utils::to_pymodd_maps::KEYS_TO_PYMODD_ENUM},
+        project_generator::entity_scripts_file::build_class_content_of_entity_type_in_category,
     };
 
     impl Keybinding {
@@ -227,7 +241,6 @@ mod tests {
 
     #[test]
     fn keybindings_field_of_entity_scripts_class() {
-        dbg!(KEYS_TO_PYMODD_ENUM.keys());
         assert_eq!(
             build_class_content_of_entity_type_in_category(
                 &EntityType {
@@ -239,9 +252,9 @@ mod tests {
                             "key": "SDUW31W", "actions": [], "parent": null, "order": 2 }
                     })),
                     keybindings: vec![
-                        Keybinding::new("button1", Some("DF31W32"), true, Some("SDUW31W"), true),
                         Keybinding::new("q", Some("DF31W32"), true, Some("3FJ31WD"), false),
                         Keybinding::new("r", Some("3FJ31WD"), false, None, false),
+                        Keybinding::new("button1", Some("DF31W32"), true, Some("SDUW31W"), true),
                         Keybinding::new("z", None, false, None, false)
                     ]
                 },
