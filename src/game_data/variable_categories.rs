@@ -45,14 +45,6 @@ const VARIABLE_CATEGORIES_ITERATION_ORDER: [&str; 17] = [
     "attributeTypes",
 ];
 
-#[derive(Debug, PartialEq, Eq)]
-pub struct Variable {
-    pub id: String,
-    pub name: String,
-    pub enum_name: String,
-    pub data_type: Option<String>,
-}
-
 pub struct CategoriesToVariables {
     pub categories_to_variables: HashMap<&'static str, Vec<Variable>>,
 }
@@ -112,6 +104,32 @@ impl CategoriesToVariables {
     }
 }
 
+#[derive(Debug, PartialEq, Eq)]
+pub struct Variable {
+    pub id: String,
+    pub name: String,
+    data: Map<String, Value>,
+}
+
+impl Variable {
+    pub fn enum_name(&self) -> String {
+        enum_name_of(&self.name)
+    }
+
+    pub fn data_type(&self) -> Option<String> {
+        Some(
+            self.get_key("dataType")?
+                .as_str()
+                .filter(|value| !value.is_empty())?
+                .to_string(),
+        )
+    }
+
+    pub fn get_key(&self, key: &str) -> Option<&Value> {
+        self.data.get(key)
+    }
+}
+
 fn variables_from_category_data(category_data: &Value) -> Vec<Variable> {
     category_data
         .as_object()
@@ -126,34 +144,24 @@ fn variables_from_category_data(category_data: &Value) -> Vec<Variable> {
             Variable {
                 id: var_id.clone(),
                 name: var_name.to_string(),
-                enum_name: enum_name_of(var_name).to_string(),
-                data_type: parse_data_type(var.get("dataType")),
+                data: var.as_object().unwrap_or(&Map::new()).clone(),
             }
         })
         .collect()
-}
-
-fn parse_data_type(data_type: Option<&Value>) -> Option<String> {
-    Some(
-        data_type?
-            .as_str()
-            .filter(|value| !value.is_empty())?
-            .to_string(),
-    )
 }
 
 fn resolve_duplicate_variable_enum_names(variables: Vec<Variable>) -> Vec<Variable> {
     let mut enum_names_to_count: HashMap<String, u32> = HashMap::new();
     variables
         .into_iter()
-        .map(|mut var| {
+        .map(|var| {
             enum_names_to_count.insert(
-                var.enum_name.clone(),
-                enum_names_to_count.get(&var.enum_name).unwrap_or(&0) + 1,
+                var.enum_name(),
+                enum_names_to_count.get(&var.enum_name()).unwrap_or(&0) + 1,
             );
-            if let Some(&count) = enum_names_to_count.get(&var.enum_name) {
+            if let Some(&count) = enum_names_to_count.get(&var.enum_name()) {
                 if count > 1 {
-                    var.enum_name.push_str(format!("_{}", count - 1).as_str());
+                    var.enum_name().push_str(format!("_{}", count - 1).as_str());
                 }
             }
             var
@@ -180,7 +188,7 @@ fn seperated_variables_categories(
                 SEPERATED_VARIABLE_CATEGORIES.iter().find(|&category| {
                     category.eq(&format!(
                         "{}s",
-                        &variable.data_type.as_ref().unwrap_or(&String::new())
+                        &variable.data_type().unwrap_or(String::new())
                     ))
                 });
 
@@ -196,7 +204,7 @@ fn seperated_variables_categories(
 mod tests {
     use std::collections::HashMap;
 
-    use serde_json::json;
+    use serde_json::{json, Map, Value};
 
     use crate::game_data::variable_categories::seperated_variables_categories;
 
@@ -206,12 +214,13 @@ mod tests {
     };
 
     impl Variable {
-        pub fn new(id: &str, name: &str, enum_name: &str, data_type: Option<&str>) -> Variable {
+        pub fn new(id: &str, name: &str, additonal_data: Value) -> Variable {
+            let mut data = additonal_data.as_object().unwrap_or(&Map::new()).clone();
+            data.insert(String::from("name"), Value::String(name.to_string()));
             Variable {
                 id: id.to_string(),
                 name: name.to_string(),
-                enum_name: enum_name.to_string(),
-                data_type: data_type.map(|val| val.to_string()),
+                data,
             }
         }
     }
@@ -233,13 +242,16 @@ mod tests {
                     vec![Variable::new(
                         "O23FJW2",
                         "banana",
-                        "BANANA",
-                        Some("unitTypeGroup")
+                        json!({"dataType": "unitTypeGroup"})
                     )]
                 ),
                 (
                     "regions",
-                    vec![Variable::new("WDWI313", "water", "WATER", Some("region"))]
+                    vec![Variable::new(
+                        "WDWI313",
+                        "water",
+                        json!({"dataType": "region"})
+                    )]
                 ),
                 ("variables", vec![]),
             ]))
@@ -247,7 +259,7 @@ mod tests {
             .unwrap(),
             (
                 "regions",
-                &Variable::new("WDWI313", "water", "WATER", Some("region"))
+                &Variable::new("WDWI313", "water", json!({"dataType": "region"}))
             )
         );
     }
@@ -262,9 +274,9 @@ mod tests {
             }))
             .as_slice(),
             [
-                Variable::new("FW3513W", "apple", "APPLE", None),
-                Variable::new("O23FJW2", "banana", "BANANA", None),
-                Variable::new("WDWI313", "water", "WATER", Some("region")),
+                Variable::new("FW3513W", "apple", json!({"dataType": null})),
+                Variable::new("O23FJW2", "banana", json!({"dataType": ""})),
+                Variable::new("WDWI313", "water", json!({"dataType": "region"})),
             ]
         );
     }
@@ -273,15 +285,15 @@ mod tests {
     fn ensure_no_duplicated_enum_names() {
         assert_eq!(
             resolve_duplicate_variable_enum_names(vec![
-                Variable::new("FW3513W", "apple", "APPLE", None),
-                Variable::new("O23FJW2", "apple", "APPLE", None),
-                Variable::new("WDWI313", "apple", "APPLE", None),
+                Variable::new("FW3513W", "apple", json!({})),
+                Variable::new("O23FJW2", "apple", json!({})),
+                Variable::new("WDWI313", "apple", json!({})),
             ])
             .as_slice(),
             [
-                Variable::new("FW3513W", "apple", "APPLE", None),
-                Variable::new("O23FJW2", "apple", "APPLE_1", None),
-                Variable::new("WDWI313", "apple", "APPLE_2", None),
+                Variable::new("FW3513W", "apple", json!({})),
+                Variable::new("O23FJW2", "apple", json!({})),
+                Variable::new("WDWI313", "apple", json!({})),
             ]
         );
     }
@@ -300,8 +312,7 @@ mod tests {
                     vec![Variable::new(
                         "FW3513W",
                         "apple",
-                        "APPLE",
-                        Some("itemTypeGroup")
+                        json!({"dataType": "itemTypeGroup"})
                     )]
                 ),
                 (
@@ -309,13 +320,16 @@ mod tests {
                     vec![Variable::new(
                         "O23FJW2",
                         "banana",
-                        "BANANA",
-                        Some("unitTypeGroup")
+                        json!({"dataType": "unitTypeGroup"})
                     )]
                 ),
                 (
                     "regions",
-                    vec![Variable::new("WDWI313", "water", "WATER", Some("region"))]
+                    vec![Variable::new(
+                        "WDWI313",
+                        "water",
+                        json!({"dataType": "region"})
+                    )]
                 ),
                 ("variables", vec![]),
             ])

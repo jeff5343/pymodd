@@ -45,7 +45,7 @@ class WhenAUnitsAttributeBecomes0OrLess():
 		if AttributeTypeOfAttribute(LastTriggeringAttribute()) == AttributeTypes.HEALTH:
 			if PlayerTypeOfPlayer(OwnerOfEntity(LastTriggeringUnit())) == PlayerTypes.PLAYER:
 				set_entity_attribute(AttributeTypes.HEALTH, LastTriggeringUnit(), AttributeMaxOfEntity(AttributeTypes.HEALTH, LastTriggeringUnit()))
-				set_entity_variable(PlayerVariables.TARGET_UNIT, LastTriggeringUnit(), Undefined())
+				set_entity_variable(EntityVariables.TARGET_UNIT, LastTriggeringUnit(), Undefined())
 				move_entity_to_position(LastTriggeringUnit(), CenterOfRegion(EntireMapRegion()))
 			else:
 				if UnitTypeOfUnit(LastTriggeringUnit()) == UnitTypes.FROG_BOSS:
@@ -56,14 +56,14 @@ class WhenAUnitsAttributeBecomes0OrLess():
 				destroy_entity(LastTriggeringUnit())
 		else:
 			if AttributeTypeOfAttribute(LastTriggeringAttribute()) == AttributeTypes.MOVE:
-				set_entity_variable(PlayerVariables.TARGET_UNIT, LastTriggeringUnit(), Undefined())
+				set_entity_variable(EntityVariables.TARGET_UNIT, LastTriggeringUnit(), Undefined())
 				for entity in AllEntitiesInRegion(DynamicRegion(XCoordinateOfPosition(PositionOfEntity(LastTriggeringUnit())) - (ValueOfEntityVariable(EntityVariables.SENSOR_RADIUS, LastTriggeringUnit()) / 2), YCoordinateOfPosition(PositionOfEntity(LastTriggeringUnit())) - (ValueOfEntityVariable(EntityVariables.SENSOR_RADIUS, LastTriggeringUnit()) / 2), ValueOfEntityVariable(EntityVariables.SENSOR_RADIUS, LastTriggeringUnit()), ValueOfEntityVariable(EntityVariables.SENSOR_RADIUS, LastTriggeringUnit()))):
 					if PlayerTypeOfPlayer(OwnerOfEntity(entity)) == PlayerTypes.PLAYER:
-						if ValueOfEntityVariable(PlayerVariables.TARGET_UNIT, LastTriggeringUnit()) == Undefined() or DistanceBetweenPositions(PositionOfEntity(entity), PositionOfEntity(LastTriggeringUnit())) > DistanceBetweenPositions(PositionOfEntity(ValueOfEntityVariable(PlayerVariables.TARGET_UNIT, LastTriggeringUnit())), PositionOfEntity(LastTriggeringUnit())):
+						if ValueOfEntityVariable(EntityVariables.TARGET_UNIT, LastTriggeringUnit()) == Undefined() or DistanceBetweenPositions(PositionOfEntity(entity), PositionOfEntity(LastTriggeringUnit())) > DistanceBetweenPositions(PositionOfEntity(ValueOfEntityVariable(EntityVariables.TARGET_UNIT, LastTriggeringUnit())), PositionOfEntity(LastTriggeringUnit())):
 							create_floating_text_at_position_with_color('Froge sense', PositionOfEntity(LastTriggeringUnit()), '#327117', disabled=True)
-							set_entity_variable(PlayerVariables.TARGET_UNIT, LastTriggeringUnit(), entity)
-				if ValueOfEntityVariable(PlayerVariables.TARGET_UNIT, LastTriggeringUnit()) != Undefined():
-					rotate_entity_instantly_to_face_position(LastTriggeringUnit(), PositionOfEntity(ValueOfEntityVariable(PlayerVariables.TARGET_UNIT, LastTriggeringUnit())))
+							set_entity_variable(EntityVariables.TARGET_UNIT, LastTriggeringUnit(), entity)
+				if ValueOfEntityVariable(EntityVariables.TARGET_UNIT, LastTriggeringUnit()) != Undefined():
+					rotate_entity_instantly_to_face_position(LastTriggeringUnit(), PositionOfEntity(ValueOfEntityVariable(EntityVariables.TARGET_UNIT, LastTriggeringUnit())))
 					if UnitTypeOfUnit(LastTriggeringUnit()) == UnitTypes.FROG_BOSS:
 						apply_force_on_entity_at_angle(RandomNumberBetween(3000, 6000), LastTriggeringUnit(), UnitsFacingAngle(LastTriggeringUnit()))
 					else:

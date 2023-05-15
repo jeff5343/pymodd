@@ -55,27 +55,34 @@ class Variable(VariableType):
             'variableName': variable_name,
         }
 
-        # group types take in a list of types as their default values
-        if data_type in [DataType.ITEM_TYPE_GROUP, DataType.UNIT_TYPE_GROUP] and type(default_value) is list:
-            # convert the list of types into modd.io data
-            self.default_value = {}
-            for type_ in default_value:
-                self.default_value[type_.id] = {
-                    'probability': 20,
-                    'quantity': 1
+        if default_value is not None:
+            # group types take in a list of types as their default values
+            if data_type in [DataType.ITEM_TYPE_GROUP, DataType.UNIT_TYPE_GROUP] and type(default_value) is list:
+                # convert the list of types into modd.io data
+                self.default_value = {}
+                for type_ in default_value:
+                    self.default_value[type_.id] = {
+                        'probability': 20,
+                        'quantity': 1
+                    }
+            # regions have additional parameters for their default value (currently not supported)
+            if data_type == DataType.REGION:
+                self.default_value = {
+                    'x': 0,
+                    'y': 0,
+                    'width': 100,
+                    'height': 100,
+                    'inside': '#FFFFFF',
+                    'outside': '',
+                    'alpha': 100,
+                    'videoChatEnabled': False
                 }
-        # regions have additional parameters for their default value
-        if data_type == DataType.REGION:
-            self.default_value = {
-                'x': 0,
-                'y': 0,
-                'width': 100,
-                'height': 100,
-                'inside': '#FFFFFF',
-                'outside': '',
-                'alpha': 100,
-                'videoChatEnabled': False
-            }
+
+    def updated_data_with_user_provided_values(self, data):
+        data = super().updated_data_with_user_provided_values(data)
+        if self.default_value is not None:
+            data['default'] = self.default_value
+        return data
 
     def get_template_data(self):
         return {

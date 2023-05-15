@@ -1,32 +1,50 @@
 use std::ops::Add;
 
 use heck::ToPascalCase;
+use serde_json::Value;
 
 use crate::{
     game_data::{variable_categories::Variable, GameData},
-    project_generator::utils::surround_string_with_quotes,
+    project_generator::utils::{
+        iterators::argument_values_iterator::ArgumentValueIterItem, surround_string_with_quotes,
+    },
 };
 
-use super::utils::to_pymodd_maps::VARIABLE_DATA_TYPES_TO_PYMODD_ENUM;
+use super::{
+    scripts_file::ScriptsContentBuilder, utils::to_pymodd_maps::VARIABLE_DATA_TYPES_TO_PYMODD_ENUM,
+};
 
 pub struct GameVariablesFile {}
 
 impl GameVariablesFile {
     pub fn build_content(game_data: &GameData) -> String {
         let mut file_content = String::new();
+        let scripts_content_builder = ScriptsContentBuilder::new(
+            &game_data.categories_to_variables,
+            &game_data.root_directory,
+        );
+        let category_class_content_builder =
+            CategoryClassContentBuilder::new(&scripts_content_builder);
         game_data
             .categories_to_variables
             .iter()
             .for_each(|(category, variables)| {
                 file_content.push_str(
-                    &build_class_content_of_category(&category, &variables).add("\n\n\n"),
+                    &category_class_content_builder
+                        .build_class_content(&category, &variables)
+                        .add("\n\n\n"),
                 );
             });
-        let classes_to_import = game_data
-            .categories_to_variables
-            .iter()
-            .map(|(category, _variables)| pymodd_class_type_of_category(&category))
-            .collect::<Vec<String>>();
+        let classes_to_import = { 
+            let mut classes = game_data
+                .categories_to_variables
+                .iter()
+                .map(|(category, _variables)| pymodd_class_type_of_category(&category))
+                .collect::<Vec<String>>();
+            classes.sort();
+            classes.dedup();
+            classes
+        };
 
         format!(
             "from pymodd.variable_types import {}, DataType\n\n\n{}",
@@ -36,46 +54,93 @@ impl GameVariablesFile {
     }
 }
 
-fn build_class_content_of_category(category: &'static str, variables: &Vec<Variable>) -> String {
-    let class_content = format!("class {}:", pymodd_class_name_of_category(&category));
-    if variables.len() == 0 {
-        return class_content.add("\n\tpass");
-    }
-    class_content.add(
-        build_class_variables_of_category(&category, &variables)
-            .into_iter()
-            .map(|class_variable| String::from("\n\t").add(&class_variable))
-            .collect::<String>()
-            .as_str(),
-    )
+pub struct CategoryClassContentBuilder<'a> {
+    // used for parsing default values of variables
+    scripts_content_builder: &'a ScriptsContentBuilder<'a>,
 }
 
-fn build_class_variables_of_category(
-    category: &'static str,
-    variables: &Vec<Variable>,
-) -> Vec<String> {
-    variables
-        .iter()
-        .map(|variable| {
-            format!(
-                "{} = {}({}{})",
-                variable.enum_name,
-                pymodd_class_type_of_category(&category),
-                surround_string_with_quotes(&variable.id),
-                if variable_category_requires_data_type(&category) {
-                    format!(
-                        ", {}",
-                        VARIABLE_DATA_TYPES_TO_PYMODD_ENUM
-                            .get(variable.data_type.as_ref().unwrap_or(&String::new()))
-                            .unwrap_or(&String::from("None"))
-                    )
-                } else {
-                    format!(", name={}", surround_string_with_quotes(&variable.name))
-                }
-            )
-            .to_string()
-        })
-        .collect()
+impl<'a> CategoryClassContentBuilder<'a> {
+    pub fn new(
+        scripts_content_builder: &'a ScriptsContentBuilder,
+    ) -> CategoryClassContentBuilder<'a> {
+        CategoryClassContentBuilder {
+            scripts_content_builder: &scripts_content_builder,
+        }
+    }
+
+    fn build_class_content(&self, category: &'static str, variables: &Vec<Variable>) -> String {
+        let class_content = format!("class {}:", pymodd_class_name_of_category(&category));
+        if variables.len() == 0 {
+            return class_content.add("\n\tpass");
+        }
+        class_content.add(
+            self.build_class_variables_of_category(&category, &variables)
+                .into_iter()
+                .map(|class_variable| String::from("\n\t").add(&class_variable))
+                .collect::<String>()
+                .as_str(),
+        )
+    }
+
+    fn build_class_variables_of_category(
+        &self,
+        category: &'static str,
+        variables: &Vec<Variable>,
+    ) -> Vec<String> {
+        variables
+            .iter()
+            .map(|variable| {
+                format!(
+                    "{} = {}({}{})",
+                    variable.enum_name(),
+                    pymodd_class_type_of_category(&category),
+                    surround_string_with_quotes(&variable.id),
+                    if !is_category_of_variable_type(&category) {
+                        format!(", name={}", surround_string_with_quotes(&variable.name))
+                    } else {
+                        let data_type = variable.data_type().unwrap_or(String::new());
+                        format!(
+                            ", {}{}",
+                            VARIABLE_DATA_TYPES_TO_PYMODD_ENUM
+                                .get(&data_type)
+                                .unwrap_or(&String::from("None")),
+                            match (
+                                variable.get_key("default"), 
+                                ["entityTypeVariables", "playerTypeVariables"].contains(&category) || data_type == "region") 
+                            {
+                                (Some(default_value), false) if data_type != "region" => format!(
+                                    ", default_value={}",
+                                    self.build_default_value_of_variable(default_value)
+                                ),
+                                _ => String::new()
+                            }
+                        )
+                    }
+                )
+                .to_string()
+            })
+            .collect()
+    }
+
+    fn build_default_value_of_variable(&self, default_value: &Value) -> String {
+        match default_value {
+            Value::Object(object) => format!(
+                "[{}]",
+                object
+                    .keys()
+                    .map(|val| {
+                        self.scripts_content_builder.build_argument_content(
+                            ArgumentValueIterItem::Value(&Value::String(val.to_string())),
+                        )
+                    })
+                    .collect::<Vec<String>>()
+                    .join(", ")
+            ),
+            _ => self
+                .scripts_content_builder
+                .build_argument_content(ArgumentValueIterItem::Value(default_value)),
+        }
+    }
 }
 
 pub fn pymodd_class_name_of_category(category: &'static str) -> String {
@@ -102,7 +167,7 @@ fn pymodd_class_type_of_category(category: &'static str) -> String {
     }
 }
 
-fn variable_category_requires_data_type(category: &'static str) -> bool {
+fn is_category_of_variable_type(category: &'static str) -> bool {
     [
         "variables",
         "entityTypeVariables",
@@ -116,19 +181,32 @@ fn variable_category_requires_data_type(category: &'static str) -> bool {
 
 #[cfg(test)]
 mod tests {
+    use std::collections::HashMap;
+
+    use serde_json::json;
+
     use crate::{
-        game_data::variable_categories::Variable,
-        project_generator::game_variables_file::build_class_content_of_category,
+        game_data::{
+            directory::Directory,
+            variable_categories::{CategoriesToVariables, Variable},
+        },
+        project_generator::{
+            game_variables_file::CategoryClassContentBuilder, scripts_file::ScriptsContentBuilder,
+        },
     };
 
     #[test]
     fn category_class_content_with_variables() {
         assert_eq!(
-            build_class_content_of_category(
+            CategoryClassContentBuilder::new(&ScriptsContentBuilder::new(
+                &CategoriesToVariables::new(HashMap::new()),
+                &Directory::new("root", "null", Vec::new())
+            ))
+            .build_class_content(
                 "itemTypes",
                 &vec![
-                    Variable::new("FW3513W", "apple", "APPLE", None),
-                    Variable::new("OE51DW2", "banana", "BANANA", None)
+                    Variable::new("FW3513W", "apple", json!({})),
+                    Variable::new("OE51DW2", "banana", json!({}))
                 ],
             ),
             String::from(
@@ -142,10 +220,125 @@ mod tests {
     #[test]
     fn category_class_content_with_no_variables() {
         assert_eq!(
-            build_class_content_of_category("itemTypes", &Vec::new(),),
+            CategoryClassContentBuilder::new(&ScriptsContentBuilder::new(
+                &CategoriesToVariables::new(HashMap::new()),
+                &Directory::new("root", "null", Vec::new())
+            ))
+            .build_class_content("itemTypes", &Vec::new(),),
             String::from(
                 "class ItemTypes:\n\
                     \tpass"
+            )
+        );
+    }
+
+    #[test]
+    fn variable_type_category_class_content_with_variables() {
+        assert_eq!(
+            CategoryClassContentBuilder::new(&ScriptsContentBuilder::new(
+                &CategoriesToVariables::new(HashMap::from([(
+                    "itemTypes",
+                    vec![
+                        Variable::new("FW3513W", "sword", json![{}]), 
+                        Variable::new("Ue25P1i", "stick", json![{}]), 
+                        Variable::new("YfO9w81", "sand", json![{}])
+                    ]
+                )])),
+                &Directory::new("root", "null", Vec::new())
+            ))
+            .build_class_content(
+                "variables",
+                &vec![
+                    Variable::new(
+                        "apple",
+                        "apple",
+                        json!({ "dataType": "number", "default": json!(5) })
+                    ),
+                    Variable::new(
+                        "banana",
+                        "banana",
+                        json!({
+                            "dataType": "itemTypeGroup",
+                            "default": {
+                                "FW3513W": { "probability": 20, "quantity": 1 },
+                                "Ue25P1i": { "probability": 20, "quantity": 1 },
+                                "YfO9w81": { "probability": 20, "quantity": 1 }
+                            }
+                        })
+                    ),
+                    Variable::new(
+                        "peach",
+                        "peach",
+                        json!({
+                            "dataType": "region", 
+                            "default": {
+                                "alpha": 100,
+                                "height": 204,
+                                "inside": "#000000",
+                                "outside": "",
+                                "videoChatEnabled": false,
+                                "width": 389,
+                                "x": 837,
+                                "y": 781
+                            }
+                        })
+                    ),
+ 
+                ],
+            ),
+            String::from(
+                "class Variables:\n\
+                    \tAPPLE = Variable('apple', DataType.NUMBER, default_value=5)\n\
+                    \tBANANA = Variable('banana', DataType.ITEM_TYPE_GROUP, default_value=[ItemTypes.SWORD, ItemTypes.STICK, ItemTypes.SAND])\n\
+                    \tPEACH = Variable('peach', DataType.REGION)"
+            )
+        );
+    }
+
+    #[test]
+    fn entity_variable_category_class_content() {
+        assert_eq!(
+            CategoryClassContentBuilder::new(&ScriptsContentBuilder::new(
+                &CategoriesToVariables::new(HashMap::new()),
+                &Directory::new("root", "null", Vec::new())
+            ))
+            .build_class_content(
+                "entityTypeVariables",
+                &vec![
+                    Variable::new(
+                        "apple",
+                        "apple",
+                        json!({ "dataType": "number", "default": json!(5) })
+                    )
+                ],
+            ),
+            String::from(
+                "class EntityVariables:\n\
+                    \tAPPLE = EntityVariable('apple', DataType.NUMBER)"
+            )
+        );
+    }
+
+    #[test]
+    fn player_variable_category_class_content() {
+        assert_eq!(
+            CategoryClassContentBuilder::new(&ScriptsContentBuilder::new(
+                &CategoriesToVariables::new(HashMap::new()),
+                &Directory::new("root", "null", Vec::new())
+            ))
+            .build_class_content(
+                "playerTypeVariables",
+                &vec![
+                    Variable::new(
+                        "apple",
+                        "apple",
+                        json!({ "dataType": "number", "default": json!(5) })
+                    )
+                ],
+            ),
+            String::from(
+                "class PlayerVariables:\n\
+                    \tAPPLE = PlayerVariable('apple', DataType.NUMBER)"
             )
         );
     }

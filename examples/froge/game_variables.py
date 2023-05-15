@@ -1,4 +1,4 @@
-from pymodd.variable_types import ItemType, ProjectileType, UnitType, PlayerType, Variable, Variable, Variable, EntityVariable, PlayerVariable, Variable, Shop, Dialogue, Music, Sound, State, AnimationType, AttributeType, DataType
+from pymodd.variable_types import AnimationType, AttributeType, Dialogue, EntityVariable, ItemType, Music, PlayerType, PlayerVariable, ProjectileType, Shop, Sound, State, UnitType, Variable, DataType
 
 
 class ItemTypes:
@@ -24,19 +24,19 @@ class PlayerTypes:
 
 
 class ItemTypeGroups:
-	RANDOMGROUP = Variable('randomgroup', DataType.ITEM_TYPE_GROUP)
+	RANDOMGROUP = Variable('randomgroup', DataType.ITEM_TYPE_GROUP, default_value=[ItemTypes.FROG_TONGUE, ItemTypes.KNIFE, ItemTypes.FROG_SWORD])
 
 
 class UnitTypeGroups:
-	UNITTYPEGROUP = Variable('unittypegroup', DataType.UNIT_TYPE_GROUP)
+	UNITTYPEGROUP = Variable('unittypegroup', DataType.UNIT_TYPE_GROUP, default_value=[UnitTypes.FROG_BOSS, UnitTypes.POOPER, UnitTypes.FROG])
 
 
 class Variables:
-	AI = Variable('AI', DataType.PLAYER)
-	BOSS_TIMER = Variable('bossTimer', DataType.NUMBER)
+	AI = Variable('AI', DataType.PLAYER, default_value='computer1')
+	BOSS_TIMER = Variable('bossTimer', DataType.NUMBER, default_value=0)
 	DWADAWD = Variable('dwadawd', DataType.UNIT_GROUP)
 	TEMP_UNIT = Variable('tempUnit', DataType.UNIT)
-	TIMER = Variable('timer', DataType.NUMBER)
+	TIMER = Variable('timer', DataType.NUMBER, default_value=0)
 
 
 class EntityVariables:
