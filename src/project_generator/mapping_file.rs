@@ -136,7 +136,7 @@ mod tests {
                 }
             }
         }"#.to_string()).unwrap()), 
-        "from pymodd.script import Game, Folder\n\n\
+        "from pymodd.game import Game, Folder\n\n\
         from scripts import *\n\
         from entity_scripts import * \n\n\n\
         class TestGame(Game):\n\
