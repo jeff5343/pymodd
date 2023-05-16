@@ -25,12 +25,7 @@ class Script(File):
         self.key = Script._class_to_key[self.__class__]
         self.triggers = []
         self.actions = []
-        self.build_func_source_code = None
-        self.build_func_source_starting_line_num = None
-        self.build_func_source_file = None
-
-    def _build(self):
-        pass
+        self.build_actions_function = None
 
     def to_dict(self, project_globals_data):
         script_actions_compiler = ScriptActionsCompiler(project_globals_data)
@@ -38,9 +33,13 @@ class Script(File):
         try:
             actions_data = script_actions_compiler.compile_script(self)
         except ScriptActionsCompileError as compile_error:
+            script_source_file = inspect.getsourcefile(self.build_actions_function)
+            script_source_starting_line_num = inspect.getsourcelines(
+                self.build_actions_function)[1]
+
             print()
             _pymodd_helper.log_error('Compile error!\n')
-            print(f''' File "{self.build_func_source_file}", line {self.build_func_source_starting_line_num + compile_error.error_line_num - 1}''',
+            print(f''' File "{script_source_file}", line {script_source_starting_line_num + compile_error.error_line_num - 1}''',
                   f'   {compile_error.error_line_code}\n',
                   f'{type(compile_error.error).__name__}: {compile_error.error}\n',
                   sep='\n')
@@ -58,14 +57,14 @@ class Script(File):
 
 
 def script(triggers=[], name=None):
-    '''turn a class into a script
+    '''turn a function into a script
 
     Args:
         triggers (list, optional): triggers for the script. Defaults to [].
 
-        name (str, optional): name to override the default name of the script. Defaults to the class name of the script.
+        name (str, optional): name to override the default name of the script. Defaults to the function name of the script.
     '''
-    def wrapper_script(cls):
+    def wrapper_script(func):
         class NewScript(Script):
             def __init__(self):
                 super().__init__()
@@ -73,14 +72,8 @@ def script(triggers=[], name=None):
                 if name is not None:
                     self.name = name
                 else:
-                    self.name = snakecase(cls.__name__).replace('_', ' ')
-                sourcelines = inspect.getsourcelines(cls._build)
-                self.build_func_source_code = ''.join(sourcelines[0])
-                self.build_func_source_starting_line_num = sourcelines[1]
-                self.build_func_source_file = inspect.getsourcefile(cls._build)
-
-            def _build(self):
-                cls._build(self)
+                    self.name = func.__name__.replace('_', ' ')
+                self.build_actions_function = func
 
         return NewScript
     return wrapper_script
@@ -108,7 +101,8 @@ class ScriptActionsCompiler(ast.NodeVisitor):
         self.depth = 0
         self.depth_to_locals_data = {0: {}}
         self.actions_data = []
-        tree = ast.parse(textwrap.dedent(script.build_func_source_code))
+        tree = ast.parse(textwrap.dedent(
+            inspect.getsource(script.build_actions_function)))
         self.visit(tree)
         return self.actions_data
 
