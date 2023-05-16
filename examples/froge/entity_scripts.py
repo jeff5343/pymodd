@@ -8,25 +8,23 @@ class Pooper(EntityScripts):
 	def _build(self):
 		self.entity_type = UnitTypes.POOPER
 		self.keybindings = {
-			Key.LEFT_CLICK: KeyBehavior(self.UseItem(), self.StopUsingItem()),
-			Key.B: KeyBehavior(OpenShop(), None),
+			Key.LEFT_CLICK: KeyBehavior(self.use_item(), self.stop_using_item()),
+			Key.B: KeyBehavior(open_shop(), None),
 			
 		}
 		self.scripts = [
-			self.UseItem(),
-			self.StopUsingItem(),
+			self.use_item(),
+			self.stop_using_item(),
 			
 		]
 
 	@script(triggers=[])
-	class UseItem():
-		def _build(self):
-			use_item_continuously_until_stopped(ItemCurrentlyHeldByUnit(ThisEntity()))
+	def use_item():
+		use_item_continuously_until_stopped(ItemCurrentlyHeldByUnit(ThisEntity()))
 
 	@script(triggers=[])
-	class StopUsingItem():
-		def _build(self):
-			stop_using_item(ItemCurrentlyHeldByUnit(ThisEntity()))
+	def stop_using_item():
+		stop_using_item(ItemCurrentlyHeldByUnit(ThisEntity()))
 
 
 class Frog(EntityScripts):
@@ -36,13 +34,12 @@ class Frog(EntityScripts):
 			
 		}
 		self.scripts = [
-			self.NewScript(),
+			self.new_script(),
 			
 		]
 
 	@script(triggers=[])
-	class NewScript():
-		def _build(self):
-			comment('wdwadawd')
+	def new_script():
+		comment('wdwadawd')
 
 
