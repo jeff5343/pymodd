@@ -1,4 +1,5 @@
 import os
+import inspect
 from enum import Enum
 
 from pymodd.game import Base, Game
@@ -22,11 +23,11 @@ class KeyBehavior(Base):
         if key_down_script is not None:
             self.key_down_script_key = key_down_script.key
             self.is_key_down_script_entity_script = os.path.split(
-                key_down_script.build_func_source_file)[-1] == 'entity_scripts.py'
+                inspect.getsourcefile(key_down_script.build_actions_function))[-1] == 'entity_scripts.py'
         if key_up_script is not None:
             self.key_up_script_key = key_up_script.key
             self.is_key_up_script_entity_script = os.path.split(
-                key_up_script.build_func_source_file)[-1] == 'entity_scripts.py'
+                inspect.getsourcefile(key_up_script.build_actions_function))[-1] == 'entity_scripts.py'
 
     def to_dict(self, old_data: None):
         # update the old data with new data if it is provided

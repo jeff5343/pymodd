@@ -73,7 +73,7 @@ pub fn build_directory_items_contents(directory: &Directory) -> Vec<String> {
                 format!(
                     "{}{}(),",
                     "\t".repeat(curr_depth),
-                    script.pymodd_class_name()
+                    script.pymodd_function_name()
                 )
             }
             DirectoryIterItem::DirectoryEnd => {
@@ -107,12 +107,12 @@ mod tests {
                 "HWI31WQ": { "folderName": "other", "key": "HWI31WQ", "parent": "31IAD2B", "order": 3 },
                 "JK32Q03": { "name": "destroy_server", "key": "JK32Q03", "actions": [], "parent": "HWI31WQ", "order": 1},
             }))).into_iter().collect::<String>(),
-            "Initialize(),\
+            "initialize(),\
             Folder('utils', [\
-                \tChangeState(),\
-                \tCheckPlayers(),\
+                \tchange_state(),\
+                \tcheck_players(),\
                 \tFolder('other', [\
-                    \t\tDestroyServer(),\
+                    \t\tdestroy_server(),\
                 \t]),\
             ]),"
         );
@@ -143,9 +143,9 @@ mod tests {
             \tdef _build(self):\n\
                 \t\tself.entity_scripts = [Bob()]\n\
                 \t\tself.scripts = [\n\
-                    \t\t\tInitialize(),\n\
+                    \t\t\tinitialize(),\n\
                     \t\t\tFolder('utils', [\n\
-                        \t\t\t\tChangeState(),\n\
+                        \t\t\t\tchange_state(),\n\
                     \t\t\t]),\n\
                     \t\t\t\n\
                 \t\t]\n\n\n\

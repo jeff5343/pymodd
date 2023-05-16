@@ -85,11 +85,10 @@ impl<'a> ScriptsContentBuilder<'a> {
     }
 
     pub fn build_script_content(&self, script: &Script) -> String {
-        let class_name = script.pymodd_class_name();
+        let function_name = script.pymodd_function_name();
         format!(
             "@script(triggers=[{}]{})\n\
-            class {class_name}():\n\
-            \tdef _build(self):\n\
+            def {function_name}():\n\
                 {}",
             script.triggers_into_pymodd_enums().join(", "),
             if script.name.is_ascii() {
@@ -100,10 +99,10 @@ impl<'a> ScriptsContentBuilder<'a> {
             if script.actions.len() > 0 {
                 self.build_actions_content(&script.actions)
                     .lines()
-                    .map(|action| format!("{}{action}\n", "\t".repeat(2)))
+                    .map(|action| format!("{}{action}\n", "\t"))
                     .collect::<String>()
             } else {
-                String::from("\t\tpass\n")
+                String::from("\tpass\n")
             }
         )
     }
@@ -328,7 +327,7 @@ impl<'a> ScriptsContentBuilder<'a> {
                 if item_with_key.is_some() {
                     if let DirectoryIterItem::Script(script) = item_with_key.unwrap() {
                         // run_script action accepts Script objects, not keys
-                        return format!("{}()", script.pymodd_class_name());
+                        return format!("{}()", script.pymodd_function_name());
                     }
                 }
                 String::from("None")
@@ -435,9 +434,8 @@ mod tests {
             )),
             String::from(format!(
                 "@script(triggers=[Trigger.GAME_START])\n\
-                class Initialize():\n\
-                    \tdef _build(self):\n\
-                        \t\tpass\n",
+                def initialize():\n\
+                    \tpass\n",
             ))
         );
     }
@@ -457,9 +455,8 @@ mod tests {
             )),
             String::from(format!(
                 "@script(triggers=[Trigger.GAME_START], name='【 𝚒𝚗𝚒𝚝𝚒𝚊𝚕𝚒𝚣𝚎 イ】')\n\
-                class q():\n\
-                    \tdef _build(self):\n\
-                        \t\tpass\n",
+                def q():\n\
+                    \tpass\n",
             ))
         );
     }
@@ -913,7 +910,7 @@ mod tests {
                 .unwrap(),
             ))
             .as_str(),
-            "run_script(SpawnBoss())\n"
+            "run_script(spawn_boss())\n"
         )
     }
 }

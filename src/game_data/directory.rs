@@ -1,4 +1,4 @@
-use heck::ToPascalCase;
+use heck::ToSnakeCase;
 use serde_json::{map::Values, Map, Value};
 
 use crate::project_generator::utils::{
@@ -151,12 +151,12 @@ pub struct Script {
 }
 
 impl Script {
-    pub fn pymodd_class_name(&self) -> String {
-        let class_name = self.name.replace("'", "").to_pascal_case().to_string();
-        if !is_valid_class_name(&class_name) {
-            return format!("q{class_name}");
+    pub fn pymodd_function_name(&self) -> String {
+        let function_name = self.name.replace("'", "").to_snake_case().to_string();
+        if !is_valid_class_name(&function_name) {
+            return format!("q{function_name}");
         }
-        class_name
+        function_name
     }
 
     pub fn triggers_into_pymodd_enums(&self) -> Vec<String> {

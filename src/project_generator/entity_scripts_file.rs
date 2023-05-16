@@ -146,14 +146,14 @@ fn build_content_of_script_with_key(
                 .find_item_with_key(&key)
                 .unwrap_or(DirectoryIterItem::DirectoryEnd)
             {
-                return format!("self.{}()", script.pymodd_class_name());
+                return format!("self.{}()", script.pymodd_function_name());
             };
         } else {
             if let DirectoryIterItem::Script(script) = game_directory
                 .find_item_with_key(&key)
                 .unwrap_or(DirectoryIterItem::DirectoryEnd)
             {
-                return format!("{}()", script.pymodd_class_name());
+                return format!("{}()", script.pymodd_function_name());
             };
         };
     }
@@ -231,9 +231,9 @@ mod tests {
                         \t\t\t\n\
                     \t\t}\n\
                     \t\tself.scripts = [\n\
-                        \t\t\tself.Initialize(),\n\
+                        \t\t\tself.initialize(),\n\
                         \t\t\tFolder('utils', [\n\
-                            \t\t\t\tself.ChangeState(),\n\
+                            \t\t\t\tself.change_state(),\n\
                         \t\t\t]),\n\
                         \t\t\t\n\
                     \t\t]\n"
@@ -276,15 +276,15 @@ mod tests {
                 \tdef _build(self):\n\
                     \t\tself.entity_type = UnitTypes.BOB\n\
                     \t\tself.keybindings = {\n\
-                        \t\t\tKey.LEFT_CLICK: KeyBehavior(self.UseItem(), self.StopUsingItem()),\n\
-                        \t\t\tKey.Q: KeyBehavior(self.UseItem(), EndGame()),\n\
-                        \t\t\tKey.R: KeyBehavior(EndGame(), None),\n\
+                        \t\t\tKey.LEFT_CLICK: KeyBehavior(self.use_item(), self.stop_using_item()),\n\
+                        \t\t\tKey.Q: KeyBehavior(self.use_item(), end_game()),\n\
+                        \t\t\tKey.R: KeyBehavior(end_game(), None),\n\
                         \t\t\tKey.Z: KeyBehavior(None, None),\n\
                         \t\t\t\n\
                     \t\t}\n\
                     \t\tself.scripts = [\n\
-                        \t\t\tself.UseItem(),\n\
-                        \t\t\tself.StopUsingItem(),\n\
+                        \t\t\tself.use_item(),\n\
+                        \t\t\tself.stop_using_item(),\n\
                         \t\t\t\n\
                     \t\t]\n"
         );
