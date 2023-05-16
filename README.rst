@@ -54,14 +54,13 @@ view the ``examples/froge`` directory for an example of a pymodd project
 .. code:: py
 
     @script(triggers=[Trigger.EVERY_SECOND])
-    class EverySecond():
-        def _build(self):
-            if NumberOfUnitsOfUnitType(UnitTypes.FROG) < 5:
-                create_unit_for_player_at_position_with_rotation(UnitTypes.FROG, Variables.AI, RandomPositionInRegion(EntireMapRegion()), 0)
-            else:
-                if NumberOfUnitsOfUnitType(UnitTypes.FROG_BOSS) == 0:
-                    if Variables.BOSS_TIMER <= 0:
-                        create_unit_for_player_at_position_with_rotation(UnitTypes.FROG_BOSS, Variables.AI, RandomPositionInRegion(EntireMapRegion()), 0)
-                        update_ui_target_for_player_for_miliseconds(UiTarget.CENTER, 'BOSS SPAWNED', Undefined(), 5000)
-                    decrease_variable_by_number(Variables.BOSS_TIMER, 1)
+    def every_second():
+        if NumberOfUnitsOfUnitType(UnitTypes.FROG) < 5:
+            create_unit_for_player_at_position_with_rotation(UnitTypes.FROG, Variables.AI, RandomPositionInRegion(EntireMapRegion()), 0)
+        else:
+            if NumberOfUnitsOfUnitType(UnitTypes.FROG_BOSS) == 0:
+                if Variables.BOSS_TIMER <= 0:
+                    create_unit_for_player_at_position_with_rotation(UnitTypes.FROG_BOSS, Variables.AI, RandomPositionInRegion(EntireMapRegion()), 0)
+                    update_ui_target_for_player_for_miliseconds(UiTarget.CENTER, 'BOSS SPAWNED', Undefined(), 5000)
+                decrease_variable_by_number(Variables.BOSS_TIMER, 1)
 

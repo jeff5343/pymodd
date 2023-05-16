@@ -8,12 +8,12 @@ class Froge(Game):
 	def _build(self):
 		self.entity_scripts = [Pooper(), Frog()]
 		self.scripts = [
-			Initialize(),
-			PlayerJoins(),
-			PlayerLeaves(),
-			EverySecond(),
-			WhenAUnitsAttributeBecomes0OrLess(),
-			OpenShop(),
+			initialize(),
+			player_joins(),
+			player_leaves(),
+			every_second(),
+			when_a_units_attribute_becomes_0_or_less(),
+			open_shop(),
 			
 		]
 
