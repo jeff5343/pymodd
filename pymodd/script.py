@@ -116,7 +116,7 @@ class ScriptActionsCompiler(ast.NodeVisitor):
             if visitor == self.generic_visit or visitor in [self.visit_Assign, self.visit_AnnAssign, self.visit_Delete]:
                 return visitor(node)
 
-            if visitor in [self.visit_If, self.visit_While, self.visit_For]:
+            if visitor in [self.visit_If, self.visit_While, self.visit_For, self.visit_With]:
                 self.depth += 1
                 self.depth_to_locals_data[self.depth] = {}
                 action_data = visitor(node)
@@ -190,15 +190,10 @@ class ScriptActionsCompiler(ast.NodeVisitor):
             return pymodd.actions.for_range(for_loop_var, range_function.start, range_function.stop, self.parse_actions_of_body(node.body))
 
     def visit_With(self, node: ast.With):
-        if len(node.items) == 0:
-            raise ValueError(
-                "'with' statement requires a 'after_timeout' action"
-            )
         evaled_item = self.eval_code(ast.unparse(node.items[0]))
         if isinstance((timeout_action_data := evaled_item), dict) and timeout_action_data.get('type') == 'setTimeOut':
             timeout_action_data['actions'] = self.parse_actions_of_body(
                 node.body)
-            print(timeout_action_data)
             return timeout_action_data
         raise ValueError(
             "'with' statement argument must be a 'after_timeout' action"
