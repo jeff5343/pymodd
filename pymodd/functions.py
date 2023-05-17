@@ -37,6 +37,9 @@ class Function(Base):
     def __truediv__(self, other):
         return Calculation(self, '/', other)
 
+    def __mod__(self, other):
+        return Calculation(self, '%', other)
+
     def __pow__(self, other):
         return Exponent(self, other)
 
@@ -55,14 +58,17 @@ class Function(Base):
     def __rtruediv__(self, other):
         return Calculation(other, '/', self)
 
+    def __rmod__(self, other):
+        return Calculation(other, '%', self)
+
     def __rpow__(self, other):
         return Exponent(other, self)
 
 
 # only subclasses of Function requires these types
 # (also prevents a circular import)
-from .variable_types import (VariableType, AttributeType, EntityVariable, ItemType, PlayerType, PlayerVariable,
-                             ProjectileType, State, UnitType, Variable)
+from .variable_types import (VariableType, AttributeType, EntityVariable, ItemType, PlayerType,
+                             PlayerVariable, ProjectileType, State, UnitType, Variable)
 
 
 # ---------------------------------------------------------------------------- #
