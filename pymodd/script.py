@@ -33,7 +33,8 @@ class Script(File):
         try:
             actions_data = script_actions_compiler.compile_script(self)
         except ScriptActionsCompileError as compile_error:
-            script_source_file = inspect.getsourcefile(self.build_actions_function)
+            script_source_file = inspect.getsourcefile(
+                self.build_actions_function)
             script_source_starting_line_num = inspect.getsourcelines(
                 self.build_actions_function)[1]
 
@@ -115,7 +116,7 @@ class ScriptActionsCompiler(ast.NodeVisitor):
             if visitor == self.generic_visit or visitor in [self.visit_Assign, self.visit_AnnAssign, self.visit_Delete]:
                 return visitor(node)
 
-            if visitor in [self.visit_If, self.visit_While, self.visit_For]:
+            if visitor in [self.visit_If, self.visit_While, self.visit_For, self.visit_With]:
                 self.depth += 1
                 self.depth_to_locals_data[self.depth] = {}
                 action_data = visitor(node)
@@ -138,21 +139,21 @@ class ScriptActionsCompiler(ast.NodeVisitor):
         return action
 
     def visit_If(self, node: ast.If):
-        then_actions_data = self.parse_actions_of_node_body(node.body)
-        else_actions_data = self.parse_actions_of_node_body(node.orelse)
+        then_actions_data = self.parse_actions_of_body(node.body)
+        else_actions_data = self.parse_actions_of_body(node.orelse)
         if_action_data = pymodd.actions.if_else(
             self.eval_condition(node.test), then_actions_data, else_actions_data)
         return if_action_data
 
     def visit_While(self, node: ast.While):
-        actions_data = self.parse_actions_of_node_body(node.body)
+        actions_data = self.parse_actions_of_body(node.body)
         return pymodd.actions.while_do(self.eval_condition(node.test), actions_data)
 
     def visit_For(self, node: ast.For):
         evaled_iter = self.eval_node(node.iter)
         # repeat action
         if isinstance((repeat_action_data := evaled_iter), dict) and repeat_action_data.get('type') == 'repeat':
-            repeat_action_data['actions'] = self.parse_actions_of_node_body(
+            repeat_action_data['actions'] = self.parse_actions_of_body(
                 node.body)
             return repeat_action_data
         # for _ in group_function action
@@ -165,7 +166,7 @@ class ScriptActionsCompiler(ast.NodeVisitor):
                 self.add_local_var_to_curr_depth_locals_data(
                     node.target.id, group_function._get_iteration_object())
             action = group_function._get_iterating_action()
-            return action(group_function, self.parse_actions_of_node_body(node.body))
+            return action(group_function, self.parse_actions_of_body(node.body))
         # for _ in group_variable action
         elif isinstance((variable := evaled_iter), pymodd.variable_types.Variable):
             if variable.data_type not in [pymodd.variable_types.DataType.ITEM_GROUP, pymodd.variable_types.DataType.UNIT_GROUP,
@@ -178,7 +179,7 @@ class ScriptActionsCompiler(ast.NodeVisitor):
                 self.add_local_var_to_curr_depth_locals_data(
                     node.target.id, variable._get_iteration_object())
             action = variable._get_iterating_action()
-            return action(variable, self.parse_actions_of_node_body(node.body))
+            return action(variable, self.parse_actions_of_body(node.body))
         # for loop action
         elif isinstance((range_function := evaled_iter), range):
             for_loop_var = self.eval_code(ast.unparse(node.target))
@@ -186,7 +187,17 @@ class ScriptActionsCompiler(ast.NodeVisitor):
                 raise TypeError(
                     f"DataType of '{ast.unparse(node.iter)}' must be DataType.NUMBER"
                 )
-            return pymodd.actions.for_range(for_loop_var, range_function.start, range_function.stop, self.parse_actions_of_node_body(node.body))
+            return pymodd.actions.for_range(for_loop_var, range_function.start, range_function.stop, self.parse_actions_of_body(node.body))
+
+    def visit_With(self, node: ast.With):
+        evaled_item = self.eval_code(ast.unparse(node.items[0]))
+        if isinstance((timeout_action_data := evaled_item), dict) and timeout_action_data.get('type') == 'setTimeOut':
+            timeout_action_data['actions'] = self.parse_actions_of_body(
+                node.body)
+            return timeout_action_data
+        raise ValueError(
+            "'with' statement argument must be a 'after_timeout' action"
+        )
 
     def visit_Break(self, node: ast.Break):
         return pymodd.actions.break_loop()
@@ -217,7 +228,7 @@ class ScriptActionsCompiler(ast.NodeVisitor):
             if isinstance(target, ast.Name):
                 self.depth_to_locals_data[self.depth].pop(target.id)
 
-    def parse_actions_of_node_body(self, node_body):
+    def parse_actions_of_body(self, node_body):
         actions_data = []
         for node in node_body:
             action_data = self.visit(node)

@@ -194,6 +194,15 @@ impl<'a> ScriptsContentBuilder<'a> {
                     (args.get(0).unwrap_or(&none), args.get(1).unwrap_or(&pass));
                 Some(format!("while {condition}:{actions}"))
             }
+            
+            // convert set timeout actions into with loops
+            "setTimeOut" => {
+                let args = self.build_arguments_of_action_individually(action);
+                let (duration, actions) =
+                    (args.get(0).unwrap_or(&none), args.get(1).unwrap_or(&pass));
+                Some(format!("with after_timeout({duration}):{actions}"))
+            }
+
             _ => None,
         };
         if let Some(statement_content) = statement_content {
@@ -907,6 +916,26 @@ mod tests {
     }
 
     #[test]
+    fn parse_set_timeout_action_into_python() {
+        assert_eq!(
+            ScriptsContentBuilder::new(
+                &CategoriesToVariables::new(HashMap::new()),
+                &Directory::new("root", "null", Vec::new())
+            )
+            .build_actions_content(&parse_actions(
+                json!([ 
+                    { "type": "setTimeOut", "duration": 1000, "actions": [ { "type": "stopMusic" } ] } 
+                ])
+                .as_array()
+                .unwrap(),
+            ))
+            .as_str(),
+            "with after_timeout(1000):\n\
+                \tstop_music_for_everyone()\n"
+        );
+    }
+
+    #[test]
     fn parse_disabled_while_action_into_python() {
         assert_eq!(
             ScriptsContentBuilder::new(
@@ -993,10 +1022,7 @@ mod tests {
             )
             .build_actions_content(&parse_actions(
                 json!([
-                     {
-                        "type": "runScript",
-                        "scriptName": "If2aW3B"
-                     }
+                     { "type": "runScript", "scriptName": "If2aW3B" }
                 ])
                 .as_array()
                 .unwrap(),
