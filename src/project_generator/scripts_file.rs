@@ -431,7 +431,7 @@ impl<'a> ScriptsContentBuilder<'a> {
 }
 
 fn into_operator(string: &str) -> Option<&str> {
-    if ["==", "!=", "<=", "<", ">", ">=", "+", "-", "/", "*", "**"].contains(&string) {
+    if ["==", "!=", "<=", "<", ">", ">=", "+", "-", "/", "*", "%", "**"].contains(&string) {
         return Some(string);
     }
     match string.to_lowercase().as_str() {
@@ -636,16 +636,18 @@ mod tests {
                             "type": "increaseVariableByNumber",
                             "variable": null,
                             "number": {
-                                "function": "calculate",
+                                "function": "calculate", 
                                 "items": [
-                                    { "operator": "*" },
-                                    { "function": "getRandomNumberBetween", "min": 0, "max": 5 },
-                                    { "function": "calculate", "items": [
-                                            { "operator": "+" },
-                                            { "function": "getExponent", "base": { "function": "currentTimeStamp" }, "power": 2 },
-                                            3
-                                       ]
-                                    }
+                                    { "operator": "%" }, 10, { "function": "calculate", "items": [
+                                            { "operator": "+" }, 5, { "function": "calculate", "items": [
+                                                    { "operator": "-" }, 3, { "function": "calculate", "items": [ 
+                                                            { "operator": "*" }, 3, { "function": "calculate", "items": [ 
+                                                                    { "operator": "/" }, 2,
+                                                                    { "function": "getExponent", "base": 5, "power": 2 }
+                                                            ] }
+                                                        ] } 
+                                                ] }
+                                        ] }
                                 ]
                             }
                         }
@@ -653,7 +655,7 @@ mod tests {
                     .as_array()
                     .unwrap()
                 )),
-            "increase_variable_by_number(None, RandomNumberBetween(0, 5) * ((CurrentUnixTimeStamp() ** 2) + 3))\n"
+            "increase_variable_by_number(None, 10 % (5 + (3 - (3 * (2 / (5 ** 2))))))\n"
         );
     }
 
