@@ -58,15 +58,6 @@ def play_ad_for_player(entity, comment=None, disabled=False, run_on_client=False
 
 
 @action
-def after_timeout(duration: Number, actions=[], comment=None, disabled=False, run_on_client=False):
-    return {
-        'type': 'setTimeOut',
-        'duration': to_dict(duration),
-        'actions': actions,
-    }
-
-
-@action
 def rotate_entity_instantly_to_face_position(entity, position, comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'rotateEntityToFacePosition',
@@ -449,15 +440,6 @@ def play_animation_for_entity(animation, entity, comment=None, disabled=False, r
         'type': 'playEntityAnimation',
         'entity': to_dict(entity),
         'animation': to_dict(animation),
-    }
-
-
-@action
-def while_do(conditions, actions=[], comment=None, disabled=False, run_on_client=False):
-    return {
-        'type': 'while',
-        'conditions': to_dict(conditions),
-        'actions': actions,
     }
 
 
@@ -1694,5 +1676,35 @@ def for_all_debris_in(debris_group, actions=[], comment=None, disabled=False, ru
     return {
         'type': 'forAllDebris',
         'debrisGroup': to_dict(debris_group),
+        'actions': actions,
+    }
+
+
+@action
+def while_do(conditions, actions=[], comment=None, disabled=False, run_on_client=False):
+    '''Deprecated, use a python while loop instead:
+    ```
+    while NumberOfPlayers() < 5:
+        ...
+    ```
+    '''
+    return {
+        'type': 'while',
+        'conditions': to_dict(conditions),
+        'actions': actions,
+    }
+
+
+@action
+def after_timeout(duration_milliseconds: Number, actions=[], comment=None, disabled=False, run_on_client=False):
+    '''Deprecated, use a python with statement instead:
+    ```
+    with after_timeout(1000):
+        ...
+    ```
+    '''
+    return {
+        'type': 'setTimeOut',
+        'duration': to_dict(duration_milliseconds),
         'actions': actions,
     }
