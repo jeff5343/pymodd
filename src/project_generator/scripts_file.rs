@@ -117,19 +117,18 @@ impl<'a> ScriptsContentBuilder<'a> {
     fn build_action_content(&self, action: &Action) -> String {
         // for use while converting arguments of special actions
         let (none, pass) = (String::from("None"), String::from("\t\tpass\n"));
-        match action.name.as_str() {
-            // convert break, continue, and return actions into keywords
-            "break" | "continue" | "return" => format!("{}\n", &action.name),
 
+        // convert actions into python statements
+        let statement_content = match action.name.as_str() {
             // convert condition actions into if statements
             "condition" => {
-                let args = self.build_arguments_of_action_seperately(action);
+                let args = self.build_arguments_of_action_individually(action);
                 let (condition, then_actions, else_actions) = (
                     args.get(0).unwrap_or(&none),
                     args.get(1).unwrap_or(&pass),
                     args.get(2).unwrap_or(&pass),
                 );
-                format!(
+                Some(format!(
                     "if {condition}:{}{}",
                     then_actions.strip_suffix("\n").unwrap(),
                     if else_actions != "\n\tpass\n" {
@@ -137,26 +136,28 @@ impl<'a> ScriptsContentBuilder<'a> {
                     } else {
                         String::from("\n")
                     }
-                )
+                ))
             }
 
             // convert variable for loop actions into for loops
             "for" => {
-                let args = self.build_arguments_of_action_seperately(action);
+                let args = self.build_arguments_of_action_individually(action);
                 let (variable, start, stop, actions) = (
                     args.get(0).unwrap_or(&none),
                     args.get(1).unwrap_or(&none),
                     args.get(2).unwrap_or(&none),
                     args.get(3).unwrap_or(&pass),
                 );
-                format!("for {variable} in range({start}, {stop}):{actions}")
+                Some(format!(
+                    "for {variable} in range({start}, {stop}):{actions}"
+                ))
             }
 
             // convert for each type in function/variable actions into for loops
             "forAllEntities" | "forAllProjectiles" | "forAllItems" | "forAllUnits"
             | "forAllPlayers" | "forAllItemTypes" | "forAllUnitTypes" | "forAllRegions"
             | "forAllDebris" => {
-                let args = self.build_arguments_of_action_seperately(action);
+                let args = self.build_arguments_of_action_individually(action);
                 let (group, actions) = (args.get(0).unwrap_or(&none), args.get(1).unwrap_or(&pass));
                 let group_type = match action
                     .name
@@ -176,23 +177,35 @@ impl<'a> ScriptsContentBuilder<'a> {
                     &format!("Selected{}()", group_type.to_upper_camel_case()),
                     &group_type,
                 );
-                format!("for {group_type} in {group}:{actions}")
+                Some(format!("for {group_type} in {group}:{actions}"))
             }
 
             // convert repeat actions into for loops
             "repeat" => {
-                let args = self.build_arguments_of_action_seperately(action);
+                let args = self.build_arguments_of_action_individually(action);
                 let (count, actions) = (args.get(0).unwrap_or(&none), args.get(1).expect(&pass));
-                format!("for _ in repeat({count}):{actions}")
+                Some(format!("for _ in repeat({count}):{actions}"))
             }
 
             // convert while actions into while loops
             "while" => {
-                let args = self.build_arguments_of_action_seperately(action);
+                let args = self.build_arguments_of_action_individually(action);
                 let (condition, actions) =
                     (args.get(0).unwrap_or(&none), args.get(1).unwrap_or(&pass));
-                format!("while {condition}:{actions}")
+                Some(format!("while {condition}:{actions}"))
             }
+            _ => None,
+        };
+        if let Some(statement_content) = statement_content {
+            return match action.disabled {
+                true => self.comment_out_statement_content(statement_content),
+                false => statement_content,
+            };
+        }
+
+        match action.name.as_str() {
+            // convert break, continue, and return actions into python keywords
+            "break" | "continue" | "return" => format!("{}\n", &action.name),
 
             "comment" => {
                 format!(
@@ -230,8 +243,22 @@ impl<'a> ScriptsContentBuilder<'a> {
         }
     }
 
+    fn comment_out_statement_content(&self, statement: String) -> String {
+        statement
+            .lines()
+            .map(|line| {
+                if line.trim().starts_with("# ") {
+                    format!("# \t{}", line.trim().strip_prefix("# ").unwrap())
+                } else {
+                    format!("# {line}")
+                }
+                .add("\n")
+            })
+            .collect()
+    }
+
     /// used while parsing if statements, for loops, and while loops
-    fn build_arguments_of_action_seperately(&self, action: &Action) -> Vec<String> {
+    fn build_arguments_of_action_individually(&self, action: &Action) -> Vec<String> {
         action
             .args
             .iter()
@@ -877,6 +904,71 @@ mod tests {
             "while EntityExists(LastTriggeringUnit()) == True:\n\
                 \tpass\n"
         );
+    }
+
+    #[test]
+    fn parse_disabled_while_action_into_python() {
+        assert_eq!(
+            ScriptsContentBuilder::new(
+                &CategoriesToVariables::new(HashMap::new()),
+                &Directory::new("root", "null", Vec::new())
+            )
+            .build_actions_content(&parse_actions(
+                json!([
+                    {
+                        "type": "while", "conditions": [ { "operandType": "boolean", "operator": "==" }, true, true ], "actions": [],
+                        "disabled": true
+                    }
+                ])
+                .as_array()
+                .unwrap(),
+            ))
+            .as_str(),
+            "# while True == True:\n\
+                # \tpass\n"
+        );
+    }
+
+    #[test]
+    fn parse_nested_disabled_if_statements_into_pymodd() {
+        assert_eq!(
+            ScriptsContentBuilder::new(
+                &CategoriesToVariables::new(HashMap::new()),
+                &Directory::new("root", "null", Vec::new())
+            )
+            .build_actions_content(&parse_actions(
+                json!([
+                     {
+                        "type": "condition", "conditions": [ { "operandType": "boolean", "operator": "==" }, true, true ],
+                        "then": [ {
+                                "type": "condition", "conditions": [ { "operandType": "boolean", "operator": "==" }, true, true ],
+                                "then": [ {
+                                        "type": "condition", "conditions": [ { "operandType": "boolean", "operator": "==" }, true, true ],
+                                        "then": [ { "type": "sendChatMessage", "message": "hi" } ],
+                                        "else": [ { "type": "sendChatMessage", "message": "hi" } ],
+                                        "disabled": true
+                                    } ],
+                                "else": [ { "type": "sendChatMessage", "message": "hi" } ],
+                                "disabled": true
+                            } ],
+                        "else": [ { "type": "sendChatMessage", "message": "hi" } ]
+                     }
+                ])
+                .as_array()
+                .unwrap(),
+            ))
+            .as_str(),
+            "if True == True:\n\
+                \t# if True == True:\n\
+    		        \t# \tif True == True:\n\
+		                \t# \t\tsend_chat_message_to_everyone('hi')\n\
+                    \t# \telse:\n\
+		                \t# \t\tsend_chat_message_to_everyone('hi')\n\
+                \t# else:\n\
+		            \t# \tsend_chat_message_to_everyone('hi')\n\
+            else:\n\
+                \tsend_chat_message_to_everyone('hi')\n"
+        )
     }
 
     #[test]
