@@ -58,7 +58,7 @@ def play_ad_for_player(entity, comment=None, disabled=False, run_on_client=False
 
 
 @action
-def set_time_out(duration: Number, actions=[], comment=None, disabled=False, run_on_client=False):
+def after_timeout(duration: Number, actions=[], comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'setTimeOut',
         'duration': to_dict(duration),
