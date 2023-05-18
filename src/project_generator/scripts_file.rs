@@ -17,7 +17,7 @@ use super::{
             argument_values_iterator::{ArgumentValueIterItem, ArgumentValuesIterator, Operation},
             directory_iterator::DirectoryIterItem,
         },
-        surround_string_with_quotes,
+        surround_string_with_quotes, TAB_SIZE,
     },
 };
 
@@ -38,7 +38,7 @@ impl ScriptsFile {
                     &game_data.root_directory,
                 ),
             )
-        )
+        ).replace("\t", &" ".repeat(TAB_SIZE))
     }
 }
 

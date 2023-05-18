@@ -9,7 +9,7 @@ use crate::{
 use super::{
     mapping_file::build_directory_items_contents,
     scripts_file::{build_directory_content, ScriptsContentBuilder},
-    utils::{enum_name_of, iterators::directory_iterator::DirectoryIterItem},
+    utils::{enum_name_of, iterators::directory_iterator::DirectoryIterItem, TAB_SIZE},
 };
 
 pub struct EntityScriptsFile {}
@@ -53,7 +53,7 @@ impl EntityScriptsFile {
                         ));
                     });
             });
-        content
+        content.replace("\t", &" ".repeat(TAB_SIZE))
     }
 }
 

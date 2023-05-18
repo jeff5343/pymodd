@@ -11,7 +11,7 @@ use crate::{
 };
 
 use super::{
-    scripts_file::ScriptsContentBuilder, utils::to_pymodd_maps::VARIABLE_DATA_TYPES_TO_PYMODD_ENUM,
+    scripts_file::ScriptsContentBuilder, utils::{to_pymodd_maps::VARIABLE_DATA_TYPES_TO_PYMODD_ENUM, TAB_SIZE},
 };
 
 pub struct GameVariablesFile {}
@@ -50,7 +50,7 @@ impl GameVariablesFile {
             "from pymodd.variable_types import {}, DataType\n\n\n{}",
             classes_to_import.join(", "),
             file_content,
-        )
+        ).replace("\t", &" ".repeat(TAB_SIZE))
     }
 }
 
