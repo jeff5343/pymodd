@@ -70,19 +70,26 @@ fn build_class_content_of_entity_type_in_category(
         "class {entity_type_class_name}(EntityScripts):\n\
             \tdef _build(self):\n\
                 \t\tself.entity_type = {category_class_name}.{}\n\
-                \t\tself.keybindings = {{\n\
                     {}\
-                \t\t\t\n\
-                \t\t}}\n\
                 \t\tself.scripts = [\n\
                     {}\
                 \t\t\t\n\
                 \t\t]\n",
         enum_name_of(&entity_type.name),
-        build_keybindings_dictionary_elements_for_entity_type(&entity_type, game_directory)
-            .into_iter()
-            .map(|element| format!("{}{element},\n", "\t".repeat(3)))
-            .collect::<String>(),
+        if category == "unitTypes" {
+            format!(
+                "\t\tself.keybindings = {{\n\
+                    {}\
+                \t\t\t\n\
+                \t\t}}\n",
+                build_keybindings_dictionary_elements_for_entity_type(&entity_type, game_directory)
+                    .into_iter()
+                    .map(|element| format!("{}{element},\n", "\t".repeat(3)))
+                    .collect::<String>()
+            )
+        } else {
+            String::new()
+        },
         build_directory_elements_for_entity_type(&entity_type)
             .into_iter()
             .map(|element| format!("{}{element}\n", "\t".repeat(3)))
@@ -285,6 +292,50 @@ mod tests {
                     \t\tself.scripts = [\n\
                         \t\t\tself.use_item(),\n\
                         \t\t\tself.stop_using_item(),\n\
+                        \t\t\t\n\
+                    \t\t]\n"
+        );
+    }
+
+    #[test]
+    fn item_type_entity_scripts_class() {
+        assert_eq!(
+            build_class_content_of_entity_type_in_category(
+                &EntityType {
+                    name: "sword".to_string(),
+                    directory: Directory::parse(&json!({})),
+                    keybindings: vec![]
+                },
+                "itemTypes",
+                &Directory::new("root", "null", vec![])
+            )
+            .as_str(),
+            "class Sword(EntityScripts):\n\
+                \tdef _build(self):\n\
+                    \t\tself.entity_type = ItemTypes.SWORD\n\
+                    \t\tself.scripts = [\n\
+                        \t\t\t\n\
+                    \t\t]\n"
+        );
+    }
+
+    #[test]
+    fn projectile_type_entity_scripts_class() {
+        assert_eq!(
+            build_class_content_of_entity_type_in_category(
+                &EntityType {
+                    name: "bullet".to_string(),
+                    directory: Directory::parse(&json!({})),
+                    keybindings: vec![]
+                },
+                "projectileTypes",
+                &Directory::new("root", "null", vec![])
+            )
+            .as_str(),
+            "class Bullet(EntityScripts):\n\
+                \tdef _build(self):\n\
+                    \t\tself.entity_type = ProjectileTypes.BULLET\n\
+                    \t\tself.scripts = [\n\
                         \t\t\t\n\
                     \t\t]\n"
         );

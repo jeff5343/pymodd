@@ -71,7 +71,9 @@ class Game(Base):
             entity_data['scripts'] = self.flatten_scripts_data(
                 entity_script.scripts)
 
-            # update entity keybindings
+            if entity_category != "UnitType":
+                continue
+            # update entity keybindings for unit types
             entity_keybindings_data = entity_data['controls']['abilities']
             unincluded_keys = list(entity_keybindings_data.keys())
             for (key, scripts) in entity_script.keybindings.items():
