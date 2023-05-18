@@ -1,4 +1,4 @@
-use std::collections::{hash_map, HashMap};
+use std::collections::HashMap;
 
 use heck::ToPascalCase;
 use serde_json::{Map, Value};
@@ -33,8 +33,18 @@ impl CategoriesToEntityTypes {
         }
     }
 
-    pub fn iter(&self) -> hash_map::Iter<&'static str, Vec<EntityType>> {
-        self.categories_to_entity_types.iter()
+    pub fn iter(&self) -> std::vec::IntoIter<(&&'static str, &Vec<EntityType>)> {
+        let mut categories_of_entity_types = self
+            .categories_to_entity_types
+            .iter()
+            .collect::<Vec<(&&'static str, &Vec<EntityType>)>>();
+        categories_of_entity_types.sort_by_key(|(category, _variables)| {
+            ["unitTypes", "itemTypes", "projectileTypes"]
+                .iter()
+                .position(|element| &element == category)
+                .unwrap()
+        });
+        categories_of_entity_types.into_iter()
     }
 }
 
