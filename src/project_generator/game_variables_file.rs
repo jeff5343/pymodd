@@ -218,6 +218,28 @@ mod tests {
     }
 
     #[test]
+    fn category_class_content_with_variables_starting_with_numbers() {
+        assert_eq!(
+            CategoryClassContentBuilder::new(&ScriptsContentBuilder::new(
+                &CategoriesToVariables::new(HashMap::new()),
+                &Directory::new("root", "null", Vec::new())
+            ))
+            .build_class_content(
+                "itemTypes",
+                &vec![
+                    Variable::new("FW3513W", "1apple", json!({})),
+                    Variable::new("OE51DW2", "2banana", json!({}))
+                ],
+            ),
+            String::from(
+                "class ItemTypes:\
+                    \n\t_1APPLE = ItemType('FW3513W', name='1apple')\
+                    \n\t_2BANANA = ItemType('OE51DW2', name='2banana')"
+            )
+        );
+    }
+
+    #[test]
     fn category_class_content_with_no_variables() {
         assert_eq!(
             CategoryClassContentBuilder::new(&ScriptsContentBuilder::new(

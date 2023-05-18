@@ -43,7 +43,17 @@ fn surrounding_quote_for_string(string: &str) -> &str {
 }
 
 pub(crate) fn enum_name_of(name: &str) -> String {
-    name.to_shouty_snake_case()
+    let enum_name: String = name.to_shouty_snake_case();
+    if enum_name
+        .chars()
+        .next()
+        .map(|c| c.is_ascii_digit())
+        .unwrap_or(true)
+    {
+        format!("_{enum_name}")
+    } else {
+        enum_name
+    }
 }
 
 #[cfg(test)]

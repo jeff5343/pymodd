@@ -9,7 +9,7 @@ use crate::{
 use super::{
     mapping_file::build_directory_items_contents,
     scripts_file::{build_directory_content, ScriptsContentBuilder},
-    utils::{enum_name_of, iterators::directory_iterator::DirectoryIterItem, TAB_SIZE},
+    utils::{iterators::directory_iterator::DirectoryIterItem, TAB_SIZE},
 };
 
 pub struct EntityScriptsFile {}
@@ -75,7 +75,7 @@ fn build_class_content_of_entity_type_in_category(
                     {}\
                 \t\t\t\n\
                 \t\t]\n",
-        enum_name_of(&entity_type.name),
+        entity_type.enum_name(),
         if category == "unitTypes" {
             format!(
                 "\t\tself.keybindings = {{\n\
