@@ -26,8 +26,8 @@ impl GameData {
         let mut deserializer = serde_json::Deserializer::from_str(&game_json_file_content);
         deserializer.disable_recursion_limit();
         let deserializer = serde_stacker::Deserializer::new(&mut deserializer);
-        let game_json = Value::deserialize(deserializer)
-            .map_err(|_| "error parsing modd.io json file!")?;
+        let game_json =
+            Value::deserialize(deserializer).map_err(|_| "error parsing modd.io json file!")?;
         let game_data = &game_json["data"];
         Ok(GameData {
             name: game_json

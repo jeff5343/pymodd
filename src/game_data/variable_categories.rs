@@ -274,7 +274,7 @@ mod tests {
             }))
             .as_slice(),
             [
-                Variable::new("FW3513W", "apple", json!({"dataType": null})),
+                Variable::new("FW3513W", "apple", json!({ "dataType": null })),
                 Variable::new("O23FJW2", "banana", json!({"dataType": ""})),
                 Variable::new("WDWI313", "water", json!({"dataType": "region"})),
             ]

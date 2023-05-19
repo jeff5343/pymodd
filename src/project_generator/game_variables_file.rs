@@ -11,7 +11,8 @@ use crate::{
 };
 
 use super::{
-    scripts_file::ScriptsContentBuilder, utils::{to_pymodd_maps::VARIABLE_DATA_TYPES_TO_PYMODD_ENUM, TAB_SIZE},
+    scripts_file::ScriptsContentBuilder,
+    utils::{to_pymodd_maps::VARIABLE_DATA_TYPES_TO_PYMODD_ENUM, TAB_SIZE},
 };
 
 pub struct GameVariablesFile {}
@@ -35,7 +36,7 @@ impl GameVariablesFile {
                         .add("\n\n\n"),
                 );
             });
-        let classes_to_import = { 
+        let classes_to_import = {
             let mut classes = game_data
                 .categories_to_variables
                 .iter()
@@ -50,7 +51,8 @@ impl GameVariablesFile {
             "from pymodd.variable_types import {}, DataType\n\n\n{}",
             classes_to_import.join(", "),
             file_content,
-        ).replace("\t", &" ".repeat(TAB_SIZE))
+        )
+        .replace("\t", &" ".repeat(TAB_SIZE))
     }
 }
 
@@ -105,14 +107,15 @@ impl<'a> CategoryClassContentBuilder<'a> {
                                 .get(&data_type)
                                 .unwrap_or(&String::from("None")),
                             match (
-                                variable.get_key("default"), 
-                                ["entityTypeVariables", "playerTypeVariables"].contains(&category) || data_type == "region") 
-                            {
+                                variable.get_key("default"),
+                                ["entityTypeVariables", "playerTypeVariables"].contains(&category)
+                                    || data_type == "region"
+                            ) {
                                 (Some(default_value), false) if data_type != "region" => format!(
                                     ", default_value={}",
                                     self.build_default_value_of_variable(default_value)
                                 ),
-                                _ => String::new()
+                                _ => String::new(),
                             }
                         )
                     }
@@ -305,7 +308,6 @@ mod tests {
                             }
                         })
                     ),
- 
                 ],
             ),
             String::from(
@@ -326,13 +328,11 @@ mod tests {
             ))
             .build_class_content(
                 "entityTypeVariables",
-                &vec![
-                    Variable::new(
-                        "apple",
-                        "apple",
-                        json!({ "dataType": "number", "default": json!(5) })
-                    )
-                ],
+                &vec![Variable::new(
+                    "apple",
+                    "apple",
+                    json!({ "dataType": "number", "default": json!(5) })
+                )],
             ),
             String::from(
                 "class EntityVariables:\n\
@@ -350,13 +350,11 @@ mod tests {
             ))
             .build_class_content(
                 "playerTypeVariables",
-                &vec![
-                    Variable::new(
-                        "apple",
-                        "apple",
-                        json!({ "dataType": "number", "default": json!(5) })
-                    )
-                ],
+                &vec![Variable::new(
+                    "apple",
+                    "apple",
+                    json!({ "dataType": "number", "default": json!(5) })
+                )],
             ),
             String::from(
                 "class PlayerVariables:\n\

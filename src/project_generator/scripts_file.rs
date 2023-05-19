@@ -38,7 +38,8 @@ impl ScriptsFile {
                     &game_data.root_directory,
                 ),
             )
-        ).replace("\t", &" ".repeat(TAB_SIZE))
+        )
+        .replace("\t", &" ".repeat(TAB_SIZE))
     }
 }
 
@@ -97,12 +98,14 @@ impl<'a> ScriptsContentBuilder<'a> {
                 format!(", name={}", surround_string_with_quotes(&script.name))
             },
             if script.actions.len() > 0 {
-                let content = self.build_actions_content(&script.actions)
+                let content = self
+                    .build_actions_content(&script.actions)
                     .lines()
                     .map(|action| format!("{}{action}\n", "\t"))
                     .collect::<String>();
-                if self.is_body_commented_out(&content) {
-                    content.trim_end().to_string().add("\tpass\n")
+                // generate pass statements for functions with commented bodies
+                if self.is_body_commented_out(&format!("def func:\n{content}")) {
+                    content.to_string().add("\tpass\n")
                 } else {
                     content
                 }
@@ -213,13 +216,21 @@ impl<'a> ScriptsContentBuilder<'a> {
         if let Some(statement_content) = statement_content {
             return match action.disabled {
                 true => self.comment_out_statement_content(statement_content),
-                false => self.append_pass_keyword_to_commented_bodies_of_statement(statement_content)
+                false => {
+                    self.append_pass_keyword_to_commented_bodies_of_statement(statement_content)
+                }
             };
         }
 
         match action.name.as_str() {
             // convert break, continue, and return actions into python keywords
-            "break" | "continue" | "return" => format!("{}\n", &action.name),
+            "break" | "continue" | "return" => {
+                format!(
+                    "{}{}\n",
+                    if action.disabled { "# " } else { "" },
+                    &action.name
+                )
+            }
 
             "comment" => {
                 format!(
@@ -271,11 +282,14 @@ impl<'a> ScriptsContentBuilder<'a> {
             .collect()
     }
 
-    fn append_pass_keyword_to_commented_bodies_of_statement(&self, statement_content: String) -> String {
+    fn append_pass_keyword_to_commented_bodies_of_statement(
+        &self,
+        statement_content: String,
+    ) -> String {
         let bodies: Vec<&str> = statement_content.trim().split("\nelse:").collect();
         let (mut then_body, mut else_body) = (
-            bodies.get(0).unwrap_or(&"").to_string(), 
-            format!("else:{}", bodies.get(1).unwrap_or(&"").to_string())
+            bodies.get(0).unwrap_or(&"").to_string(),
+            format!("else:{}", bodies.get(1).unwrap_or(&"").to_string()),
         );
         if self.is_body_commented_out(&then_body) {
             then_body = then_body.add("\n\tpass")
@@ -283,13 +297,15 @@ impl<'a> ScriptsContentBuilder<'a> {
         if self.is_body_commented_out(&else_body) {
             else_body = else_body.add("\n\tpass")
         }
-        format!("{then_body}{}\n", 
+        format!(
+            "{then_body}{}\n",
             // add else body if it is not empty
-            if else_body != String::from("else:") { 
-                format!("\n{else_body}") 
-            } else { 
-                String::new() 
-            })
+            if else_body != String::from("else:") {
+                format!("\n{else_body}")
+            } else {
+                String::new()
+            }
+        )
     }
 
     fn is_body_commented_out(&self, body_content: &String) -> bool {
@@ -297,7 +313,10 @@ impl<'a> ScriptsContentBuilder<'a> {
         if body_lines.collect::<Vec<&str>>().len() == 1 {
             return false;
         }
-        !body_content.lines().skip(1).any(|line| line.starts_with("\t") & !line.starts_with("\t# "))
+        !body_content
+            .lines()
+            .skip(1)
+            .any(|line| line.starts_with("\t") & !line.starts_with("\t# "))
     }
 
     /// used while parsing if statements, for loops, and while loops
@@ -465,7 +484,11 @@ impl<'a> ScriptsContentBuilder<'a> {
 }
 
 fn into_operator(string: &str) -> Option<&str> {
-    if ["==", "!=", "<=", "<", ">", ">=", "+", "-", "/", "*", "%", "**"].contains(&string) {
+    if [
+        "==", "!=", "<=", "<", ">", ">=", "+", "-", "/", "*", "%", "**",
+    ]
+    .contains(&string)
+    {
         return Some(string);
     }
     match string.to_lowercase().as_str() {
@@ -526,6 +549,28 @@ mod tests {
             String::from(format!(
                 "@script(triggers=[Trigger.GAME_START], name='【 𝚒𝚗𝚒𝚝𝚒𝚊𝚕𝚒𝚣𝚎 イ】')\n\
                 def q():\n\
+                    \tpass\n",
+            ))
+        );
+    }
+
+    #[test]
+    fn script_content_with_commented_body() {
+        assert_eq!(
+            ScriptsContentBuilder::new(
+                &CategoriesToVariables::new(HashMap::new()),
+                &Directory::new("root", "null", Vec::new())
+            )
+            .build_script_content(&Script::new(
+                "initialize",
+                "WI31HDK",
+                vec!["gameStart"],
+                vec![Action::new("break", vec![], None, false, true)]
+            )),
+            String::from(format!(
+                "@script(triggers=[Trigger.GAME_START])\n\
+                def initialize():\n\
+                    \t# break\n\
                     \tpass\n",
             ))
         );
@@ -658,6 +703,28 @@ mod tests {
     }
 
     #[test]
+    fn parse_disabled_keyword_actions_into_pymodd() {
+        assert_eq!(
+            ScriptsContentBuilder::new(
+                &CategoriesToVariables::new(HashMap::new()),
+                &Directory::new("root", "null", Vec::new())
+            )
+            .build_actions_content(&parse_actions(
+                &json!([
+                    { "type": "break", "disabled": true },
+                    { "type": "continue", "disabled": true },
+                    { "type": "return", "disabled": true }
+                ])
+                .as_array()
+                .unwrap()
+            )),
+            "# break\n\
+            # continue\n\
+            # return\n"
+        );
+    }
+
+    #[test]
     fn parse_nested_calculations_into_pymodd() {
         assert_eq!(
             ScriptsContentBuilder::new(
@@ -679,7 +746,7 @@ mod tests {
                                                                     { "operator": "/" }, 2,
                                                                     { "function": "getExponent", "base": 5, "power": 2 }
                                                             ] }
-                                                        ] } 
+                                                        ] }
                                                 ] }
                                         ] }
                                 ]
@@ -959,7 +1026,7 @@ mod tests {
                 &Directory::new("root", "null", Vec::new())
             )
             .build_actions_content(&parse_actions(
-                json!([ 
+                json!([
                     { "type": "setTimeOut", "duration": 1000, "actions": [ { "type": "stopMusic" } ] } 
                 ])
                 .as_array()
