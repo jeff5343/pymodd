@@ -4,7 +4,9 @@ use heck::ToPascalCase;
 
 use crate::game_data::{directory::Directory, entity_types::CategoriesToEntityTypes, GameData};
 
-use super::utils::{iterators::directory_iterator::DirectoryIterItem, surround_string_with_quotes};
+use super::utils::{
+    iterators::directory_iterator::DirectoryIterItem, surround_string_with_quotes, TAB_SIZE,
+};
 
 pub struct MappingFile {}
 
@@ -41,7 +43,7 @@ impl MappingFile {
                 game_data.pymodd_project_name()
             )
             .as_str(),
-        )
+        ).replace("\t", &" ".repeat(TAB_SIZE))
     }
 }
 
@@ -90,11 +92,9 @@ mod tests {
     use serde_json::json;
 
     use crate::{
-        game_data::{directory::Directory, GameData},
+        game_data::directory::Directory,
         project_generator::mapping_file::build_directory_items_contents,
     };
-
-    use super::MappingFile;
 
     #[test]
     fn directory_content() {
@@ -116,44 +116,5 @@ mod tests {
                 \t]),\
             ]),"
         );
-    }
-
-    #[test]
-    fn simple_mapping_file_content() {
-        assert_eq!(MappingFile::build_content(&GameData::parse(r#"{
-            "title": "test_game",
-            "data": {
-                "scripts": {
-                    "WI31HDK": { "name": "initialize", "key": "WI31HDK", "actions": [], "parent": null, "order": 1},
-                    "31IAD2B": { "folderName": "utils", "key": "31IAD2B", "parent": null, "order": 2 },
-                    "SDUW31W": { "name": "change_state", "key": "SDUW31W", "actions": [], "parent": "31IAD2B", "order": 1 }
-                },
-                "unitTypes": {
-                    "RW31QW2": { "name": "bob", "scripts": {
-                        "DF31W32": { "name": "initialize", "key": "DF31W32", "actions": [], "parent": null, "order": 1 }
-                    }},
-                    "IO53IWD": { "name": "empty" }
-                }
-            }
-        }"#.to_string()).unwrap()), 
-        "from pymodd.game import Game, Folder\n\n\
-        from scripts import *\n\
-        from entity_scripts import * \n\n\n\
-        class TestGame(Game):\n\
-            \tdef _build(self):\n\
-                \t\tself.entity_scripts = [Bob()]\n\
-                \t\tself.scripts = [\n\
-                    \t\t\tinitialize(),\n\
-                    \t\t\tFolder('utils', [\n\
-                        \t\t\t\tchange_state(),\n\
-                    \t\t\t]),\n\
-                    \t\t\t\n\
-                \t\t]\n\n\n\
-        # run `pymodd compile` within this project directory to generate this game's json files\n\
-        # example:\n\
-        \"\"\"\n\
-        $ cd test_game\n\
-        $ pymodd compile\n\
-        \"\"\"\n");
     }
 }

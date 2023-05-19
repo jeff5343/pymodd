@@ -7,6 +7,8 @@ use crate::game_data::variable_categories::{
     SEPERATED_VARIABLE_CATEGORIES, VARIABLES_CATEGORY_NAME, VARIABLE_CATEGORIES,
 };
 
+pub(crate) const TAB_SIZE: usize = 4;
+
 pub(crate) fn is_valid_class_name(class_name: &str) -> bool {
     !(class_name.is_empty()
         || string_starts_with_a_number(&class_name)
