@@ -61,7 +61,9 @@ class Variable(VariableType):
                 # convert the list of types into modd.io data
                 self.default_value = {}
                 for type_ in default_value:
-                    self.default_value[type_.id] = {
+                    id = type_.id if isinstance(
+                        type_, (ItemType, UnitType)) else type_
+                    self.default_value[id] = {
                         'probability': 20,
                         'quantity': 1
                     }
