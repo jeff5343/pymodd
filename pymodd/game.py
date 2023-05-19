@@ -98,10 +98,13 @@ class Game(Base):
         scripts_queue = scripts.copy()
         while len(scripts_queue) > 0:
             script = scripts_queue.pop(0)
+            scripts_data = None
             # add folder's scripts to the queue
-            if isinstance(script, Folder):
-                scripts_queue += script.scripts
-            script_data = script.to_dict(self.project_globals_data)
+            if isinstance((folder := script), Folder):
+                script_data = folder.to_dict()
+                scripts_queue += folder.scripts
+            else:
+                script_data = script.to_dict(self.project_globals_data)
             flattened_scripts[script_data['key']] = script_data
         return flattened_scripts
 
