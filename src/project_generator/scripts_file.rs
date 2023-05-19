@@ -97,10 +97,15 @@ impl<'a> ScriptsContentBuilder<'a> {
                 format!(", name={}", surround_string_with_quotes(&script.name))
             },
             if script.actions.len() > 0 {
-                self.build_actions_content(&script.actions)
+                let content = self.build_actions_content(&script.actions)
                     .lines()
                     .map(|action| format!("{}{action}\n", "\t"))
-                    .collect::<String>()
+                    .collect::<String>();
+                if self.is_body_commented_out(&content) {
+                    content.trim_end().to_string().add("\tpass\n")
+                } else {
+                    content
+                }
             } else {
                 String::from("\tpass\n")
             }
@@ -194,7 +199,7 @@ impl<'a> ScriptsContentBuilder<'a> {
                     (args.get(0).unwrap_or(&none), args.get(1).unwrap_or(&pass));
                 Some(format!("while {condition}:{actions}"))
             }
-            
+
             // convert set timeout actions into with loops
             "setTimeOut" => {
                 let args = self.build_arguments_of_action_individually(action);
@@ -208,7 +213,7 @@ impl<'a> ScriptsContentBuilder<'a> {
         if let Some(statement_content) = statement_content {
             return match action.disabled {
                 true => self.comment_out_statement_content(statement_content),
-                false => statement_content,
+                false => self.append_pass_keyword_to_commented_bodies_of_statement(statement_content)
             };
         }
 
@@ -252,8 +257,8 @@ impl<'a> ScriptsContentBuilder<'a> {
         }
     }
 
-    fn comment_out_statement_content(&self, statement: String) -> String {
-        statement
+    fn comment_out_statement_content(&self, statement_content: String) -> String {
+        statement_content
             .lines()
             .map(|line| {
                 if line.trim().starts_with("# ") {
@@ -264,6 +269,35 @@ impl<'a> ScriptsContentBuilder<'a> {
                 .add("\n")
             })
             .collect()
+    }
+
+    fn append_pass_keyword_to_commented_bodies_of_statement(&self, statement_content: String) -> String {
+        let bodies: Vec<&str> = statement_content.trim().split("\nelse:").collect();
+        let (mut then_body, mut else_body) = (
+            bodies.get(0).unwrap_or(&"").to_string(), 
+            format!("else:{}", bodies.get(1).unwrap_or(&"").to_string())
+        );
+        if self.is_body_commented_out(&then_body) {
+            then_body = then_body.add("\n\tpass")
+        }
+        if self.is_body_commented_out(&else_body) {
+            else_body = else_body.add("\n\tpass")
+        }
+        format!("{then_body}{}\n", 
+            // add else body if it is not empty
+            if else_body != String::from("else:") { 
+                format!("\n{else_body}") 
+            } else { 
+                String::new() 
+            })
+    }
+
+    fn is_body_commented_out(&self, body_content: &String) -> bool {
+        let body_lines = body_content.lines();
+        if body_lines.collect::<Vec<&str>>().len() == 1 {
+            return false;
+        }
+        !body_content.lines().skip(1).any(|line| line.starts_with("\t") & !line.starts_with("\t# "))
     }
 
     /// used while parsing if statements, for loops, and while loops
@@ -448,7 +482,7 @@ mod tests {
     use serde_json::json;
 
     use crate::game_data::{
-        actions::parse_actions,
+        actions::{parse_actions, Action},
         directory::{Directory, DirectoryItem, Script},
         variable_categories::{CategoriesToVariables, Variable},
     };
@@ -477,7 +511,7 @@ mod tests {
     }
 
     #[test]
-    fn script_with_weird_name_content() {
+    fn script_with_non_ascii_name_content() {
         assert_eq!(
             ScriptsContentBuilder::new(
                 &CategoriesToVariables::new(HashMap::new()),
@@ -961,6 +995,37 @@ mod tests {
     }
 
     #[test]
+    fn parse_while_action_with_disabled_actions_into_python() {
+        assert_eq!(
+            ScriptsContentBuilder::new(
+                &CategoriesToVariables::new(HashMap::new()),
+                &Directory::new("root", "null", Vec::new())
+            )
+            .build_actions_content(&parse_actions(
+                json!([
+                    {
+                        "type": "while", 
+                        "conditions": [ { "operandType": "boolean", "operator": "==" }, true, true ], 
+                        "actions": [
+                            {
+                                "type": "while", "conditions": [ { "operandType": "boolean", "operator": "==" }, true, true ], "actions": [],
+                                "disabled": true
+                            }
+                        ],
+                    }
+                ])
+                .as_array()
+                .unwrap(),
+            ))
+            .as_str(),
+            "while True == True:\n\
+                \t# while True == True:\n\
+                \t# \tpass\n\
+                \tpass\n"
+        );
+    }
+
+    #[test]
     fn parse_nested_disabled_if_statements_into_pymodd() {
         assert_eq!(
             ScriptsContentBuilder::new(
@@ -982,7 +1047,12 @@ mod tests {
                                 "else": [ { "type": "sendChatMessage", "message": "hi" } ],
                                 "disabled": true
                             } ],
-                        "else": [ { "type": "sendChatMessage", "message": "hi" } ]
+                        "else": [ {
+                                "type": "condition", "conditions": [ { "operandType": "boolean", "operator": "==" }, true, true ],
+                                "then": [ { "type": "sendChatMessage", "message": "hi" } ],
+                                "else": [ { "type": "sendChatMessage", "message": "hi" } ],
+                                "disabled": true
+                            } ]
                      }
                 ])
                 .as_array()
@@ -997,8 +1067,13 @@ mod tests {
 		                \t# \t\tsend_chat_message_to_everyone('hi')\n\
                 \t# else:\n\
 		            \t# \tsend_chat_message_to_everyone('hi')\n\
+                \tpass\n\
             else:\n\
-                \tsend_chat_message_to_everyone('hi')\n"
+                \t# if True == True:\n\
+                    \t# \tsend_chat_message_to_everyone('hi')\n\
+                \t# else:\n\
+                    \t# \tsend_chat_message_to_everyone('hi')\n\
+                \tpass\n"
         )
     }
 
