@@ -156,6 +156,17 @@ class ScriptActionsCompiler(ast.NodeVisitor):
             repeat_action_data['actions'] = self.parse_actions_of_body(
                 node.body)
             return repeat_action_data
+        # for loop action
+        elif isinstance((loop_function_data := evaled_iter), dict) and repeat_action_data.get('type') == 'for':
+            for_loop_var = self.eval_code(ast.unparse(node.target))
+            if for_loop_var.data_type != pymodd.variable_types.DataType.NUMBER:
+                raise TypeError(
+                    f"DataType of '{ast.unparse(node.iter)}' must be DataType.NUMBER"
+                )
+            loop_function_data['variableName'] = for_loop_var.id
+            loop_function_data['actions'] = self.parse_actions_of_body(
+                node.body)
+            return loop_function_data
         # for _ in group_function action
         elif isinstance((group_function := evaled_iter), pymodd.functions.Function):
             if not isinstance(group_function, pymodd.functions.Group):
@@ -180,14 +191,6 @@ class ScriptActionsCompiler(ast.NodeVisitor):
                     node.target.id, variable._get_iteration_object())
             action = variable._get_iterating_action()
             return action(variable, self.parse_actions_of_body(node.body))
-        # for loop action
-        elif isinstance((range_function := evaled_iter), range):
-            for_loop_var = self.eval_code(ast.unparse(node.target))
-            if for_loop_var.data_type != pymodd.variable_types.DataType.NUMBER:
-                raise TypeError(
-                    f"DataType of '{ast.unparse(node.iter)}' must be DataType.NUMBER"
-                )
-            return pymodd.actions.for_range(for_loop_var, range_function.start, range_function.stop, self.parse_actions_of_body(node.body))
 
     def visit_With(self, node: ast.With):
         evaled_item = self.eval_code(ast.unparse(node.items[0]))

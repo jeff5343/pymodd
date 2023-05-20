@@ -150,7 +150,7 @@ impl<'a> ScriptsContentBuilder<'a> {
             // convert variable for loop actions into for loops
             "for" => {
                 let args = self.build_arguments_of_action_individually(action);
-                let (variable, start, stop, actions) = (
+                let (start, stop, variable, actions) = (
                     args.get(0).unwrap_or(&none),
                     args.get(1).unwrap_or(&none),
                     args.get(2).unwrap_or(&none),
