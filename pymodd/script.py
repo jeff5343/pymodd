@@ -167,18 +167,7 @@ class ScriptActionsCompiler(ast.NodeVisitor):
             loop_function_data['actions'] = self.parse_actions_of_body(
                 node.body)
             return loop_function_data
-        # for _ in group_function action
-        elif isinstance((group_function := evaled_iter), pymodd.functions.Function):
-            if not isinstance(group_function, pymodd.functions.Group):
-                raise TypeError(
-                    f"'{ast.unparse(node.iter)}' is not iterable"
-                )
-            if isinstance(node.target, ast.Name):
-                self.add_local_var_to_curr_depth_locals_data(
-                    node.target.id, group_function._get_iteration_object())
-            action = group_function._get_iterating_action()
-            return action(group_function, self.parse_actions_of_body(node.body))
-        # for _ in group_variable action
+        # for _ in group variable action
         elif isinstance((variable := evaled_iter), pymodd.variable_types.Variable):
             if variable.data_type not in [pymodd.variable_types.DataType.ITEM_GROUP, pymodd.variable_types.DataType.UNIT_GROUP,
                                           pymodd.variable_types.DataType.PLAYER_GROUP, pymodd.variable_types.DataType.ITEM_TYPE_GROUP,
@@ -191,6 +180,17 @@ class ScriptActionsCompiler(ast.NodeVisitor):
                     node.target.id, variable._get_iteration_object())
             action = variable._get_iterating_action()
             return action(variable, self.parse_actions_of_body(node.body))
+        # for _ in group function action
+        elif isinstance((group_function := evaled_iter), pymodd.functions.Function):
+            if not isinstance(group_function, pymodd.functions.Group):
+                raise TypeError(
+                    f"'{ast.unparse(node.iter)}' is not iterable"
+                )
+            if isinstance(node.target, ast.Name):
+                self.add_local_var_to_curr_depth_locals_data(
+                    node.target.id, group_function._get_iteration_object())
+            action = group_function._get_iterating_action()
+            return action(group_function, self.parse_actions_of_body(node.body))
 
     def visit_With(self, node: ast.With):
         evaled_item = self.eval_code(ast.unparse(node.items[0]))
