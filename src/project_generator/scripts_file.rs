@@ -336,30 +336,27 @@ impl<'a> ScriptsContentBuilder<'a> {
                 let include_seperator =
                     !pymodd_args.ends_with("(") && arg != ArgumentValueIterItem::FunctionEnd;
                 pymodd_args
-                    + &format!(
-                        "{}{}",
-                        String::from(if include_seperator { ", " } else { "" }),
-                        {
-                            // remove parentheses surrounding the outermost layer of conditions
-                            if let ArgumentValueIterItem::Condition(_) = arg {
-                                let condition_content = self.build_argument_content(arg);
-                                if condition_content.starts_with("(")
-                                    && condition_content.ends_with(")")
-                                {
-                                    condition_content
-                                        .strip_prefix("(")
-                                        .unwrap()
-                                        .strip_suffix(")")
-                                        .unwrap()
-                                        .to_string()
-                                } else {
-                                    condition_content
-                                }
+                    .add(if include_seperator { ", " } else { "" })
+                    .add(&{
+                        // remove parentheses surrounding the outermost layer of conditions
+                        if let ArgumentValueIterItem::Condition(_) = arg {
+                            let condition_content = self.build_argument_content(arg);
+                            if condition_content.starts_with("(")
+                                && condition_content.ends_with(")")
+                            {
+                                condition_content
+                                    .strip_prefix("(")
+                                    .unwrap()
+                                    .strip_suffix(")")
+                                    .unwrap()
+                                    .to_string()
                             } else {
-                                self.build_argument_content(arg)
+                                condition_content
                             }
+                        } else {
+                            self.build_argument_content(arg)
                         }
-                    )
+                    })
             })
             .strip_prefix("(")
             .unwrap()
@@ -421,6 +418,7 @@ impl<'a> ScriptsContentBuilder<'a> {
                 }
                 String::from("None")
             }
+            ArgumentValueIterItem::None => String::from("None"),
             ArgumentValueIterItem::FunctionEnd => String::from(")"),
         }
     }
@@ -666,6 +664,23 @@ mod tests {
         )
     }
 
+    #[test]
+    fn parse_action_with_null_into_pymodd() {
+        assert_eq!(
+            ScriptsContentBuilder::new(
+                &CategoriesToVariables::new(HashMap::new()),
+                &Directory::new("root", "null", Vec::new())
+            )
+            .build_actions_content(&parse_actions(
+                &json!([
+                    { "type": "updateUiTextForEveryone", "target": "top", "value": null }
+                ])
+                .as_array()
+                .unwrap()
+            )),
+            "update_ui_text_for_everyone(UiTarget.TOP, None)\n"
+        )
+    }
     #[test]
     fn parse_comment_action_into_pymodd() {
         assert_eq!(
