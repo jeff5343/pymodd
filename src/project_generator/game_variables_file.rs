@@ -147,15 +147,15 @@ impl<'a> CategoryClassContentBuilder<'a> {
 }
 
 pub fn pymodd_class_name_of_category(category: &'static str) -> String {
-    let mut class_name = match category {
-        "entityTypeVariables" => "EntityVariables",
-        "playerTypeVariables" => "PlayerVariables",
+    let class_name = match category {
+        "entityTypeVariables" => "EntityVariable",
+        "playerTypeVariables" => "PlayerVariable",
         _ => category,
     }
     .to_pascal_case()
     .to_string();
-    if !class_name.ends_with("s") {
-        class_name.push('s')
+    if class_name.ends_with("s") {
+        return class_name.strip_suffix("s").unwrap().to_string();
     }
     class_name
 }
@@ -163,10 +163,7 @@ pub fn pymodd_class_name_of_category(category: &'static str) -> String {
 fn pymodd_class_type_of_category(category: &'static str) -> String {
     match category {
         "itemTypeGroups" | "unitTypeGroups" | "regions" => String::from("Variable"),
-        _ => pymodd_class_name_of_category(&category)
-            .strip_suffix('s')
-            .unwrap()
-            .to_string(),
+        _ => pymodd_class_name_of_category(&category).to_string(),
     }
     .add("Base")
 }
@@ -214,9 +211,9 @@ mod tests {
                 ],
             ),
             String::from(
-                "class ItemTypes:\
-                    \n\tAPPLE = ItemType('FW3513W', name='apple')\
-                    \n\tBANANA = ItemType('OE51DW2', name='banana')"
+                "class ItemType:\
+                    \n\tAPPLE = ItemTypeBase('FW3513W', name='apple')\
+                    \n\tBANANA = ItemTypeBase('OE51DW2', name='banana')"
             )
         );
     }
@@ -236,9 +233,9 @@ mod tests {
                 ],
             ),
             String::from(
-                "class ItemTypes:\
-                    \n\t_1APPLE = ItemType('FW3513W', name='1apple')\
-                    \n\t_2BANANA = ItemType('OE51DW2', name='2banana')"
+                "class ItemType:\
+                    \n\t_1APPLE = ItemTypeBase('FW3513W', name='1apple')\
+                    \n\t_2BANANA = ItemTypeBase('OE51DW2', name='2banana')"
             )
         );
     }
@@ -252,7 +249,7 @@ mod tests {
             ))
             .build_class_content("itemTypes", &Vec::new(),),
             String::from(
-                "class ItemTypes:\n\
+                "class ItemType:\n\
                     \tpass"
             )
         );
@@ -312,10 +309,10 @@ mod tests {
                 ],
             ),
             String::from(
-                "class Variables:\n\
-                    \tAPPLE = Variable('apple', DataType.NUMBER, default_value=5)\n\
-                    \tBANANA = Variable('banana', DataType.ITEM_TYPE_GROUP, default_value=[ItemTypes.SWORD, ItemTypes.STICK, ItemTypes.SAND])\n\
-                    \tPEACH = Variable('peach', DataType.REGION)"
+                "class Variable:\n\
+                    \tAPPLE = VariableBase('apple', DataType.NUMBER, default_value=5)\n\
+                    \tBANANA = VariableBase('banana', DataType.ITEM_TYPE_GROUP, default_value=[ItemType.SWORD, ItemType.STICK, ItemType.SAND])\n\
+                    \tPEACH = VariableBase('peach', DataType.REGION)"
             )
         );
     }
@@ -336,8 +333,8 @@ mod tests {
                 )],
             ),
             String::from(
-                "class EntityVariables:\n\
-                    \tAPPLE = EntityVariable('apple', DataType.NUMBER)"
+                "class EntityVariable:\n\
+                    \tAPPLE = EntityVariableBase('apple', DataType.NUMBER)"
             )
         );
     }
@@ -358,8 +355,8 @@ mod tests {
                 )],
             ),
             String::from(
-                "class PlayerVariables:\n\
-                    \tAPPLE = PlayerVariable('apple', DataType.NUMBER)"
+                "class PlayerVariable:\n\
+                    \tAPPLE = PlayerVariableBase('apple', DataType.NUMBER)"
             )
         );
     }

@@ -64,7 +64,7 @@ class Game(Base):
 
         # update data of each entity_type
         for entity_script in self.entity_scripts:
-            entity_category, entity_id = f'{camelcase(entity_script.entity_type.__class__.__name__)}s', entity_script.entity_type.id
+            entity_category, entity_id = f'{camelcase(entity_script.entity_type.__class__.__name__)[:-4]}s', entity_script.entity_type.id
             entity_data = self.data['data'][entity_category][entity_id]
 
             # update entity scripts

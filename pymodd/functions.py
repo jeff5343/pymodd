@@ -67,8 +67,8 @@ class Function(Base):
 
 # only subclasses of Function requires these types
 # (also prevents a circular import)
-from .variable_types import (VariableType, AttributeType, EntityVariable, ItemType, PlayerType,
-                             PlayerVariable, ProjectileType, StateBase, UnitType, Variable)
+from .variable_types import (VariableType, AttributeTypeBase, EntityVariableBase, ItemTypeBase, PlayerTypeBase,
+                             PlayerVariableBase, ProjectileTypeBase, StateBase, UnitTypeBase, VariableBase)
 
 
 # ---------------------------------------------------------------------------- #
@@ -89,7 +89,7 @@ def type_of_item(item):
         return None
     if (primitive := primitive_to_type.get(type(item))):
         return primitive
-    if isinstance(item, Variable):
+    if isinstance(item, VariableBase):
         return item.data_type.value
     if isinstance(item, VariableType):
         base_classes = item.__class__.mro()
@@ -1382,7 +1382,7 @@ class UnitParticle(Particle):
 # ---------------------------------------------------------------------------- #
 
 
-class ValueOfEntityVariable(EntityVariable):
+class ValueOfEntityVariable(EntityVariableBase):
     def __init__(self, entity_variable_type, entity):
         self.function = 'getValueOfEntityVariable'
         self.data_type = entity_variable_type.data_type
@@ -1397,7 +1397,7 @@ class ValueOfEntityVariable(EntityVariable):
 # ---------------------------------------------------------------------------- #
 
 
-class ValueOfPlayerVariable(PlayerVariable):
+class ValueOfPlayerVariable(PlayerVariableBase):
     def __init__(self, player_variable_type, player):
         self.function = 'getValueOfPlayerVariable'
         self.data_type = player_variable_type.data_type
@@ -1458,7 +1458,7 @@ class DynamicRegion(Region):
 # ---------------------------------------------------------------------------- #
 
 
-class UnitTypeOfUnit(UnitType):
+class UnitTypeOfUnit(UnitTypeBase):
     def __init__(self, entity):
         self.function = 'getUnitTypeOfUnit'
         self.options = {
@@ -1466,13 +1466,13 @@ class UnitTypeOfUnit(UnitType):
         }
 
 
-class IdOfLastPurchasedUnitTypet(UnitType):
+class IdOfLastPurchasedUnitTypet(UnitTypeBase):
     def __init__(self):
         self.function = 'lastPurchasedUnitTypetId'
         self.options = {}
 
 
-class RandomUnitTypeFromUnitTypeGroup(UnitType):
+class RandomUnitTypeFromUnitTypeGroup(UnitTypeBase):
     def __init__(self, unit_type_group):
         self.function = 'getRandomUnitTypeFromUnitTypeGroup'
         self.options = {
@@ -1480,7 +1480,7 @@ class RandomUnitTypeFromUnitTypeGroup(UnitType):
         }
 
 
-class SelectedUnitType(UnitType):
+class SelectedUnitType(UnitTypeBase):
     def __init__(self):
         self.function = 'selectedUnitType'
         self.options = {}
@@ -1491,13 +1491,13 @@ class SelectedUnitType(UnitType):
 # ---------------------------------------------------------------------------- #
 
 
-class SelectedItemType(ItemType):
+class SelectedItemType(ItemTypeBase):
     def __init__(self):
         self.function = 'selectedItemType'
         self.options = {}
 
 
-class ItemTypeOfItem(ItemType):
+class ItemTypeOfItem(ItemTypeBase):
     def __init__(self, entity):
         self.function = 'getItemTypeOfItem'
         self.options = {
@@ -1505,7 +1505,7 @@ class ItemTypeOfItem(ItemType):
         }
 
 
-class RandomItemTypeFromItemTypeGroup(ItemType):
+class RandomItemTypeFromItemTypeGroup(ItemTypeBase):
     def __init__(self, item_type_group):
         self.function = 'getRandomItemTypeFromItemTypeGroup'
         self.options = {
@@ -1518,7 +1518,7 @@ class RandomItemTypeFromItemTypeGroup(ItemType):
 # ---------------------------------------------------------------------------- #
 
 
-class ProjectileTypeOfProjectile(ProjectileType):
+class ProjectileTypeOfProjectile(ProjectileTypeBase):
     def __init__(self, entity):
         self.function = 'getProjectileTypeOfProjectile'
         self.options = {
@@ -1531,7 +1531,7 @@ class ProjectileTypeOfProjectile(ProjectileType):
 # ---------------------------------------------------------------------------- #
 
 
-class PlayerTypeOfPlayer(PlayerType):
+class PlayerTypeOfPlayer(PlayerTypeBase):
     def __init__(self, player):
         self.function = 'playerTypeOfPlayer'
         self.options = {
@@ -1544,7 +1544,7 @@ class PlayerTypeOfPlayer(PlayerType):
 # ---------------------------------------------------------------------------- #
 
 
-class AttributeTypeOfAttribute(AttributeType):
+class AttributeTypeOfAttribute(AttributeTypeBase):
     def __init__(self, entity):
         self.function = 'getAttributeTypeOfAttribute'
         self.options = {

@@ -600,7 +600,7 @@ mod tests {
                 .as_array()
                 .unwrap()
             )),
-            "open_shop_for_player(Shops.WEAPONS, OwnerOfEntity(LastCastingUnit()))\n"
+            "open_shop_for_player(Shop.WEAPONS, OwnerOfEntity(LastCastingUnit()))\n"
         )
     }
 
@@ -904,7 +904,7 @@ mod tests {
                 .unwrap(),
             ))
             .as_str(),
-            "for Variables.I in range(0, 5):\n\
+            "for Variable.I in range(0, 5):\n\
                 \tpass\n"
         );
     }
@@ -953,7 +953,7 @@ mod tests {
                 .unwrap(),
             ))
             .as_str(),
-            "for item_type in ItemTypeGroups.SPECIAL_ITEM_TYPES:\n\
+            "for item_type in ItemTypeGroup.SPECIAL_ITEM_TYPES:\n\
                 \tpass\n"
         );
     }
