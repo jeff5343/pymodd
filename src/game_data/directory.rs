@@ -152,11 +152,14 @@ pub struct Script {
 
 impl Script {
     pub fn pymodd_function_name(&self) -> String {
-        let function_name = self.name.replace("'", "").to_snake_case().to_string();
-        if !is_valid_class_name(&function_name) {
-            return format!("q{function_name}");
+        let function_name = self.name.replace(['\'', '\"'], "").to_snake_case();
+        if is_valid_class_name(&function_name) {
+            function_name
+        } else if function_name.is_empty() {
+            self.key.to_string().to_lowercase()
+        } else {
+            format!("q{function_name}")
         }
-        function_name
     }
 
     pub fn triggers_into_pymodd_enums(&self) -> Vec<String> {

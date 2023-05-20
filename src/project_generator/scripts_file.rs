@@ -546,7 +546,28 @@ mod tests {
             )),
             String::from(format!(
                 "@script(triggers=[Trigger.GAME_START], name='【 𝚒𝚗𝚒𝚝𝚒𝚊𝚕𝚒𝚣𝚎 イ】')\n\
-                def q():\n\
+                def wi31hdk():\n\
+                    \tpass\n",
+            ))
+        );
+    }
+
+    #[test]
+    fn script_with_no_name() {
+        assert_eq!(
+            ScriptsContentBuilder::new(
+                &CategoriesToVariables::new(HashMap::new()),
+                &Directory::new("root", "null", Vec::new())
+            )
+            .build_script_content(&Script::new(
+                "",
+                "WI31HDK",
+                vec![],
+                Vec::new()
+            )),
+            String::from(format!(
+                "@script(triggers=[])\n\
+                def wi31hdk():\n\
                     \tpass\n",
             ))
         );
