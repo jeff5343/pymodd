@@ -85,7 +85,7 @@ def type_of_item(item):
         str: 'string',
     }
 
-    if isinstance(item, (Undefined, Null)):
+    if isinstance(item, Undefined):
         return None
     if (primitive := primitive_to_type.get(type(item))):
         return primitive
@@ -139,14 +139,6 @@ class Undefined(Function):
     def __init__(self):
         self.function = 'undefinedValue'
         self.options = {}
-
-
-class Null(Function):
-    def __init__(self):
-        self.function = {
-            'direct': True,
-            'value': None,
-        }
 
 
 # ---------------------------------------------------------------------------- #
