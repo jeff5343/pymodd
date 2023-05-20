@@ -104,37 +104,6 @@ def type_of_item(item):
     return None
 
 
-class Condition(Function):
-    def __init__(self, item_a: Base, operator: str, item_b: Base):
-        '''The comparison type of the condition is determined based on the type of item_a
-
-        Args:
-            item_a (Base): any object
-
-            operator (str): can be regular comparisons (==, !=, >=, ...) or 'AND' and 'OR'
-
-            item_b (Base): any object
-        '''
-
-        self.item_a = item_a
-        self.operator = operator.upper()
-        self.item_b = item_b
-        if self.operator == 'AND' or self.operator == 'OR':
-            self.comparison = operator.lower()
-        else:
-            self.comparison = type_of_item(item_a) or type_of_item(item_b)
-
-    def to_dict(self):
-        return [
-            {
-                'operandType': self.comparison,
-                'operator': self.operator,
-            },
-            to_dict(self.item_a),
-            to_dict(self.item_b)
-        ]
-
-
 class Undefined(Function):
     def __init__(self):
         self.function = 'undefinedValue'
@@ -1030,20 +999,6 @@ class UnitSensorRadius(Number):
         }
 
 
-class Calculation(Number):
-    def __init__(self, item_a: Number, operator: str, item_b: Number):
-        self.function = 'calculate'
-        self.options = {
-            'items': [
-                {
-                    'operator': operator
-                },
-                to_dict(item_a),
-                to_dict(item_b),
-            ]
-        }
-
-
 # ---------------------------------------------------------------------------- #
 #                                    Strings                                   #
 # ---------------------------------------------------------------------------- #
@@ -1070,15 +1025,6 @@ class LastCustomInputOfPlayer(String):
         self.function = 'playerCustomInput'
         self.options = {
             'player': to_dict(player),
-        }
-
-
-class Concat(String):
-    def __init__(self, text_a, text_b):
-        self.function = 'concat'
-        self.options = {
-            'textA': to_dict(text_a),
-            'textB': to_dict(text_b),
         }
 
 
@@ -1935,3 +1881,58 @@ class AllRegionsInTheGame(RegionGroup):
 # ---------------------------------------------------------------------------- #
 #                                   Dialogues                                  #
 # ---------------------------------------------------------------------------- #
+
+
+# ---------------------------------------------------------------------------- #
+#                              Deprecated Actions                              #
+# ---------------------------------------------------------------------------- #
+
+
+class Condition(Function):
+    '''Deprecated, use python comparison operators instead'''
+
+    def __init__(self, item_a: Base, operator: str, item_b: Base):
+        self.item_a = item_a
+        self.operator = operator.upper()
+        self.item_b = item_b
+        if self.operator == 'AND' or self.operator == 'OR':
+            self.comparison = operator.lower()
+        else:
+            self.comparison = type_of_item(item_a) or type_of_item(item_b)
+
+    def to_dict(self):
+        return [
+            {
+                'operandType': self.comparison,
+                'operator': self.operator,
+            },
+            to_dict(self.item_a),
+            to_dict(self.item_b)
+        ]
+
+
+class Calculation(Number):
+    '''Deprecated, use python arithmetic operators instead'''
+
+    def __init__(self, item_a: Number, operator: str, item_b: Number):
+        self.function = 'calculate'
+        self.options = {
+            'items': [
+                {
+                    'operator': operator
+                },
+                to_dict(item_a),
+                to_dict(item_b),
+            ]
+        }
+
+
+class Concat(String):
+    '''Deprecated, use python `+` operator instead'''
+
+    def __init__(self, text_a, text_b):
+        self.function = 'concat'
+        self.options = {
+            'textA': to_dict(text_a),
+            'textB': to_dict(text_b),
+        }
