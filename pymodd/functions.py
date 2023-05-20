@@ -79,6 +79,8 @@ from .variable_types import (VariableType, AttributeType, EntityVariable, ItemTy
 def type_of_item(item):
     primitive_to_type = {
         int: 'number',
+        float: 'number',
+        complex: 'number',
         bool: 'boolean',
         str: 'string',
     }
