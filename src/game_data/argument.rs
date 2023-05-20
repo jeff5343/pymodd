@@ -8,7 +8,7 @@ use crate::project_generator::utils::to_pymodd_maps::{
 
 use super::actions::{parse_actions, Action};
 
-const ARGS_TO_IGNORE: [&str; 8] = [
+const ARGS_TO_IGNORE: [&str; 9] = [
     "type",
     "entityType",
     "vars",
@@ -17,6 +17,7 @@ const ARGS_TO_IGNORE: [&str; 8] = [
     "disabled",
     "runOnClient",
     "hasFixedCSP",
+    "isExpanded",
 ];
 
 /// Accepts both pymodd action and pymodd function data
