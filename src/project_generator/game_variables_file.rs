@@ -168,6 +168,7 @@ fn pymodd_class_type_of_category(category: &'static str) -> String {
             .unwrap()
             .to_string(),
     }
+    .add("Base")
 }
 
 fn is_category_of_variable_type(category: &'static str) -> bool {

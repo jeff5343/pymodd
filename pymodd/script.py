@@ -168,7 +168,7 @@ class ScriptActionsCompiler(ast.NodeVisitor):
                 node.body)
             return loop_function_data
         # for _ in group variable action
-        elif isinstance((variable := evaled_iter), pymodd.variable_types.Variable):
+        elif isinstance((variable := evaled_iter), pymodd.variable_types.VariableBase):
             if variable.data_type not in [pymodd.variable_types.DataType.ITEM_GROUP, pymodd.variable_types.DataType.UNIT_GROUP,
                                           pymodd.variable_types.DataType.PLAYER_GROUP, pymodd.variable_types.DataType.ITEM_TYPE_GROUP,
                                           pymodd.variable_types.DataType.UNIT_TYPE_GROUP]:

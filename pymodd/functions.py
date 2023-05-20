@@ -68,7 +68,7 @@ class Function(Base):
 # only subclasses of Function requires these types
 # (also prevents a circular import)
 from .variable_types import (VariableType, AttributeType, EntityVariable, ItemType, PlayerType,
-                             PlayerVariable, ProjectileType, State, UnitType, Variable)
+                             PlayerVariable, ProjectileType, StateBase, UnitType, Variable)
 
 
 # ---------------------------------------------------------------------------- #
@@ -543,7 +543,7 @@ class LastTriggeringSensor(Sensor):
 # ---------------------------------------------------------------------------- #
 
 
-class CurrentStateOfEntity(State):
+class CurrentStateOfEntity(StateBase):
     def __init__(self, entity):
         self.function = 'getEntityState'
         self.options = {

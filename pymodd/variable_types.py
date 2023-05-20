@@ -45,7 +45,7 @@ class DataType(Enum):
     REGION = 'region'
 
 
-class Variable(VariableType):
+class VariableBase(VariableType):
     def __init__(self, variable_name, data_type: DataType, default_value=None):
         super().__init__(variable_name)
         self.data_type = data_type
@@ -62,7 +62,7 @@ class Variable(VariableType):
                 self.default_value = {}
                 for type_ in default_value:
                     id = type_.id if isinstance(
-                        type_, (ItemType, UnitType)) else type_
+                        type_, (ItemTypeBase, UnitTypeBase)) else type_
                     self.default_value[id] = {
                         'probability': 20,
                         'quantity': 1
@@ -121,7 +121,7 @@ class Variable(VariableType):
         return None
 
 
-class EntityVariable(Variable):
+class EntityVariableBase(VariableBase):
     def __init__(self, variable_name, data_type):
         super().__init__(variable_name, data_type)
         self.function = 'getEntityVariable'
@@ -135,7 +135,7 @@ class EntityVariable(Variable):
         }
 
 
-class PlayerVariable(Variable):
+class PlayerVariableBase(VariableBase):
     def __init__(self, variable_name, data_type):
         super().__init__(variable_name, data_type)
         self.function = 'getPlayerVariable'
@@ -149,7 +149,7 @@ class PlayerVariable(Variable):
         }
 
 
-class UnitType(VariableType):
+class UnitTypeBase(VariableType):
     def __init__(self, id=None, name=None):
         super().__init__(id, name=name)
 
@@ -653,7 +653,7 @@ class UnitType(VariableType):
         }
 
 
-class ItemType(VariableType):
+class ItemTypeBase(VariableType):
     def __init__(self, id=None, name=None):
         super().__init__(id, name=name)
 
@@ -902,7 +902,7 @@ class ItemType(VariableType):
         }
 
 
-class ProjectileType(VariableType):
+class ProjectileTypeBase(VariableType):
     def __init__(self, id=None, name=None):
         super().__init__(id, name=name)
 
@@ -1012,7 +1012,7 @@ class ProjectileType(VariableType):
         }
 
 
-class PlayerType(VariableType):
+class PlayerTypeBase(VariableType):
     def __init__(self, id=None, name=None):
         super().__init__(id, name=name)
 
@@ -1026,7 +1026,7 @@ class PlayerType(VariableType):
         }
 
 
-class AttributeType(VariableType):
+class AttributeTypeBase(VariableType):
     def __init__(self, id=None, name=None):
         super().__init__(id, name=name)
 
@@ -1047,7 +1047,7 @@ class AttributeType(VariableType):
         }
 
 
-class AnimationType(VariableType):
+class AnimationTypeBase(VariableType):
     def __init__(self, id=None, name=None):
         super().__init__(id, name=name)
 
@@ -1062,7 +1062,7 @@ class AnimationType(VariableType):
         }
 
 
-class State(VariableType):
+class StateBase(VariableType):
     def __init__(self, id=None, name=None):
         super().__init__(id, name=name)
 
@@ -1076,7 +1076,7 @@ class State(VariableType):
         }
 
 
-class Shop(VariableType):
+class ShopBase(VariableType):
     def __init__(self, id=None, name=None):
         super().__init__(id, name=name)
 
@@ -1089,7 +1089,7 @@ class Shop(VariableType):
         }
 
 
-class Music(VariableType):
+class MusicBase(VariableType):
     def __init__(self, id=None, name=None):
         super().__init__(id, name=name)
 
@@ -1101,7 +1101,7 @@ class Music(VariableType):
         }
 
 
-class Sound(VariableType):
+class SoundBase(VariableType):
     def __init__(self, id=None, name=None):
         super().__init__(id, name=name)
 
@@ -1113,7 +1113,7 @@ class Sound(VariableType):
         }
 
 
-class Dialogue(VariableType):
+class DialogueBase(VariableType):
     def __init__(self, id=None, name=None):
         super().__init__(id, name=name)
 

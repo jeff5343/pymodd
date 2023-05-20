@@ -1,4 +1,4 @@
-from pymodd.variable_types import AnimationType, AttributeType, Dialogue, EntityVariable, ItemType, Music, PlayerType, PlayerVariable, ProjectileType, Shop, Sound, State, UnitType, Variable, DataType
+from pymodd.variable_types import AnimationType, AttributeType, Dialogue, EntityVariable, ItemType, Music, PlayerType, PlayerVariable, ProjectileType, Shop, SoundBase, State, UnitType, Variable, DataType
 
 
 class ItemTypes:
