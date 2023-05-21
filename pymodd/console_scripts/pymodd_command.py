@@ -2,6 +2,7 @@ import os
 import sys
 import json
 import runpy
+from pathlib import Path
 from argparse import ArgumentParser
 
 from pymodd import _pymodd_helper
@@ -17,7 +18,16 @@ VARIABLE_TYPE_CLASS_NAMES = [
 
 
 def generate_project(args):
-    _pymodd_helper.generate_project_from_json_file_path(args.json_file_path)
+    json_file_path = args.json_file_path
+    if args.json_file_path == 'default-template':
+        json_file_path = (Path(__file__).parent /
+                          '../utils/Default Game.json').resolve()
+    if not os.path.isfile(json_file_path):
+        _pymodd_helper.log_error('invalid json file path!')
+        return
+
+    _pymodd_helper.generate_project_from_json_file_content(
+        open(json_file_path, 'r').read())
 
 
 def compile_project(_args):
