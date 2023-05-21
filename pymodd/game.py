@@ -64,14 +64,14 @@ class Game(Base):
 
         # update data of each entity_type
         for entity_script in self.entity_scripts:
-            entity_category, entity_id = f'{camelcase(entity_script.entity_type.__class__.__name__)}s', entity_script.entity_type.id
+            entity_category, entity_id = f'{camelcase(entity_script.entity_type.__class__.__name__)[:-4]}s', entity_script.entity_type.id
             entity_data = self.data['data'][entity_category][entity_id]
 
             # update entity scripts
             entity_data['scripts'] = self.flatten_scripts_data(
                 entity_script.scripts)
 
-            if entity_category != "UnitType":
+            if entity_category != "unitTypes":
                 continue
             # update entity keybindings for unit types
             entity_keybindings_data = entity_data['controls']['abilities']
@@ -98,10 +98,13 @@ class Game(Base):
         scripts_queue = scripts.copy()
         while len(scripts_queue) > 0:
             script = scripts_queue.pop(0)
+            scripts_data = None
             # add folder's scripts to the queue
-            if isinstance(script, Folder):
-                scripts_queue += script.scripts
-            script_data = script.to_dict(self.project_globals_data)
+            if isinstance((folder := script), Folder):
+                script_data = folder.to_dict()
+                scripts_queue += folder.scripts
+            else:
+                script_data = script.to_dict(self.project_globals_data)
             flattened_scripts[script_data['key']] = script_data
         return flattened_scripts
 

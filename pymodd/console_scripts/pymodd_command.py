@@ -10,9 +10,9 @@ from pymodd.entity_script import EntityScripts
 
 
 VARIABLE_TYPE_CLASS_NAMES = [
-    'UnitTypes', 'PlayerTypes', 'ItemTypes', 'ProjectileTypes', 'Regions', 'Variables',
-    'EntityVariables', 'PlayerVariables', 'AnimationTypes', 'AttributeTypes', 'ItemTypeGroups',
-    'UnitTypeGroups', 'States', 'Shops', 'Dialogues', 'Musics', 'Sounds'
+    'UnitType', 'PlayerType', 'ItemType', 'ProjectileType', 'Region', 'Variable',
+    'EntityVariable', 'PlayerVariable', 'AnimationType', 'AttributeType', 'ItemTypeGroup',
+    'UnitTypeGroup', 'State', 'Shop', 'Dialogue', 'Music', 'Sound'
 ]
 
 

@@ -1529,7 +1529,7 @@ def repeat(count: Number, actions=[], comment=None, disabled=False, run_on_clien
 
 
 @action
-def for_range(variable, start: Number, stop: Number, actions=[], comment=None, disabled=False, run_on_client=False):
+def range(start: Number, stop: Number, variable=None, actions=[], comment=None, disabled=False, run_on_client=False):
     '''Deprecated, use a python for loop instead:
     ```
     for Variables.I in range(5):
@@ -1538,7 +1538,7 @@ def for_range(variable, start: Number, stop: Number, actions=[], comment=None, d
     '''
     return {
         'type': 'for',
-        'variableName': variable.id,
+        'variableName': '',
         'start': to_dict(start),
         'stop': to_dict(stop),
         'actions': actions,

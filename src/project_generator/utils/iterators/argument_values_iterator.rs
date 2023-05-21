@@ -67,6 +67,7 @@ pub enum ArgumentValueIterItem<'a> {
     Concatenation(Operation),
     Calculation(Operation),
     ScriptKey(String),
+    None,
     FunctionEnd,
 }
 
@@ -78,6 +79,7 @@ impl<'a> ArgumentValueIterItem<'a> {
                     ("condition", Some(operation)) => ArgumentValueIterItem::Condition(operation),
                     ("concat", Some(operation)) => ArgumentValueIterItem::Concatenation(operation),
                     (_, Some(operation)) => ArgumentValueIterItem::Calculation(operation),
+                    ("null", _) => ArgumentValueIterItem::None,
                     _ => ArgumentValueIterItem::StartOfFunction(&function),
                 }
             }

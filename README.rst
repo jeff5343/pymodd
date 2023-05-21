@@ -55,12 +55,12 @@ view the ``examples/froge`` directory for an example of a pymodd project
 
     @script(triggers=[Trigger.EVERY_SECOND])
     def every_second():
-        if NumberOfUnitsOfUnitType(UnitTypes.FROG) < 5:
-            create_unit_for_player_at_position_with_rotation(UnitTypes.FROG, Variables.AI, RandomPositionInRegion(EntireMapRegion()), 0)
+        if NumberOfUnitsOfUnitType(UnitType.FROG) < 5:
+            create_unit_for_player_at_position_with_rotation(UnitType.FROG, Variable.AI, RandomPositionInRegion(EntireMapRegion()), 0)
         else:
-            if NumberOfUnitsOfUnitType(UnitTypes.FROG_BOSS) == 0:
-                if Variables.BOSS_TIMER <= 0:
-                    create_unit_for_player_at_position_with_rotation(UnitTypes.FROG_BOSS, Variables.AI, RandomPositionInRegion(EntireMapRegion()), 0)
+            if NumberOfUnitsOfUnitType(UnitType.FROG_BOSS) == 0:
+                if Variable.BOSS_TIMER <= 0:
+                    create_unit_for_player_at_position_with_rotation(UnitType.FROG_BOSS, Variable.AI, RandomPositionInRegion(EntireMapRegion()), 0)
                     update_ui_target_for_player_for_miliseconds(UiTarget.CENTER, 'BOSS SPAWNED', Undefined(), 5000)
-                decrease_variable_by_number(Variables.BOSS_TIMER, 1)
+                decrease_variable_by_number(Variable.BOSS_TIMER, 1)
 

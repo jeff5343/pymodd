@@ -11,7 +11,8 @@ use crate::{
 };
 
 use super::{
-    scripts_file::ScriptsContentBuilder, utils::{to_pymodd_maps::VARIABLE_DATA_TYPES_TO_PYMODD_ENUM, TAB_SIZE},
+    scripts_file::ScriptsContentBuilder,
+    utils::{to_pymodd_maps::VARIABLE_DATA_TYPES_TO_PYMODD_ENUM, TAB_SIZE},
 };
 
 pub struct GameVariablesFile {}
@@ -35,7 +36,7 @@ impl GameVariablesFile {
                         .add("\n\n\n"),
                 );
             });
-        let classes_to_import = { 
+        let classes_to_import = {
             let mut classes = game_data
                 .categories_to_variables
                 .iter()
@@ -50,7 +51,8 @@ impl GameVariablesFile {
             "from pymodd.variable_types import {}, DataType\n\n\n{}",
             classes_to_import.join(", "),
             file_content,
-        ).replace("\t", &" ".repeat(TAB_SIZE))
+        )
+        .replace("\t", &" ".repeat(TAB_SIZE))
     }
 }
 
@@ -105,14 +107,15 @@ impl<'a> CategoryClassContentBuilder<'a> {
                                 .get(&data_type)
                                 .unwrap_or(&String::from("None")),
                             match (
-                                variable.get_key("default"), 
-                                ["entityTypeVariables", "playerTypeVariables"].contains(&category) || data_type == "region") 
-                            {
+                                variable.get_key("default"),
+                                ["entityTypeVariables", "playerTypeVariables"].contains(&category)
+                                    || data_type == "region"
+                            ) {
                                 (Some(default_value), false) if data_type != "region" => format!(
                                     ", default_value={}",
                                     self.build_default_value_of_variable(default_value)
                                 ),
-                                _ => String::new()
+                                _ => String::new(),
                             }
                         )
                     }
@@ -144,15 +147,15 @@ impl<'a> CategoryClassContentBuilder<'a> {
 }
 
 pub fn pymodd_class_name_of_category(category: &'static str) -> String {
-    let mut class_name = match category {
-        "entityTypeVariables" => "EntityVariables",
-        "playerTypeVariables" => "PlayerVariables",
+    let class_name = match category {
+        "entityTypeVariables" => "EntityVariable",
+        "playerTypeVariables" => "PlayerVariable",
         _ => category,
     }
     .to_pascal_case()
     .to_string();
-    if !class_name.ends_with("s") {
-        class_name.push('s')
+    if class_name.ends_with("s") {
+        return class_name.strip_suffix("s").unwrap().to_string();
     }
     class_name
 }
@@ -160,11 +163,9 @@ pub fn pymodd_class_name_of_category(category: &'static str) -> String {
 fn pymodd_class_type_of_category(category: &'static str) -> String {
     match category {
         "itemTypeGroups" | "unitTypeGroups" | "regions" => String::from("Variable"),
-        _ => pymodd_class_name_of_category(&category)
-            .strip_suffix('s')
-            .unwrap()
-            .to_string(),
+        _ => pymodd_class_name_of_category(&category).to_string(),
     }
+    .add("Base")
 }
 
 fn is_category_of_variable_type(category: &'static str) -> bool {
@@ -210,9 +211,31 @@ mod tests {
                 ],
             ),
             String::from(
-                "class ItemTypes:\
-                    \n\tAPPLE = ItemType('FW3513W', name='apple')\
-                    \n\tBANANA = ItemType('OE51DW2', name='banana')"
+                "class ItemType:\
+                    \n\tAPPLE = ItemTypeBase('FW3513W', name='apple')\
+                    \n\tBANANA = ItemTypeBase('OE51DW2', name='banana')"
+            )
+        );
+    }
+
+    #[test]
+    fn category_class_content_with_variables_starting_with_numbers() {
+        assert_eq!(
+            CategoryClassContentBuilder::new(&ScriptsContentBuilder::new(
+                &CategoriesToVariables::new(HashMap::new()),
+                &Directory::new("root", "null", Vec::new())
+            ))
+            .build_class_content(
+                "itemTypes",
+                &vec![
+                    Variable::new("FW3513W", "1apple", json!({})),
+                    Variable::new("OE51DW2", "2banana", json!({}))
+                ],
+            ),
+            String::from(
+                "class ItemType:\
+                    \n\t_1APPLE = ItemTypeBase('FW3513W', name='1apple')\
+                    \n\t_2BANANA = ItemTypeBase('OE51DW2', name='2banana')"
             )
         );
     }
@@ -226,7 +249,7 @@ mod tests {
             ))
             .build_class_content("itemTypes", &Vec::new(),),
             String::from(
-                "class ItemTypes:\n\
+                "class ItemType:\n\
                     \tpass"
             )
         );
@@ -283,14 +306,13 @@ mod tests {
                             }
                         })
                     ),
- 
                 ],
             ),
             String::from(
-                "class Variables:\n\
-                    \tAPPLE = Variable('apple', DataType.NUMBER, default_value=5)\n\
-                    \tBANANA = Variable('banana', DataType.ITEM_TYPE_GROUP, default_value=[ItemTypes.SWORD, ItemTypes.STICK, ItemTypes.SAND])\n\
-                    \tPEACH = Variable('peach', DataType.REGION)"
+                "class Variable:\n\
+                    \tAPPLE = VariableBase('apple', DataType.NUMBER, default_value=5)\n\
+                    \tBANANA = VariableBase('banana', DataType.ITEM_TYPE_GROUP, default_value=[ItemType.SWORD, ItemType.STICK, ItemType.SAND])\n\
+                    \tPEACH = VariableBase('peach', DataType.REGION)"
             )
         );
     }
@@ -304,17 +326,15 @@ mod tests {
             ))
             .build_class_content(
                 "entityTypeVariables",
-                &vec![
-                    Variable::new(
-                        "apple",
-                        "apple",
-                        json!({ "dataType": "number", "default": json!(5) })
-                    )
-                ],
+                &vec![Variable::new(
+                    "apple",
+                    "apple",
+                    json!({ "dataType": "number", "default": json!(5) })
+                )],
             ),
             String::from(
-                "class EntityVariables:\n\
-                    \tAPPLE = EntityVariable('apple', DataType.NUMBER)"
+                "class EntityVariable:\n\
+                    \tAPPLE = EntityVariableBase('apple', DataType.NUMBER)"
             )
         );
     }
@@ -328,17 +348,15 @@ mod tests {
             ))
             .build_class_content(
                 "playerTypeVariables",
-                &vec![
-                    Variable::new(
-                        "apple",
-                        "apple",
-                        json!({ "dataType": "number", "default": json!(5) })
-                    )
-                ],
+                &vec![Variable::new(
+                    "apple",
+                    "apple",
+                    json!({ "dataType": "number", "default": json!(5) })
+                )],
             ),
             String::from(
-                "class PlayerVariables:\n\
-                    \tAPPLE = PlayerVariable('apple', DataType.NUMBER)"
+                "class PlayerVariable:\n\
+                    \tAPPLE = PlayerVariableBase('apple', DataType.NUMBER)"
             )
         );
     }

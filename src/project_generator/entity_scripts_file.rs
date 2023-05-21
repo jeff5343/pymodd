@@ -9,7 +9,7 @@ use crate::{
 use super::{
     mapping_file::build_directory_items_contents,
     scripts_file::{build_directory_content, ScriptsContentBuilder},
-    utils::{enum_name_of, iterators::directory_iterator::DirectoryIterItem, TAB_SIZE},
+    utils::{iterators::directory_iterator::DirectoryIterItem, TAB_SIZE},
 };
 
 pub struct EntityScriptsFile {}
@@ -75,7 +75,7 @@ fn build_class_content_of_entity_type_in_category(
                     {}\
                 \t\t\t\n\
                 \t\t]\n",
-        enum_name_of(&entity_type.name),
+        entity_type.enum_name(),
         if category == "unitTypes" {
             format!(
                 "\t\tself.keybindings = {{\n\
@@ -233,7 +233,7 @@ mod tests {
             .as_str(),
             "class Bob(EntityScripts):\n\
                 \tdef _build(self):\n\
-                    \t\tself.entity_type = UnitTypes.BOB\n\
+                    \t\tself.entity_type = UnitType.BOB\n\
                     \t\tself.keybindings = {\n\
                         \t\t\t\n\
                     \t\t}\n\
@@ -281,7 +281,7 @@ mod tests {
             .as_str(),
             "class Bob(EntityScripts):\n\
                 \tdef _build(self):\n\
-                    \t\tself.entity_type = UnitTypes.BOB\n\
+                    \t\tself.entity_type = UnitType.BOB\n\
                     \t\tself.keybindings = {\n\
                         \t\t\tKey.LEFT_CLICK: KeyBehavior(self.use_item(), self.stop_using_item()),\n\
                         \t\t\tKey.Q: KeyBehavior(self.use_item(), end_game()),\n\
@@ -312,7 +312,7 @@ mod tests {
             .as_str(),
             "class Sword(EntityScripts):\n\
                 \tdef _build(self):\n\
-                    \t\tself.entity_type = ItemTypes.SWORD\n\
+                    \t\tself.entity_type = ItemType.SWORD\n\
                     \t\tself.scripts = [\n\
                         \t\t\t\n\
                     \t\t]\n"
@@ -334,7 +334,7 @@ mod tests {
             .as_str(),
             "class Bullet(EntityScripts):\n\
                 \tdef _build(self):\n\
-                    \t\tself.entity_type = ProjectileTypes.BULLET\n\
+                    \t\tself.entity_type = ProjectileType.BULLET\n\
                     \t\tself.scripts = [\n\
                         \t\t\t\n\
                     \t\t]\n"

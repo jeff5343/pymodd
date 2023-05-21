@@ -1,92 +1,92 @@
-from pymodd.variable_types import AnimationType, AttributeType, Dialogue, EntityVariable, ItemType, Music, PlayerType, PlayerVariable, ProjectileType, Shop, Sound, State, UnitType, Variable, DataType
+from pymodd.variable_types import AnimationTypeBase, AttributeTypeBase, DialogueBase, EntityVariableBase, ItemTypeBase, MusicBase, PlayerTypeBase, PlayerVariableBase, ProjectileTypeBase, ShopBase, SoundBase, StateBase, UnitTypeBase, VariableBase, DataType
 
 
-class ItemTypes:
-    BOSS_FROG_TONGUE = ItemType('AqrGZUYBdS', name='Boss Frog Tongue')
-    FROG_TONGUE = ItemType('BBCDO38dr7', name='Frog Tongue')
-    KNIFE = ItemType('bMDJQyFACm', name='Knife')
-    FROG_SWORD = ItemType('tmAlzggQX4', name='Frog Sword')
+class ItemType:
+    BOSS_FROG_TONGUE = ItemTypeBase('AqrGZUYBdS', name='Boss Frog Tongue')
+    FROG_TONGUE = ItemTypeBase('BBCDO38dr7', name='Frog Tongue')
+    KNIFE = ItemTypeBase('bMDJQyFACm', name='Knife')
+    FROG_SWORD = ItemTypeBase('tmAlzggQX4', name='Frog Sword')
 
 
-class ProjectileTypes:
+class ProjectileType:
     pass
 
 
-class UnitTypes:
-    FROG_BOSS = UnitType('TyaKyQzgKc', name='Frog Boss')
-    POOPER = UnitType('fighter', name='Pooper')
-    FROG = UnitType('oTDQ3jlcMa', name='Frog')
+class UnitType:
+    FROG_BOSS = UnitTypeBase('TyaKyQzgKc', name='Frog Boss')
+    POOPER = UnitTypeBase('fighter', name='Pooper')
+    FROG = UnitTypeBase('oTDQ3jlcMa', name='Frog')
 
 
-class PlayerTypes:
-    AI = PlayerType('eA9ZwoweVz', name='ai')
-    PLAYER = PlayerType('humanPlayer', name='Player')
+class PlayerType:
+    AI = PlayerTypeBase('eA9ZwoweVz', name='ai')
+    PLAYER = PlayerTypeBase('humanPlayer', name='Player')
 
 
-class ItemTypeGroups:
-    RANDOMGROUP = Variable('randomgroup', DataType.ITEM_TYPE_GROUP, default_value=[ItemTypes.FROG_TONGUE, ItemTypes.KNIFE, ItemTypes.FROG_SWORD])
+class ItemTypeGroup:
+    RANDOMGROUP = VariableBase('randomgroup', DataType.ITEM_TYPE_GROUP, default_value=[ItemType.FROG_TONGUE, ItemType.KNIFE, ItemType.FROG_SWORD])
 
 
-class UnitTypeGroups:
-    UNITTYPEGROUP = Variable('unittypegroup', DataType.UNIT_TYPE_GROUP, default_value=[UnitTypes.FROG_BOSS, UnitTypes.POOPER, UnitTypes.FROG])
+class UnitTypeGroup:
+    UNITTYPEGROUP = VariableBase('unittypegroup', DataType.UNIT_TYPE_GROUP, default_value=[UnitType.FROG_BOSS, UnitType.POOPER, UnitType.FROG])
 
 
-class Variables:
-    AI = Variable('AI', DataType.PLAYER, default_value='computer1')
-    BOSS_TIMER = Variable('bossTimer', DataType.NUMBER, default_value=0)
-    DWADAWD = Variable('dwadawd', DataType.UNIT_GROUP)
-    TEMP_UNIT = Variable('tempUnit', DataType.UNIT)
-    TIMER = Variable('timer', DataType.NUMBER, default_value=0)
+class Variable:
+    AI = VariableBase('AI', DataType.PLAYER, default_value='computer1')
+    BOSS_TIMER = VariableBase('bossTimer', DataType.NUMBER, default_value=0)
+    DWADAWD = VariableBase('dwadawd', DataType.UNIT_GROUP)
+    TEMP_UNIT = VariableBase('tempUnit', DataType.UNIT)
+    TIMER = VariableBase('timer', DataType.NUMBER, default_value=0)
 
 
-class EntityVariables:
-    SENSOR_RADIUS = EntityVariable('sensorRadius', DataType.NUMBER)
-    TARGET_UNIT = EntityVariable('targetUnit', DataType.UNIT)
+class EntityVariable:
+    SENSOR_RADIUS = EntityVariableBase('sensorRadius', DataType.NUMBER)
+    TARGET_UNIT = EntityVariableBase('targetUnit', DataType.UNIT)
 
 
-class PlayerVariables:
-    TARGET_UNIT = PlayerVariable('targetUnit', DataType.UNIT)
+class PlayerVariable:
+    TARGET_UNIT = PlayerVariableBase('targetUnit', DataType.UNIT)
 
 
-class Regions:
+class Region:
     pass
 
 
-class Shops:
-    FROGE_SHOP = Shop('OJbEQyc7is', name='Froge Shop')
+class Shop:
+    FROGE_SHOP = ShopBase('OJbEQyc7is', name='Froge Shop')
 
 
-class Dialogues:
+class Dialogue:
     pass
 
 
-class Musics:
-    D = Music('iJ8RoRfyeu', name='d')
+class Music:
+    D = MusicBase('iJ8RoRfyeu', name='d')
 
 
-class Sounds:
+class Sound:
     pass
 
 
-class States:
-    DEFAULT = State('default', name='default')
-    DROPPED = State('dropped', name='dropped')
-    TONGUE_OUT = State('r60qiEIvyt', name='tongue out')
-    SELECTED = State('selected', name='selected')
-    UNSELECTED = State('unselected', name='unselected')
+class State:
+    DEFAULT = StateBase('default', name='default')
+    DROPPED = StateBase('dropped', name='dropped')
+    TONGUE_OUT = StateBase('r60qiEIvyt', name='tongue out')
+    SELECTED = StateBase('selected', name='selected')
+    UNSELECTED = StateBase('unselected', name='unselected')
 
 
-class AnimationTypes:
-    TONGUE_OUT = AnimationType('B1cWOYKvNL', name='tongue out')
-    DEFAULT = AnimationType('default', name='default')
-    DROPPED = AnimationType('dropped', name='dropped')
-    USE = AnimationType('use', name='use')
+class AnimationType:
+    TONGUE_OUT = AnimationTypeBase('B1cWOYKvNL', name='tongue out')
+    DEFAULT = AnimationTypeBase('default', name='default')
+    DROPPED = AnimationTypeBase('dropped', name='dropped')
+    USE = AnimationTypeBase('use', name='use')
 
 
-class AttributeTypes:
-    MOVE = AttributeType('G3adwzJecn', name='move')
-    HEALTH = AttributeType('health', name='health ')
-    SPEED = AttributeType('speed', name='speed')
-    FROG_KILLS = AttributeType('yjdyHZbWpA', name='frog kills')
+class AttributeType:
+    MOVE = AttributeTypeBase('G3adwzJecn', name='move')
+    HEALTH = AttributeTypeBase('health', name='health ')
+    SPEED = AttributeTypeBase('speed', name='speed')
+    FROG_KILLS = AttributeTypeBase('yjdyHZbWpA', name='frog kills')
 
 

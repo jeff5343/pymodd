@@ -38,7 +38,8 @@ impl ScriptsFile {
                     &game_data.root_directory,
                 ),
             )
-        ).replace("\t", &" ".repeat(TAB_SIZE))
+        )
+        .replace("\t", &" ".repeat(TAB_SIZE))
     }
 }
 
@@ -97,10 +98,17 @@ impl<'a> ScriptsContentBuilder<'a> {
                 format!(", name={}", surround_string_with_quotes(&script.name))
             },
             if script.actions.len() > 0 {
-                self.build_actions_content(&script.actions)
+                let content = self
+                    .build_actions_content(&script.actions)
                     .lines()
                     .map(|action| format!("{}{action}\n", "\t"))
-                    .collect::<String>()
+                    .collect::<String>();
+                // generate pass statements for functions with commented bodies
+                if self.is_body_commented_out(&format!("def func:\n{content}")) {
+                    content.to_string().add("\tpass\n")
+                } else {
+                    content
+                }
             } else {
                 String::from("\tpass\n")
             }
@@ -142,7 +150,7 @@ impl<'a> ScriptsContentBuilder<'a> {
             // convert variable for loop actions into for loops
             "for" => {
                 let args = self.build_arguments_of_action_individually(action);
-                let (variable, start, stop, actions) = (
+                let (start, stop, variable, actions) = (
                     args.get(0).unwrap_or(&none),
                     args.get(1).unwrap_or(&none),
                     args.get(2).unwrap_or(&none),
@@ -194,7 +202,7 @@ impl<'a> ScriptsContentBuilder<'a> {
                     (args.get(0).unwrap_or(&none), args.get(1).unwrap_or(&pass));
                 Some(format!("while {condition}:{actions}"))
             }
-            
+
             // convert set timeout actions into with loops
             "setTimeOut" => {
                 let args = self.build_arguments_of_action_individually(action);
@@ -208,13 +216,21 @@ impl<'a> ScriptsContentBuilder<'a> {
         if let Some(statement_content) = statement_content {
             return match action.disabled {
                 true => self.comment_out_statement_content(statement_content),
-                false => statement_content,
+                false => {
+                    self.append_pass_keyword_to_commented_bodies_of_statement(statement_content)
+                }
             };
         }
 
         match action.name.as_str() {
             // convert break, continue, and return actions into python keywords
-            "break" | "continue" | "return" => format!("{}\n", &action.name),
+            "break" | "continue" | "return" => {
+                format!(
+                    "{}{}\n",
+                    if action.disabled { "# " } else { "" },
+                    &action.name
+                )
+            }
 
             "comment" => {
                 format!(
@@ -252,8 +268,8 @@ impl<'a> ScriptsContentBuilder<'a> {
         }
     }
 
-    fn comment_out_statement_content(&self, statement: String) -> String {
-        statement
+    fn comment_out_statement_content(&self, statement_content: String) -> String {
+        statement_content
             .lines()
             .map(|line| {
                 if line.trim().starts_with("# ") {
@@ -264,6 +280,43 @@ impl<'a> ScriptsContentBuilder<'a> {
                 .add("\n")
             })
             .collect()
+    }
+
+    fn append_pass_keyword_to_commented_bodies_of_statement(
+        &self,
+        statement_content: String,
+    ) -> String {
+        let bodies: Vec<&str> = statement_content.trim().split("\nelse:").collect();
+        let (mut then_body, mut else_body) = (
+            bodies.get(0).unwrap_or(&"").to_string(),
+            format!("else:{}", bodies.get(1).unwrap_or(&"").to_string()),
+        );
+        if self.is_body_commented_out(&then_body) {
+            then_body = then_body.add("\n\tpass")
+        }
+        if self.is_body_commented_out(&else_body) {
+            else_body = else_body.add("\n\tpass")
+        }
+        format!(
+            "{then_body}{}\n",
+            // add else body if it is not empty
+            if else_body != String::from("else:") {
+                format!("\n{else_body}")
+            } else {
+                String::new()
+            }
+        )
+    }
+
+    fn is_body_commented_out(&self, body_content: &String) -> bool {
+        let body_lines = body_content.lines();
+        if body_lines.collect::<Vec<&str>>().len() == 1 {
+            return false;
+        }
+        !body_content
+            .lines()
+            .skip(1)
+            .any(|line| line.starts_with("\t") & !line.starts_with("\t# "))
     }
 
     /// used while parsing if statements, for loops, and while loops
@@ -283,30 +336,27 @@ impl<'a> ScriptsContentBuilder<'a> {
                 let include_seperator =
                     !pymodd_args.ends_with("(") && arg != ArgumentValueIterItem::FunctionEnd;
                 pymodd_args
-                    + &format!(
-                        "{}{}",
-                        String::from(if include_seperator { ", " } else { "" }),
-                        {
-                            // remove parentheses surrounding the outermost layer of conditions
-                            if let ArgumentValueIterItem::Condition(_) = arg {
-                                let condition_content = self.build_argument_content(arg);
-                                if condition_content.starts_with("(")
-                                    && condition_content.ends_with(")")
-                                {
-                                    condition_content
-                                        .strip_prefix("(")
-                                        .unwrap()
-                                        .strip_suffix(")")
-                                        .unwrap()
-                                        .to_string()
-                                } else {
-                                    condition_content
-                                }
+                    .add(if include_seperator { ", " } else { "" })
+                    .add(&{
+                        // remove parentheses surrounding the outermost layer of conditions
+                        if let ArgumentValueIterItem::Condition(_) = arg {
+                            let condition_content = self.build_argument_content(arg);
+                            if condition_content.starts_with("(")
+                                && condition_content.ends_with(")")
+                            {
+                                condition_content
+                                    .strip_prefix("(")
+                                    .unwrap()
+                                    .strip_suffix(")")
+                                    .unwrap()
+                                    .to_string()
                             } else {
-                                self.build_argument_content(arg)
+                                condition_content
                             }
+                        } else {
+                            self.build_argument_content(arg)
                         }
-                    )
+                    })
             })
             .strip_prefix("(")
             .unwrap()
@@ -368,6 +418,7 @@ impl<'a> ScriptsContentBuilder<'a> {
                 }
                 String::from("None")
             }
+            ArgumentValueIterItem::None => String::from("None"),
             ArgumentValueIterItem::FunctionEnd => String::from(")"),
         }
     }
@@ -431,7 +482,11 @@ impl<'a> ScriptsContentBuilder<'a> {
 }
 
 fn into_operator(string: &str) -> Option<&str> {
-    if ["==", "!=", "<=", "<", ">", ">=", "+", "-", "/", "*", "%", "**"].contains(&string) {
+    if [
+        "==", "!=", "<=", "<", ">", ">=", "+", "-", "/", "*", "%", "**",
+    ]
+    .contains(&string)
+    {
         return Some(string);
     }
     match string.to_lowercase().as_str() {
@@ -448,7 +503,7 @@ mod tests {
     use serde_json::json;
 
     use crate::game_data::{
-        actions::parse_actions,
+        actions::{parse_actions, Action},
         directory::{Directory, DirectoryItem, Script},
         variable_categories::{CategoriesToVariables, Variable},
     };
@@ -477,7 +532,7 @@ mod tests {
     }
 
     #[test]
-    fn script_with_weird_name_content() {
+    fn script_with_non_ascii_name_content() {
         assert_eq!(
             ScriptsContentBuilder::new(
                 &CategoriesToVariables::new(HashMap::new()),
@@ -491,7 +546,50 @@ mod tests {
             )),
             String::from(format!(
                 "@script(triggers=[Trigger.GAME_START], name='【 𝚒𝚗𝚒𝚝𝚒𝚊𝚕𝚒𝚣𝚎 イ】')\n\
-                def q():\n\
+                def wi31hdk():\n\
+                    \tpass\n",
+            ))
+        );
+    }
+
+    #[test]
+    fn script_with_no_name() {
+        assert_eq!(
+            ScriptsContentBuilder::new(
+                &CategoriesToVariables::new(HashMap::new()),
+                &Directory::new("root", "null", Vec::new())
+            )
+            .build_script_content(&Script::new(
+                "",
+                "WI31HDK",
+                vec![],
+                Vec::new()
+            )),
+            String::from(format!(
+                "@script(triggers=[])\n\
+                def wi31hdk():\n\
+                    \tpass\n",
+            ))
+        );
+    }
+
+    #[test]
+    fn script_content_with_commented_body() {
+        assert_eq!(
+            ScriptsContentBuilder::new(
+                &CategoriesToVariables::new(HashMap::new()),
+                &Directory::new("root", "null", Vec::new())
+            )
+            .build_script_content(&Script::new(
+                "initialize",
+                "WI31HDK",
+                vec!["gameStart"],
+                vec![Action::new("break", vec![], None, false, true)]
+            )),
+            String::from(format!(
+                "@script(triggers=[Trigger.GAME_START])\n\
+                def initialize():\n\
+                    \t# break\n\
                     \tpass\n",
             ))
         );
@@ -523,7 +621,7 @@ mod tests {
                 .as_array()
                 .unwrap()
             )),
-            "open_shop_for_player(Shops.WEAPONS, OwnerOfEntity(LastCastingUnit()))\n"
+            "open_shop_for_player(Shop.WEAPONS, OwnerOfEntity(LastCastingUnit()))\n"
         )
     }
 
@@ -588,6 +686,23 @@ mod tests {
     }
 
     #[test]
+    fn parse_action_with_null_into_pymodd() {
+        assert_eq!(
+            ScriptsContentBuilder::new(
+                &CategoriesToVariables::new(HashMap::new()),
+                &Directory::new("root", "null", Vec::new())
+            )
+            .build_actions_content(&parse_actions(
+                &json!([
+                    { "type": "updateUiTextForEveryone", "target": "top", "value": null }
+                ])
+                .as_array()
+                .unwrap()
+            )),
+            "update_ui_text_for_everyone(UiTarget.TOP, None)\n"
+        )
+    }
+    #[test]
     fn parse_comment_action_into_pymodd() {
         assert_eq!(
             ScriptsContentBuilder::new(
@@ -624,6 +739,28 @@ mod tests {
     }
 
     #[test]
+    fn parse_disabled_keyword_actions_into_pymodd() {
+        assert_eq!(
+            ScriptsContentBuilder::new(
+                &CategoriesToVariables::new(HashMap::new()),
+                &Directory::new("root", "null", Vec::new())
+            )
+            .build_actions_content(&parse_actions(
+                &json!([
+                    { "type": "break", "disabled": true },
+                    { "type": "continue", "disabled": true },
+                    { "type": "return", "disabled": true }
+                ])
+                .as_array()
+                .unwrap()
+            )),
+            "# break\n\
+            # continue\n\
+            # return\n"
+        );
+    }
+
+    #[test]
     fn parse_nested_calculations_into_pymodd() {
         assert_eq!(
             ScriptsContentBuilder::new(
@@ -645,7 +782,7 @@ mod tests {
                                                                     { "operator": "/" }, 2,
                                                                     { "function": "getExponent", "base": 5, "power": 2 }
                                                             ] }
-                                                        ] } 
+                                                        ] }
                                                 ] }
                                         ] }
                                 ]
@@ -788,7 +925,7 @@ mod tests {
                 .unwrap(),
             ))
             .as_str(),
-            "for Variables.I in range(0, 5):\n\
+            "for Variable.I in range(0, 5):\n\
                 \tpass\n"
         );
     }
@@ -837,7 +974,7 @@ mod tests {
                 .unwrap(),
             ))
             .as_str(),
-            "for item_type in ItemTypeGroups.SPECIAL_ITEM_TYPES:\n\
+            "for item_type in ItemTypeGroup.SPECIAL_ITEM_TYPES:\n\
                 \tpass\n"
         );
     }
@@ -925,7 +1062,7 @@ mod tests {
                 &Directory::new("root", "null", Vec::new())
             )
             .build_actions_content(&parse_actions(
-                json!([ 
+                json!([
                     { "type": "setTimeOut", "duration": 1000, "actions": [ { "type": "stopMusic" } ] } 
                 ])
                 .as_array()
@@ -961,6 +1098,37 @@ mod tests {
     }
 
     #[test]
+    fn parse_while_action_with_disabled_actions_into_python() {
+        assert_eq!(
+            ScriptsContentBuilder::new(
+                &CategoriesToVariables::new(HashMap::new()),
+                &Directory::new("root", "null", Vec::new())
+            )
+            .build_actions_content(&parse_actions(
+                json!([
+                    {
+                        "type": "while", 
+                        "conditions": [ { "operandType": "boolean", "operator": "==" }, true, true ], 
+                        "actions": [
+                            {
+                                "type": "while", "conditions": [ { "operandType": "boolean", "operator": "==" }, true, true ], "actions": [],
+                                "disabled": true
+                            }
+                        ],
+                    }
+                ])
+                .as_array()
+                .unwrap(),
+            ))
+            .as_str(),
+            "while True == True:\n\
+                \t# while True == True:\n\
+                \t# \tpass\n\
+                \tpass\n"
+        );
+    }
+
+    #[test]
     fn parse_nested_disabled_if_statements_into_pymodd() {
         assert_eq!(
             ScriptsContentBuilder::new(
@@ -982,7 +1150,12 @@ mod tests {
                                 "else": [ { "type": "sendChatMessage", "message": "hi" } ],
                                 "disabled": true
                             } ],
-                        "else": [ { "type": "sendChatMessage", "message": "hi" } ]
+                        "else": [ {
+                                "type": "condition", "conditions": [ { "operandType": "boolean", "operator": "==" }, true, true ],
+                                "then": [ { "type": "sendChatMessage", "message": "hi" } ],
+                                "else": [ { "type": "sendChatMessage", "message": "hi" } ],
+                                "disabled": true
+                            } ]
                      }
                 ])
                 .as_array()
@@ -997,8 +1170,13 @@ mod tests {
 		                \t# \t\tsend_chat_message_to_everyone('hi')\n\
                 \t# else:\n\
 		            \t# \tsend_chat_message_to_everyone('hi')\n\
+                \tpass\n\
             else:\n\
-                \tsend_chat_message_to_everyone('hi')\n"
+                \t# if True == True:\n\
+                    \t# \tsend_chat_message_to_everyone('hi')\n\
+                \t# else:\n\
+                    \t# \tsend_chat_message_to_everyone('hi')\n\
+                \tpass\n"
         )
     }
 

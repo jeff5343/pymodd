@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use heck::ToPascalCase;
 use serde_json::{Map, Value};
 
-use crate::project_generator::utils::is_valid_class_name;
+use crate::project_generator::utils::{enum_name_of, is_valid_class_name};
 
 use super::Directory;
 
@@ -89,6 +89,10 @@ impl EntityType {
             return format!("q{class_name}");
         }
         class_name
+    }
+
+    pub fn enum_name(&self) -> String {
+        enum_name_of(&self.name)
     }
 }
 

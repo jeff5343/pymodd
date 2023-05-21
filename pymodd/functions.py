@@ -67,8 +67,8 @@ class Function(Base):
 
 # only subclasses of Function requires these types
 # (also prevents a circular import)
-from .variable_types import (VariableType, AttributeType, EntityVariable, ItemType, PlayerType,
-                             PlayerVariable, ProjectileType, State, UnitType, Variable)
+from .variable_types import (VariableType, AttributeTypeBase, EntityVariableBase, ItemTypeBase, PlayerTypeBase,
+                             PlayerVariableBase, ProjectileTypeBase, StateBase, UnitTypeBase, VariableBase)
 
 
 # ---------------------------------------------------------------------------- #
@@ -79,15 +79,17 @@ from .variable_types import (VariableType, AttributeType, EntityVariable, ItemTy
 def type_of_item(item):
     primitive_to_type = {
         int: 'number',
+        float: 'number',
+        complex: 'number',
         bool: 'boolean',
         str: 'string',
     }
 
-    if isinstance(item, (Undefined, Null)):
+    if isinstance(item, Undefined):
         return None
     if (primitive := primitive_to_type.get(type(item))):
         return primitive
-    if isinstance(item, Variable):
+    if isinstance(item, VariableBase):
         return item.data_type.value
     if isinstance(item, VariableType):
         base_classes = item.__class__.mro()
@@ -102,49 +104,10 @@ def type_of_item(item):
     return None
 
 
-class Condition(Function):
-    def __init__(self, item_a: Base, operator: str, item_b: Base):
-        '''The comparison type of the condition is determined based on the type of item_a
-
-        Args:
-            item_a (Base): any object
-
-            operator (str): can be regular comparisons (==, !=, >=, ...) or 'AND' and 'OR'
-
-            item_b (Base): any object
-        '''
-
-        self.item_a = item_a
-        self.operator = operator.upper()
-        self.item_b = item_b
-        if self.operator == 'AND' or self.operator == 'OR':
-            self.comparison = operator.lower()
-        else:
-            self.comparison = type_of_item(item_a) or type_of_item(item_b)
-
-    def to_dict(self):
-        return [
-            {
-                'operandType': self.comparison,
-                'operator': self.operator,
-            },
-            to_dict(self.item_a),
-            to_dict(self.item_b)
-        ]
-
-
 class Undefined(Function):
     def __init__(self):
         self.function = 'undefinedValue'
         self.options = {}
-
-
-class Null(Function):
-    def __init__(self):
-        self.function = {
-            'direct': True,
-            'value': None,
-        }
 
 
 # ---------------------------------------------------------------------------- #
@@ -580,7 +543,7 @@ class LastTriggeringSensor(Sensor):
 # ---------------------------------------------------------------------------- #
 
 
-class CurrentStateOfEntity(State):
+class CurrentStateOfEntity(StateBase):
     def __init__(self, entity):
         self.function = 'getEntityState'
         self.options = {
@@ -1036,20 +999,6 @@ class UnitSensorRadius(Number):
         }
 
 
-class Calculation(Number):
-    def __init__(self, item_a: Number, operator: str, item_b: Number):
-        self.function = 'calculate'
-        self.options = {
-            'items': [
-                {
-                    'operator': operator
-                },
-                to_dict(item_a),
-                to_dict(item_b),
-            ]
-        }
-
-
 # ---------------------------------------------------------------------------- #
 #                                    Strings                                   #
 # ---------------------------------------------------------------------------- #
@@ -1076,15 +1025,6 @@ class LastCustomInputOfPlayer(String):
         self.function = 'playerCustomInput'
         self.options = {
             'player': to_dict(player),
-        }
-
-
-class Concat(String):
-    def __init__(self, text_a, text_b):
-        self.function = 'concat'
-        self.options = {
-            'textA': to_dict(text_a),
-            'textB': to_dict(text_b),
         }
 
 
@@ -1442,7 +1382,7 @@ class UnitParticle(Particle):
 # ---------------------------------------------------------------------------- #
 
 
-class ValueOfEntityVariable(EntityVariable):
+class ValueOfEntityVariable(EntityVariableBase):
     def __init__(self, entity_variable_type, entity):
         self.function = 'getValueOfEntityVariable'
         self.data_type = entity_variable_type.data_type
@@ -1457,7 +1397,7 @@ class ValueOfEntityVariable(EntityVariable):
 # ---------------------------------------------------------------------------- #
 
 
-class ValueOfPlayerVariable(PlayerVariable):
+class ValueOfPlayerVariable(PlayerVariableBase):
     def __init__(self, player_variable_type, player):
         self.function = 'getValueOfPlayerVariable'
         self.data_type = player_variable_type.data_type
@@ -1518,7 +1458,7 @@ class DynamicRegion(Region):
 # ---------------------------------------------------------------------------- #
 
 
-class UnitTypeOfUnit(UnitType):
+class UnitTypeOfUnit(UnitTypeBase):
     def __init__(self, entity):
         self.function = 'getUnitTypeOfUnit'
         self.options = {
@@ -1526,13 +1466,13 @@ class UnitTypeOfUnit(UnitType):
         }
 
 
-class IdOfLastPurchasedUnitTypet(UnitType):
+class IdOfLastPurchasedUnitTypet(UnitTypeBase):
     def __init__(self):
         self.function = 'lastPurchasedUnitTypetId'
         self.options = {}
 
 
-class RandomUnitTypeFromUnitTypeGroup(UnitType):
+class RandomUnitTypeFromUnitTypeGroup(UnitTypeBase):
     def __init__(self, unit_type_group):
         self.function = 'getRandomUnitTypeFromUnitTypeGroup'
         self.options = {
@@ -1540,7 +1480,7 @@ class RandomUnitTypeFromUnitTypeGroup(UnitType):
         }
 
 
-class SelectedUnitType(UnitType):
+class SelectedUnitType(UnitTypeBase):
     def __init__(self):
         self.function = 'selectedUnitType'
         self.options = {}
@@ -1551,13 +1491,13 @@ class SelectedUnitType(UnitType):
 # ---------------------------------------------------------------------------- #
 
 
-class SelectedItemType(ItemType):
+class SelectedItemType(ItemTypeBase):
     def __init__(self):
         self.function = 'selectedItemType'
         self.options = {}
 
 
-class ItemTypeOfItem(ItemType):
+class ItemTypeOfItem(ItemTypeBase):
     def __init__(self, entity):
         self.function = 'getItemTypeOfItem'
         self.options = {
@@ -1565,7 +1505,7 @@ class ItemTypeOfItem(ItemType):
         }
 
 
-class RandomItemTypeFromItemTypeGroup(ItemType):
+class RandomItemTypeFromItemTypeGroup(ItemTypeBase):
     def __init__(self, item_type_group):
         self.function = 'getRandomItemTypeFromItemTypeGroup'
         self.options = {
@@ -1578,7 +1518,7 @@ class RandomItemTypeFromItemTypeGroup(ItemType):
 # ---------------------------------------------------------------------------- #
 
 
-class ProjectileTypeOfProjectile(ProjectileType):
+class ProjectileTypeOfProjectile(ProjectileTypeBase):
     def __init__(self, entity):
         self.function = 'getProjectileTypeOfProjectile'
         self.options = {
@@ -1591,7 +1531,7 @@ class ProjectileTypeOfProjectile(ProjectileType):
 # ---------------------------------------------------------------------------- #
 
 
-class PlayerTypeOfPlayer(PlayerType):
+class PlayerTypeOfPlayer(PlayerTypeBase):
     def __init__(self, player):
         self.function = 'playerTypeOfPlayer'
         self.options = {
@@ -1604,7 +1544,7 @@ class PlayerTypeOfPlayer(PlayerType):
 # ---------------------------------------------------------------------------- #
 
 
-class AttributeTypeOfAttribute(AttributeType):
+class AttributeTypeOfAttribute(AttributeTypeBase):
     def __init__(self, entity):
         self.function = 'getAttributeTypeOfAttribute'
         self.options = {
@@ -1941,3 +1881,58 @@ class AllRegionsInTheGame(RegionGroup):
 # ---------------------------------------------------------------------------- #
 #                                   Dialogues                                  #
 # ---------------------------------------------------------------------------- #
+
+
+# ---------------------------------------------------------------------------- #
+#                              Deprecated Actions                              #
+# ---------------------------------------------------------------------------- #
+
+
+class Condition(Function):
+    '''Deprecated, use python comparison operators instead'''
+
+    def __init__(self, item_a: Base, operator: str, item_b: Base):
+        self.item_a = item_a
+        self.operator = operator.upper()
+        self.item_b = item_b
+        if self.operator == 'AND' or self.operator == 'OR':
+            self.comparison = operator.lower()
+        else:
+            self.comparison = type_of_item(item_a) or type_of_item(item_b)
+
+    def to_dict(self):
+        return [
+            {
+                'operandType': self.comparison,
+                'operator': self.operator,
+            },
+            to_dict(self.item_a),
+            to_dict(self.item_b)
+        ]
+
+
+class Calculation(Number):
+    '''Deprecated, use python arithmetic operators instead'''
+
+    def __init__(self, item_a: Number, operator: str, item_b: Number):
+        self.function = 'calculate'
+        self.options = {
+            'items': [
+                {
+                    'operator': operator
+                },
+                to_dict(item_a),
+                to_dict(item_b),
+            ]
+        }
+
+
+class Concat(String):
+    '''Deprecated, use python `+` operator instead'''
+
+    def __init__(self, text_a, text_b):
+        self.function = 'concat'
+        self.options = {
+            'textA': to_dict(text_a),
+            'textB': to_dict(text_b),
+        }

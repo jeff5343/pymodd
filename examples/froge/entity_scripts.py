@@ -6,7 +6,7 @@ from scripts import *
 
 class Pooper(EntityScripts):
     def _build(self):
-        self.entity_type = UnitTypes.POOPER
+        self.entity_type = UnitType.POOPER
         self.keybindings = {
             Key.LEFT_CLICK: KeyBehavior(self.use_item(), self.stop_using_item()),
             Key.B: KeyBehavior(open_shop(), None),
@@ -29,7 +29,7 @@ class Pooper(EntityScripts):
 
 class Frog(EntityScripts):
     def _build(self):
-        self.entity_type = UnitTypes.FROG
+        self.entity_type = UnitType.FROG
         self.keybindings = {
             
         }
