@@ -152,13 +152,15 @@ pub struct Script {
 
 impl Script {
     pub fn pymodd_function_name(&self) -> String {
-        let function_name = self.name.replace(['\'', '\"'], "").to_snake_case();
-        if is_valid_class_name(&function_name) {
-            function_name
-        } else if function_name.is_empty() {
-            self.key.to_string().to_lowercase()
-        } else {
+        let mut function_name = self.name.replace(['\'', '\"'], "").to_snake_case();
+        // use script key as name if script name is empty
+        if function_name.is_empty() {
+            function_name = self.key.to_string().to_lowercase()
+        }
+        if !is_valid_class_name(&function_name) {
             format!("q{function_name}")
+        } else {
+            function_name
         }
     }
 
