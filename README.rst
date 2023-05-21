@@ -4,7 +4,7 @@ pymodd
 
 |Build| |Version| |License|
 
-pymodd is a python package for creating modd.io games in python
+pymodd is a python package for creating and editing modd.io games in python
 
 .. |Build| image:: https://img.shields.io/github/actions/workflow/status/jeff5343/pymodd/CI.yml?label=CI&logo=github&style=plastic
    :alt: GitHub Workflow Status
@@ -18,38 +18,26 @@ Features
 
 - edit global and entity scripts
 - organize folders and scripts with a mapping file
+- dyanmically edit environment variables
 - a command to generate and compile a pymodd project
 
-Installing
-----------
+Documentation
+-------------
 
-**Python 3.8 or higher is required**
+The pymodd wiki is located at `github.com/jeff5343/pymodd/wiki <https://github.com/jeff5343/pymodd/wiki>`_
 
-To install the library run the following command:
+Here is a brief outline of the pages:
 
-.. code:: sh
-
-    # Linux/macOS
-    python3 -m pip install -U pymodd
-
-    # Windows
-    py -3 -m pip install -U pymodd
-
-
-Getting Started
----------------
-
-Export your modd game json file from the website and then generate a pymodd project by running the following command:
-
-.. code:: sh
-
-    pymodd generate-project [GAME_JSON_FILE_PATH]
+- `Introduction <https://github.com/jeff5343/pymodd/wiki>`_
+- `Install Guide <https://github.com/jeff5343/pymodd/wiki/Install-Guide>`_
+- `Generating and Compiling a Pymodd Project <https://github.com/jeff5343/pymodd/wiki/Generating-and-Compiling-a-Pymodd-Project>`_
+- `Pymodd Project Structure <https://github.com/jeff5343/pymodd/wiki/Pymodd-Project-Structure>`_
 
 
 Quick Script Example
 --------------------
 
-view the ``examples/froge`` directory for an example of a pymodd project
+view the ``examples/froge`` directory for a full example of a pymodd project
 
 .. code:: py
 
