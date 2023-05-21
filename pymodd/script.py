@@ -307,6 +307,7 @@ class Trigger(Enum):
     UNIT_ATTRIBUTE_BECOMES_FULL = 'unitAttributeBecomesFull'
     UNIT_DROPPED_AN_ITEM = 'unitDroppedAnItem'
     UNIT_ENTERS_REGION = 'unitEntersRegion'
+    UNIT_LEAVES_REGION = 'unitLeavesRegion'
     UNIT_TOUCHES_ITEM = 'unitTouchesItem'
     UNIT_PICKED_AN_ITEM = 'unitPickedAnItem'
     UNIT_TOUCHES_UNIT = 'unitTouchesUnit'
@@ -334,6 +335,7 @@ class Trigger(Enum):
 
     ITEM_ATTRIBUTE_BECOMES_FULL = 'itemAttributeBecomesFull'
     ITEM_ENTERS_REGION = 'itemEntersRegion'
+    ITEM_LEAVES_REGION = 'itemLeavesRegion'
     ITEM_TOUCHES_WALL = 'itemTouchesWall'
     ITEM_ATTRIBUTE_BECOMES_ZERO = 'itemAttributeBecomesZero'
     ITEM_IS_USED = 'itemIsUsed'
@@ -348,6 +350,7 @@ class Trigger(Enum):
     ENTITY_ATTRIBUTE_BECOMES_ZERO = 'entityAttributeBecomesZero'
     ENTITY_ATTRIBUTE_BECOMES_FULL = 'entityAttributeBecomesFull'
     ENTITY_ENTERS_REGION = 'entityEntersRegion'
+    ENTITY_LEAVES_REGION = 'entityLeavesRegion'
     ENTITY_GETS_ATTACKED = 'entityGetsAttacked'
 
     DEBRIS_ENTERS_REGION = 'debrisEntersRegion'
