@@ -26,7 +26,7 @@ Documentation
 
 The pymodd wiki is located at `github.com/jeff5343/pymodd/wiki <https://github.com/jeff5343/pymodd/wiki>`_
 
-A brief outline of the pages:
+A brief outline of the wiki:
 
 - `Introduction <https://github.com/jeff5343/pymodd/wiki>`_
 - `Install Guide <https://github.com/jeff5343/pymodd/wiki/Install-Guide>`_
