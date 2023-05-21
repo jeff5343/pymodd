@@ -18,7 +18,7 @@ Features
 
 - edit global and entity scripts
 - organize folders and scripts with a mapping file
-- dyanmically edit environment variables
+- edit environment variables
 - a command to generate and compile a pymodd project
 
 Documentation
@@ -26,7 +26,7 @@ Documentation
 
 The pymodd wiki is located at `github.com/jeff5343/pymodd/wiki <https://github.com/jeff5343/pymodd/wiki>`_
 
-Here is a brief outline of the pages:
+A brief outline of the pages:
 
 - `Introduction <https://github.com/jeff5343/pymodd/wiki>`_
 - `Install Guide <https://github.com/jeff5343/pymodd/wiki/Install-Guide>`_
@@ -37,7 +37,7 @@ Here is a brief outline of the pages:
 Quick Script Example
 --------------------
 
-view the ``examples/froge`` directory for a full example of a pymodd project
+view the ``examples/froge`` directory for an example of a pymodd project
 
 .. code:: py
 
