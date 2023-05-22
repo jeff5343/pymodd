@@ -18,30 +18,30 @@ VARIABLE_TYPE_CLASS_NAMES = [
 
 
 def generate_project(args):
-    json_file_path = args.json_file_path
+    json_file = Path(args.json_file_path)
     if args.json_file_path == 'default-template':
-        json_file_path = (Path(__file__).parent /
-                          '../utils/Default Game.json').resolve()
-    if not os.path.isfile(json_file_path):
+        json_file = Path(__file__).parent.parent.joinpath(
+            'utils', 'Default Game.json')
+    if not Path.exists(json_file):
         _pymodd_helper.log_error('invalid json file path!')
         return
 
     _pymodd_helper.generate_project_from_json_file_content(
-        open(json_file_path, 'r').read())
+        json_file.read_text())
 
 
 def compile_project(_args):
-    required_files = ['mapping.py']
+    required_files = [Path('mapping.py')]
     for file in required_files:
-        if not os.path.isfile(file):
+        if not Path.exists(file):
             _pymodd_helper.log_error(
-                f'{file} file not found: is your current working directory a pymodd project?')
+                f'{file.name} file not found: is your current working directory a pymodd project?')
             return
 
-    project_directory_name = os.getcwd().split(os.sep)[-1]
+    project_directory_name = Path.cwd().name
     _pymodd_helper.log_cli_start_message("Compiling", project_directory_name)
 
-    sys.path.append(os.path.abspath(f'../{project_directory_name}/'))
+    sys.path.append(str(Path.cwd().absolute()))
     project_data = runpy.run_path('mapping.py')
 
     game_classes = find_game_classes_in_project_data(project_data)
@@ -58,12 +58,10 @@ def compile_project(_args):
         project_data)
     game = game_classes[0]('utils/game.json', variable_classes, project_data)
 
-    compiled_json_output_path = f'output/{game.name}.json'
-    if not os.path.exists('output/'):
-        os.makedirs('output/')
-    with open(f'{compiled_json_output_path}', 'w') as file:
-        file.write(json.dumps(game.to_dict(), indent=4))
-    _pymodd_helper.log_success(f'{compiled_json_output_path} written')
+    compiled_json_file = Path(f'output/{game.name}.json')
+    compiled_json_file.parent.mkdir(parents=True, exist_ok=True)
+    compiled_json_file.write_text(json.dumps(game.to_dict(), indent=4))
+    _pymodd_helper.log_success(f'{compiled_json_file} written')
 
     _pymodd_helper.log_cli_end_message("compilation", True)
 

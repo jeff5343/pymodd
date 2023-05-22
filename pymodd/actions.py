@@ -544,6 +544,16 @@ def emit_particle_once_at_position(particle_type, position, comment=None, disabl
 
 
 @action
+def emit_particle_attached_to_entity(particle_type, angle, entity, comment=None, disabled=False, run_on_client=False):
+    return {
+        'type': 'emitParticleAttachedToEntity',
+        'particle_type': to_dict(particle_type),
+        'angle': to_dict(angle),
+        'entity': to_dict(entity),
+    }
+
+
+@action
 def set_velocity_of_entity(velocity_x: Number, velocity_y: Number, entity, comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'setVelocityOfEntityXY',
@@ -1472,6 +1482,7 @@ def command_ai_to_idle(unit, comment=None, disabled=False, run_on_client=False):
 # ---------------------------------------------------------------------------- #
 #                              Deprecated Actions                              #
 # ---------------------------------------------------------------------------- #
+
 
 @action
 def break_loop(comment=None, disabled=False, run_on_client=False):
