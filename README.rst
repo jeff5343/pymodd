@@ -6,7 +6,7 @@ pymodd
 
 pymodd is a python package for creating and editing modd.io games in python
 
-.. |Build| image:: https://img.shields.io/github/actions/workflow/status/jeff5343/pymodd/CI.yml?label=CI&logo=github&style=plastic
+.. |Build| image:: https://img.shields.io/github/actions/workflow/status/jeff5343/pymodd/test.yml?label=CI&logo=github&style=plastic
    :alt: GitHub Workflow Status
 .. |Version| image:: https://img.shields.io/pypi/v/pymodd?style=plastic
    :alt: PyPI
