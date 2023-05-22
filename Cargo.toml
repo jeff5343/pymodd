@@ -15,4 +15,3 @@ serde_json = { version = "1.0", features = ["unbounded_depth"] }
 serde_stacker = "0.1.8"
 heck = "0.4.0"
 crossterm = "0.26.0"
-openssl = { version = "0.10", features = ["vendored"] }
