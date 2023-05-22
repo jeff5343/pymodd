@@ -1,0 +1,22 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test_pymodd_generator:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: update local toolchain
+        run: |
+          rustup update
+      - name: Cargo test
+        run: |
+          cd src
+          cargo check
+          cargo test --all
