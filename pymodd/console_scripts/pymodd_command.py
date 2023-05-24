@@ -91,13 +91,17 @@ def find_variable_classes_in_project_data(project_data: dict):
 
 def main_cli():
     parser = ArgumentParser(prog='pymodd')
+    parser.set_defaults(func=lambda _: parser.print_help())
     subparsers = parser.add_subparsers(
-        title='subcommands', description='valid subcommands')
+        title='subcommands', description='generate-project, compile', metavar='')
 
     parser_generate_project = subparsers.add_parser(
-        'generate-project', description='Parse a modd.io json file into a pymodd project')
+        'generate-project', description='Generate a pymodd project from a modd.io json file')
     parser_generate_project.add_argument(
-        'json_file_path', type=str, help='the path of the modd.io json file')
+        'json_file_path',
+        type=str,
+        help='the path of the modd.io json file. to generate a default project, fill in `default-template` instead'
+    )
     parser_generate_project.set_defaults(func=generate_project)
 
     parser_build = subparsers.add_parser(
