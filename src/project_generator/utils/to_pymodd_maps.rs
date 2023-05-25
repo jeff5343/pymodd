@@ -135,7 +135,11 @@ fn generate_functions_to_pymodd_structure_map() -> HashMap<String, PymoddStructu
     );
 
     let function_classes: Vec<&str> = PYMODD_FUNCTIONS_FILE_CONTENT
-        .split("\n\n\n")
+        .split(if cfg!(windows) {
+            "\r\n\r\n\r\n"
+        } else {
+            "\n\n\n"
+        })
         .skip(5)
         .collect();
     function_classes.into_iter().for_each(|class_content| {
