@@ -69,7 +69,11 @@ fn generate_to_pymodd_enums_map_for_type(
 fn generate_actions_to_pymodd_structure_map() -> HashMap<String, PymoddStructure> {
     let mut actions_to_structure: HashMap<String, PymoddStructure> = HashMap::new();
     let action_functions: Vec<&str> = PYMODD_ACTIONS_FILE_CONTENT
-        .split("\n\n\n")
+        .split(if cfg!(windows) {
+            "\r\n\r\n\r\n"
+        } else {
+            "\n\n\n"
+        })
         .skip(3)
         .collect();
     action_functions.into_iter().for_each(|function_content| {
