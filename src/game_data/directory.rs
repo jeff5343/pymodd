@@ -11,6 +11,104 @@ use super::actions::{self, Action};
 const UNDEFINED_STRING: &str = "UNDEFINED";
 
 #[derive(Debug, PartialEq, Eq)]
+pub struct Directory {
+    pub children: Vec<DirectoryItem>,
+    pub name: String,
+    key: String,
+}
+
+impl Directory {
+    pub fn parse(scripts: &Value) -> Directory {
+        Directory {
+            children: root_children_from_scripts_data(scripts),
+            name: String::from("/"),
+            key: String::from("root"),
+        }
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.children.is_empty()
+    }
+
+    pub fn find_item_with_key(&self, key: &str) -> Option<DirectoryIterItem> {
+        self.iter_flattened().find(|item| match item {
+            DirectoryIterItem::StartOfDirectory(dir) => dir.key == key,
+            DirectoryIterItem::Script(script) => script.key == key,
+            _ => false,
+        })
+    }
+}
+
+fn root_children_from_scripts_data(scripts: &Value) -> Vec<DirectoryItem> {
+    let empty_map = Map::new();
+    let mut items: Vec<&Value> =
+        sort_items_by_order(scripts.as_object().unwrap_or(&empty_map).values());
+
+    // filter out root level scripts and directories
+    let mut children: Vec<DirectoryItem> = remove_children_of_parent_in_items(None, &mut items)
+        .into_iter()
+        .map(|val| DirectoryItem::parse(val))
+        .collect();
+
+    let mut stack: Vec<&mut DirectoryItem> = children.iter_mut().collect();
+    while stack.len() > 0 {
+        if let DirectoryItem::Directory(directory) = stack.pop().unwrap() {
+            directory.children.extend(
+                remove_children_of_parent_in_items(Some(&directory.key), &mut items)
+                    .into_iter()
+                    .map(|val| DirectoryItem::parse(val)),
+            );
+
+            stack.extend(
+                directory
+                    .children
+                    .iter_mut()
+                    .collect::<Vec<&mut DirectoryItem>>(),
+            );
+        }
+    }
+    children
+}
+
+fn sort_items_by_order(items: Values) -> Vec<&Value> {
+    let mut items: Vec<&Value> = items.collect();
+    items.sort_by(|item_a, item_b| {
+        item_a
+            .get("order")
+            .unwrap_or(&Value::Null)
+            .as_i64()
+            .unwrap_or(-1)
+            .cmp(
+                &item_b
+                    .get("order")
+                    .unwrap_or(&Value::Null)
+                    .as_i64()
+                    .unwrap_or(-1),
+            )
+    });
+    items
+}
+
+/// The key of the root directory is `None`
+///
+/// Returns the removed children
+fn remove_children_of_parent_in_items<'a>(
+    parent_key: Option<&str>,
+    items: &mut Vec<&'a Value>,
+) -> Vec<&'a Value> {
+    let mut children = Vec::new();
+    items.retain(|&item| {
+        let item_parent = item.get("parent").unwrap_or(&Value::Null).as_str();
+        if item_parent == parent_key {
+            children.push(item);
+            return false;
+        }
+        true
+    });
+    children
+}
+
+#[derive(Debug, PartialEq, Eq)]
 pub enum DirectoryItem {
     Directory(Directory),
     Script(Script),
@@ -48,98 +146,6 @@ impl DirectoryItem {
             }),
         }
     }
-}
-
-#[derive(Debug, PartialEq, Eq)]
-pub struct Directory {
-    pub children: Vec<DirectoryItem>,
-    pub name: String,
-    key: String,
-}
-
-impl Directory {
-    pub fn parse(scripts: &Value) -> Directory {
-        Directory {
-            children: root_children_from_scripts_data(scripts),
-            name: String::from("/"),
-            key: String::from("root"),
-        }
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.children.is_empty()
-    }
-
-    pub fn find_item_with_key(&self, key: &str) -> Option<DirectoryIterItem> {
-        self.iter_flattened().find(|item| match item {
-            DirectoryIterItem::StartOfDirectory(dir) => dir.key == key,
-            DirectoryIterItem::Script(script) => script.key == key,
-            _ => false,
-        })
-    }
-}
-
-fn root_children_from_scripts_data(scripts: &Value) -> Vec<DirectoryItem> {
-    let empty_map = Map::new();
-    let mut items: Vec<&Value> =
-        sort_based_on_order(scripts.as_object().unwrap_or(&empty_map).values());
-
-    // filter out root level scripts and directories
-    let mut children = filter_out_children_of_parent(&mut items, None);
-
-    let mut stack: Vec<&mut DirectoryItem> = children.iter_mut().collect();
-    while stack.len() > 0 {
-        if let DirectoryItem::Directory(directory) = stack.pop().unwrap() {
-            directory.children.extend(filter_out_children_of_parent(
-                &mut items,
-                Some(&directory.key),
-            ));
-
-            stack.extend(
-                directory
-                    .children
-                    .iter_mut()
-                    .collect::<Vec<&mut DirectoryItem>>(),
-            );
-        }
-    }
-    children
-}
-
-fn sort_based_on_order(items: Values) -> Vec<&Value> {
-    let mut items: Vec<&Value> = items.collect();
-    items.sort_by(|item_a, item_b| {
-        item_a
-            .get("order")
-            .unwrap_or(&Value::Null)
-            .as_i64()
-            .unwrap_or(-1)
-            .cmp(
-                &item_b
-                    .get("order")
-                    .unwrap_or(&Value::Null)
-                    .as_i64()
-                    .unwrap_or(-1),
-            )
-    });
-    items
-}
-
-/// `parent_name: None` represents the root
-fn filter_out_children_of_parent(
-    items: &mut Vec<&Value>,
-    parent_key: Option<&str>,
-) -> Vec<DirectoryItem> {
-    let mut children = Vec::new();
-    items.retain(|item| {
-        let item_parent = item.get("parent").unwrap_or(&Value::Null).as_str();
-        if item_parent == parent_key {
-            children.push(DirectoryItem::parse(&item));
-            return false;
-        }
-        true
-    });
-    children
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -188,7 +194,7 @@ mod tests {
         },
     };
 
-    use super::filter_out_children_of_parent;
+    use super::remove_children_of_parent_in_items;
 
     impl Directory {
         pub fn new(name: &str, key: &str, children: Vec<DirectoryItem>) -> Directory {
@@ -276,7 +282,11 @@ mod tests {
         let mut items: Vec<&Value> = data.as_array().unwrap().iter().collect();
 
         assert_eq!(
-            filter_out_children_of_parent(&mut items, Some("31IAD2B")).as_slice(),
+            remove_children_of_parent_in_items(Some("31IAD2B"), &mut items)
+                .into_iter()
+                .map(|val| DirectoryItem::parse(val))
+                .collect::<Vec<DirectoryItem>>()
+                .as_slice(),
             [
                 DirectoryItem::Script(Script::new("change_state", "SDUW31W", vec![], Vec::new())),
                 DirectoryItem::Script(Script::new("check_players", "FWJ31WD", vec![], Vec::new())),
