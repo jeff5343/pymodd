@@ -44,7 +44,7 @@ fn root_children_from_scripts_data(scripts: &Value) -> Vec<DirectoryItem> {
     let mut items: Vec<&Value> =
         sort_items_by_order(scripts.as_object().unwrap_or(&empty_map).values());
 
-    // filter out root level scripts and directories
+    // remove root level scripts and directories
     let mut children: Vec<DirectoryItem> = remove_children_of_parent_in_items(None, &mut items)
         .into_iter()
         .map(|val| DirectoryItem::parse(val))
@@ -67,6 +67,9 @@ fn root_children_from_scripts_data(scripts: &Value) -> Vec<DirectoryItem> {
             );
         }
     }
+    // before returning the children, apply some kinda function to find duplicate pymodd script
+    // names and change them. or do this in scripts_file.rs on the root directory before parsing
+    // scripts? idk this sounds stupid. i like the first idea better.
     children
 }
 
@@ -126,18 +129,20 @@ fn parse_key_of_item_to_string(key: &str, item_data: &Value) -> String {
 impl DirectoryItem {
     fn parse(item_data: &Value) -> DirectoryItem {
         match item_data.get("actions") {
-            Some(actions) => DirectoryItem::Script(Script {
-                name: parse_key_of_item_to_string("name", &item_data),
-                key: parse_key_of_item_to_string("key", &item_data),
-                triggers: item_data
-                    .get("triggers")
-                    .unwrap_or(&Value::Null)
-                    .as_array()
-                    .unwrap_or(&Vec::new())
-                    .into_iter()
-                    .map(|trigger| parse_key_of_item_to_string("type", &trigger))
-                    .collect(),
-                actions: actions::parse_actions(actions.as_array().unwrap_or(&Vec::new())),
+            Some(actions) => DirectoryItem::Script({
+                Script::new(
+                    parse_key_of_item_to_string("name", &item_data),
+                    parse_key_of_item_to_string("key", &item_data),
+                    item_data
+                        .get("triggers")
+                        .unwrap_or(&Value::Null)
+                        .as_array()
+                        .unwrap_or(&Vec::new())
+                        .into_iter()
+                        .map(|trigger| parse_key_of_item_to_string("type", &trigger))
+                        .collect(),
+                    actions::parse_actions(actions.as_array().unwrap_or(&Vec::new())),
+                )
             }),
             None => DirectoryItem::Directory(Directory {
                 children: Vec::new(),
@@ -151,22 +156,37 @@ impl DirectoryItem {
 #[derive(Debug, PartialEq, Eq)]
 pub struct Script {
     pub name: String,
+    pub function_name: String,
     pub key: String,
     pub triggers: Vec<String>,
     pub actions: Vec<Action>,
 }
 
 impl Script {
-    pub fn pymodd_function_name(&self) -> String {
-        let mut function_name = self.name.replace(['\'', '\"'], "").to_snake_case();
-        // use script key as name if script name is empty
+    fn new(name: String, key: String, triggers: Vec<String>, actions: Vec<Action>) -> Script {
+        Script {
+            function_name: Script::function_name_of(&name).unwrap_or(key.to_lowercase()),
+            name,
+            key,
+            triggers,
+            actions,
+        }
+    }
+
+    fn function_name_of(name: &str) -> Option<String> {
+        let function_name = name
+            .replace(
+                |c: char| !(c.is_alphabetic() || c.is_digit(10) || [' ', '_'].contains(&c)),
+                "",
+            )
+            .to_snake_case();
         if function_name.is_empty() {
-            function_name = self.key.to_string().to_lowercase()
+            return None;
         }
         if !is_valid_class_name(&function_name) {
-            format!("q{function_name}")
+            Some(format!("_{function_name}"))
         } else {
-            function_name
+            Some(function_name)
         }
     }
 
@@ -207,16 +227,17 @@ mod tests {
     }
 
     impl Script {
-        pub fn new(name: &str, key: &str, triggers: Vec<&str>, actions: Vec<Action>) -> Script {
-            Script {
-                name: name.to_string(),
-                key: key.to_string(),
-                triggers: triggers
+        /// q (quick) new function
+        pub fn qnew(name: &str, key: &str, triggers: Vec<&str>, actions: Vec<Action>) -> Script {
+            Script::new(
+                name.to_string(),
+                key.to_string(),
+                triggers
                     .into_iter()
                     .map(|string| string.to_string())
                     .collect(),
                 actions,
-            }
+            )
         }
     }
 
@@ -239,18 +260,18 @@ mod tests {
             }))
             .as_slice(),
             [
-                DirectoryItem::Script(Script::new("initialize", "WI31HDK", vec!["gameStart"], Vec::new())),
+                DirectoryItem::Script(Script::qnew("initialize", "WI31HDK", vec!["gameStart"], Vec::new())),
                 DirectoryItem::Directory(Directory::new(
                     "utils",
                     "31IAD2B",
                     vec![
-                        DirectoryItem::Script(Script::new(
+                        DirectoryItem::Script(Script::qnew(
                             "change_state",
                             "SDUW31W",
                             vec![],
                             Vec::new()
                         )),
-                        DirectoryItem::Script(Script::new(
+                        DirectoryItem::Script(Script::qnew(
                             "check_players",
                             UNDEFINED_STRING,
                             vec!["secondTick"],
@@ -259,7 +280,7 @@ mod tests {
                         DirectoryItem::Directory(Directory::new(
                             "other",
                             "HWI31WQ",
-                            vec![DirectoryItem::Script(Script::new(
+                            vec![DirectoryItem::Script(Script::qnew(
                                 "destroy_server",
                                 "JK32Q03",
                                 vec![],
@@ -288,8 +309,8 @@ mod tests {
                 .collect::<Vec<DirectoryItem>>()
                 .as_slice(),
             [
-                DirectoryItem::Script(Script::new("change_state", "SDUW31W", vec![], Vec::new())),
-                DirectoryItem::Script(Script::new("check_players", "FWJ31WD", vec![], Vec::new())),
+                DirectoryItem::Script(Script::qnew("change_state", "SDUW31W", vec![], Vec::new())),
+                DirectoryItem::Script(Script::qnew("check_players", "FWJ31WD", vec![], Vec::new())),
             ]
         );
         assert_eq!(

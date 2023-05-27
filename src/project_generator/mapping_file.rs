@@ -75,7 +75,7 @@ pub fn build_directory_items_contents(directory: &Directory) -> Vec<String> {
                 format!(
                     "{}{}(),",
                     "\t".repeat(curr_depth),
-                    script.pymodd_function_name()
+                    script.function_name
                 )
             }
             DirectoryIterItem::DirectoryEnd => {
