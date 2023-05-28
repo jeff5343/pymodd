@@ -16,7 +16,7 @@ pub(crate) fn is_valid_class_name(class_name: &str) -> bool {
 }
 
 fn string_starts_with_a_number(string: &str) -> bool {
-    string.chars().next().unwrap().is_numeric()
+    string.chars().next().unwrap().is_digit(10)
 }
 
 fn type_conflicts_with_a_category_class_name(class_name: &str) -> bool {
