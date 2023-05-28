@@ -153,14 +153,14 @@ fn build_content_of_script_with_key(
                 .find_item_with_key(&key)
                 .unwrap_or(DirectoryIterItem::DirectoryEnd)
             {
-                return format!("self.{}()", script.pymodd_function_name());
+                return format!("self.{}()", script.function_name);
             };
         } else {
             if let DirectoryIterItem::Script(script) = game_directory
                 .find_item_with_key(&key)
                 .unwrap_or(DirectoryIterItem::DirectoryEnd)
             {
-                return format!("{}()", script.pymodd_function_name());
+                return format!("{}()", script.function_name);
             };
         };
     }
@@ -270,12 +270,12 @@ mod tests {
                 &Directory::new(
                     "root",
                     "null",
-                    vec![DirectoryItem::Script(Script {
-                        name: String::from("EndGame"),
-                        key: String::from("3FJ31WD"),
-                        triggers: Vec::new(),
-                        actions: Vec::new(),
-                    })]
+                    vec![DirectoryItem::Script(Script::qnew(
+                        "EndGame",
+                        "3FJ31WD",
+                        Vec::new(),
+                        Vec::new(),
+                    ))]
                 )
             )
             .as_str(),

@@ -86,7 +86,7 @@ impl<'a> ScriptsContentBuilder<'a> {
     }
 
     pub fn build_script_content(&self, script: &Script) -> String {
-        let function_name = script.pymodd_function_name();
+        let function_name = &script.function_name;
         format!(
             "@script(triggers=[{}]{})\n\
             def {function_name}():\n\
@@ -413,7 +413,7 @@ impl<'a> ScriptsContentBuilder<'a> {
                 if item_with_key.is_some() {
                     if let DirectoryIterItem::Script(script) = item_with_key.unwrap() {
                         // run_script action accepts Script objects, not keys
-                        return format!("{}()", script.pymodd_function_name());
+                        return format!("{}()", script.function_name);
                     }
                 }
                 String::from("None")
@@ -517,7 +517,7 @@ mod tests {
                 &CategoriesToVariables::new(HashMap::new()),
                 &Directory::new("root", "null", Vec::new())
             )
-            .build_script_content(&Script::new(
+            .build_script_content(&Script::qnew(
                 "initialize",
                 "WI31HDK",
                 vec!["gameStart"],
@@ -538,7 +538,7 @@ mod tests {
                 &CategoriesToVariables::new(HashMap::new()),
                 &Directory::new("root", "null", Vec::new())
             )
-            .build_script_content(&Script::new(
+            .build_script_content(&Script::qnew(
                 "【 𝚒𝚗𝚒𝚝𝚒𝚊𝚕𝚒𝚣𝚎 イ】",
                 "WI31HDK",
                 vec!["gameStart"],
@@ -559,12 +559,7 @@ mod tests {
                 &CategoriesToVariables::new(HashMap::new()),
                 &Directory::new("root", "null", Vec::new())
             )
-            .build_script_content(&Script::new(
-                "",
-                "WI31HDK",
-                vec![],
-                Vec::new()
-            )),
+            .build_script_content(&Script::qnew("", "WI31HDK", vec![], Vec::new())),
             String::from(format!(
                 "@script(triggers=[])\n\
                 def wi31hdk():\n\
@@ -580,7 +575,7 @@ mod tests {
                 &CategoriesToVariables::new(HashMap::new()),
                 &Directory::new("root", "null", Vec::new())
             )
-            .build_script_content(&Script::new(
+            .build_script_content(&Script::qnew(
                 "initialize",
                 "WI31HDK",
                 vec!["gameStart"],
@@ -1191,12 +1186,12 @@ mod tests {
                     vec![DirectoryItem::Directory(Directory::new(
                         "utils",
                         "n3DhW3",
-                        vec![DirectoryItem::Script(Script {
-                            name: String::from("spawn boss"),
-                            key: String::from("If2aW3B"),
-                            triggers: Vec::new(),
-                            actions: Vec::new()
-                        })]
+                        vec![DirectoryItem::Script(Script::qnew(
+                            "spawn boss",
+                            "If2aW3B",
+                            Vec::new(),
+                            Vec::new()
+                        ))]
                     ))]
                 )
             )
