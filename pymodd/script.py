@@ -1,4 +1,5 @@
 import ast
+import types
 import inspect
 import textwrap
 from enum import Enum
@@ -31,7 +32,8 @@ class Script(File):
         script_actions_compiler = ScriptActionsCompiler(project_globals_data)
         actions_data = None
         try:
-            actions_data = script_actions_compiler.compile_script(self)
+            actions_data = script_actions_compiler.compile(
+                self.build_actions_function)
         except ScriptActionsCompileError as compile_error:
             script_source_file = inspect.getsourcefile(
                 self.build_actions_function)
@@ -98,12 +100,12 @@ class ScriptActionsCompiler(ast.NodeVisitor):
     def __init__(self, project_globals_data):
         self.project_globals_data = project_globals_data
 
-    def compile_script(self, script: Script):
+    def compile(self, build_actions_function: types.FunctionType):
         self.depth = 0
         self.depth_to_locals_data = {0: {}}
         self.actions_data = []
         tree = ast.parse(textwrap.dedent(
-            inspect.getsource(script.build_actions_function)))
+            inspect.getsource(build_actions_function)))
         self.visit(tree)
         return self.actions_data
 
@@ -125,7 +127,10 @@ class ScriptActionsCompiler(ast.NodeVisitor):
             else:
                 action_data = visitor(node)
             if self.depth == 0:
-                self.actions_data.append(action_data)
+                if isinstance(action_data, list):
+                    self.actions_data.extend(action_data)
+                else:
+                    self.actions_data.append(action_data)
             return action_data
         except Exception as error:
             raise ScriptActionsCompileError(
@@ -136,6 +141,8 @@ class ScriptActionsCompiler(ast.NodeVisitor):
 
     def visit_Expr(self, node: ast.Expr):
         action = self.eval_node(node.value)
+        if isinstance(action, HelperAction):
+            return ScriptActionsCompiler(self.project_globals_data).compile(action.build_actions_function)
         return action
 
     def visit_If(self, node: ast.If):
@@ -236,7 +243,10 @@ class ScriptActionsCompiler(ast.NodeVisitor):
         for node in node_body:
             action_data = self.visit(node)
             if action_data is not None:
-                actions_data.append(action_data)
+                if isinstance(action_data, list):
+                    actions_data.extend(action_data)
+                else:
+                    actions_data.append(action_data)
         return actions_data
 
     def get_current_locals_data(self):
@@ -287,6 +297,23 @@ def to_dict(obj):
     if isinstance(obj, Enum):
         return obj.value
     return obj
+
+
+class HelperAction:
+    def __init__(self):
+        self.build_actions_function = None
+
+
+def helper_action(func):
+    '''turn a function into helper action that can be called in any script'''
+    def wrapper_helper_action(func):
+        class NewHelperAction(HelperAction):
+            def __init__(self):
+                super().__init__()
+                self.build_actions_function = func
+
+        return NewHelperAction
+    return wrapper_helper_action(func)
 
 
 # ---------------------------------------------------------------------------- #
