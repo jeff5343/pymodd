@@ -26,7 +26,7 @@ Documentation
 
 The pymodd wiki is located at `github.com/jeff5343/pymodd/wiki <https://github.com/jeff5343/pymodd/wiki>`_
 
-A brief outline of the wiki:
+A brief outline:
 
 - `Introduction <https://github.com/jeff5343/pymodd/wiki>`_
 - `Install Guide <https://github.com/jeff5343/pymodd/wiki/Install-Guide>`_
@@ -37,7 +37,7 @@ A brief outline of the wiki:
 Quick Script Example
 --------------------
 
-view the ``examples/froge`` directory for an example of a pymodd project
+view the ``examples/froge`` directory in the `github repository <https://github.com/jeff5343/pymodd>`_ to view the entire pymodd project
 
 .. code:: py
 
