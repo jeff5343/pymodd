@@ -233,6 +233,14 @@ class LastCreatedUnit(Unit):
         self.options = {}
 
 
+class GetPlayerSelectedUnit(Unit):
+    def __init__(self, player):
+        self.function = 'getPlayerSelectedUnit'
+        self.options = {
+            'player': to_dict(player),
+        }
+
+
 class OwnerOfItem(Unit):
     def __init__(self, entity):
         self.function = 'getOwnerOfItem'
@@ -489,6 +497,16 @@ class PositionOfEntity(Position):
         self.function = 'getEntityPosition'
         self.options = {
             'entity': to_dict(entity),
+        }
+
+
+class GetPositionInFrontOfPosition(Position):
+    def __init__(self, position, distance, angle):
+        self.function = 'getPositionInFrontOfPosition'
+        self.options = {
+            'position': to_dict(position),
+            'distance': to_dict(distance),
+            'angle': to_dict(angle),
         }
 
 
@@ -1198,6 +1216,22 @@ class NumberToString(String):
         }
 
 
+class NumberToDegrees(Number):
+    def __init__(self, number):
+        self.function = 'toDegrees'
+        self.options = {
+            'number': to_dict(number),
+        }
+
+
+class NumberToRadians(Number):
+    def __init__(self, number):
+        self.function = 'toRadians'
+        self.options = {
+            'number': to_dict(number),
+        }
+
+
 # ---------------------------------------------------------------------------- #
 #                                   Booleans                                   #
 # ---------------------------------------------------------------------------- #
@@ -1214,6 +1248,14 @@ class Boolean(Function):
 class IsPlayerLoggedIn(Boolean):
     def __init__(self, player):
         self.function = 'isPlayerLoggedIn'
+        self.options = {
+            'player': to_dict(player),
+        }
+
+
+class PlayerIsCreator(Boolean):
+    def __init__(self, player):
+        self.function = 'playerIsCreator'
         self.options = {
             'player': to_dict(player),
         }

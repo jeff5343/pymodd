@@ -1229,6 +1229,33 @@ def command_ai_to_attack_unit(unit, target_unit, comment=None, disabled=False, r
     }
 
 
+@action
+def set_max_attack_range(unit, number, comment=None, disabled=False, run_on_client=False):
+    return {
+        'type': 'setMaxAttackRange',
+        'unit': to_dict(unit),
+        'number': to_dict(number),
+    }
+
+
+@action
+def set_let_go_distance(unit, number, comment=None, disabled=False, run_on_client=False):
+    return {
+        'type': 'setLetGoDistance',
+        'unit': to_dict(unit),
+        'number': to_dict(number),
+    }
+
+
+@action
+def set_max_travel_distance(unit, number, comment=None, disabled=False, run_on_client=False):
+    return {
+        'type': 'setMaxTravelDistance',
+        'unit': to_dict(unit),
+        'number': to_dict(number),
+    }
+
+
 @ action
 def change_radius_of_sensor(radius: Number, sensor, comment=None, disabled=False, run_on_client=False):
     return {
