@@ -19,6 +19,13 @@ const EXCLUDED_ACTIONS: [&str; 2] = [
     "addPlayerToPlayerGroup",
 ];
 
+const EXCLUDED_FUNCTIONS: [&str; 2] = [
+    // already implemented in variable_types.py
+    "getVariable",
+    // not sure what this does
+    "getGlobalVariable",
+];
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("\nFetching modd.io editor data...");
     let mut triggers_data = fetch_modd_io_triggers_data()?;
@@ -77,6 +84,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .filter(|action| !EXCLUDED_ACTIONS.contains(&action.name.as_str()))
         .collect();
 
+    // remove excluded functions from missing functions
+    missing_functions = missing_functions
+        .into_iter()
+        .filter(|function| !EXCLUDED_FUNCTIONS.contains(&function.name.as_str()))
+        .collect();
+
     // log number of missing triggers
     println!(
         "  missing triggers: {}",
@@ -94,7 +107,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             "# auto generated\n\n\n{}\n",
             missing_triggers
                 .iter()
-                .map(|trigger_name| format!("{} = '{}'\n", trigger_name.to_shouty_snake_case(), trigger_name))
+                .map(|trigger_name| format!(
+                    "{} = '{}'\n",
+                    trigger_name.to_shouty_snake_case(),
+                    trigger_name
+                ))
                 .collect::<String>()
                 .trim_end()
         )?;

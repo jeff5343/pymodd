@@ -364,6 +364,8 @@ class Trigger(Enum):
     COIN_SEND_FAILURE_DUE_TO_DAILY_LIMIT = 'coinSendFailureDueToDailyLimit'
     COIN_SEND_FAILURE_DUE_TO_INSUFFICIENT_COINS = 'coinSendFailureDueToInsufficientCoins'
 
+    ON_POST_RESPONSE = 'onPostResponse'
+
 
 class UiTarget(Enum):
     TOP = 'top'

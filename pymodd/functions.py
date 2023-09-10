@@ -1017,6 +1017,40 @@ class UnitSensorRadius(Number):
         }
 
 
+class NumberToDegrees(Number):
+    def __init__(self, number):
+        self.function = 'toDegrees'
+        self.options = {
+            'number': to_dict(number),
+        }
+
+
+class NumberToRadians(Number):
+    def __init__(self, number):
+        self.function = 'toRadians'
+        self.options = {
+            'number': to_dict(number),
+        }
+
+
+class GetMapTileId(Number):
+    def __init__(self, x, y, layer):
+        self.function = 'getMapTileId'
+        self.options = {
+            'x': to_dict(x),
+            'y': to_dict(y),
+            'layer': to_dict(layer),
+        }
+
+
+class ElementCount(Number):
+    def __init__(self, object):
+        self.function = 'elementCount'
+        self.options = {
+            'object': to_dict(object),
+        }
+
+
 # ---------------------------------------------------------------------------- #
 #                                    Strings                                   #
 # ---------------------------------------------------------------------------- #
@@ -1216,21 +1250,33 @@ class NumberToString(String):
         }
 
 
-class NumberToDegrees(Number):
-    def __init__(self, number):
-        self.function = 'toDegrees'
+class GetMapJson(String):
+    def __init__(self, ):
+        self.function = 'getMapJson'
         self.options = {
-            'number': to_dict(number),
         }
 
 
-class NumberToRadians(Number):
-    def __init__(self, number):
-        self.function = 'toRadians'
+class LastReceivedPostResponse(String):
+    def __init__(self, ):
+        self.function = 'lastReceivedPostResponse'
         self.options = {
-            'number': to_dict(number),
         }
 
+
+class LastUpdatedVariableName(String):
+    def __init__(self, ):
+        self.function = 'lastUpdatedVariableName'
+        self.options = {
+        }
+
+
+class ObjectToString(String):
+    def __init__(self, object):
+        self.function = 'objectToString'
+        self.options = {
+            'object': to_dict(object),
+        }
 
 # ---------------------------------------------------------------------------- #
 #                                   Booleans                                   #
@@ -1378,6 +1424,56 @@ class IsPlayerAComputer(Boolean):
         self.function = 'isComputerPlayer'
         self.options = {
             'player is a computer': to_dict(player_is_a_computer),
+        }
+
+
+class RoleExistsForPlayer(Boolean):
+    def __init__(self, name, player):
+        self.function = 'roleExistsForPlayer'
+        self.options = {
+            'name': to_dict(name),
+            'player': to_dict(player),
+        }
+
+
+class StringIsANumber(Boolean):
+    def __init__(self, string_is_a_number):
+        self.function = 'stringIsANumber'
+        self.options = {
+            'string_is_a_number': to_dict(string_is_a_number),
+        }
+
+
+# ---------------------------------------------------------------------------- #
+#                                    Objects                                   #
+# ---------------------------------------------------------------------------- #
+
+
+class Object(Function):
+    pass
+
+
+class StringToObject(Object):
+    def __init__(self, string):
+        self.function = 'stringToObject'
+        self.options = {
+            'string': to_dict(string),
+        }
+
+
+class ElementFromObject(Object):
+    def __init__(self, key, object):
+        self.function = 'elementFromObject'
+        self.options = {
+            'key': to_dict(key),
+            'object': to_dict(object),
+        }
+
+
+class EmptyObject(Object):
+    def __init__(self, ):
+        self.function = 'emptyObject'
+        self.options = {
         }
 
 

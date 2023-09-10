@@ -92,7 +92,7 @@ def main_cli():
     parser = ArgumentParser(prog='pymodd')
     parser.set_defaults(func=lambda _: parser.print_help())
     subparsers = parser.add_subparsers(
-        title='subcommands', description='generate-project, compile', metavar='')
+        title='subcommands', description='generate-project, compile', metavar='', required=True)
 
     parser_generate_project = subparsers.add_parser(
         'generate-project', description='Generate a pymodd project from a modd.io json file')
