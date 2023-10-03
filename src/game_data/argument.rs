@@ -85,16 +85,23 @@ fn parse_arguments_of_operator_data(operator_data: &Value) -> Vec<Argument> {
         ),
         Argument::new(
             "operator",
-            ArgumentValue::Value(
-                arguments_of_operator_argument
+            ArgumentValue::Value({
+                let operator = arguments_of_operator_argument
                     .get(0)
-                    .unwrap_or(&Value::Null)
-                    .as_object()
-                    .unwrap_or(&Map::new())
-                    .get("operator")
-                    .unwrap_or(&Value::Null)
-                    .clone(),
-            ),
+                    .unwrap_or(&Value::Null);
+
+                // sometimes the operator string is passed in directly
+                match operator.as_object() {
+                    Some(operator_data) => operator_data
+                        .get("operator")
+                        .unwrap_or(&Value::Null)
+                        .clone(),
+                    None => operator
+                        .as_str()
+                        .map(|string| Value::String(string.to_owned()))
+                        .unwrap_or(Value::Null),
+                }
+            }),
         ),
         Argument::parse(
             "item_b",
@@ -563,6 +570,27 @@ mod tests {
                              1,
                              5
                         ]
+                })
+                .as_object()
+                .unwrap()
+            ),
+            Function::new(
+                "calculate",
+                vec![
+                    Argument::new("item_a", Val(json!(1))),
+                    Argument::new("operator", Val(Value::String("+".to_string()))),
+                    Argument::new("item_b", Val(json!(5))),
+                ]
+            )
+        );
+    }
+
+    #[test]
+    fn parse_calculate_function_without_operator_object() {
+        assert_eq!(
+            Function::parse(
+                &json!({
+                    "function": "calculate", "items": [ "+", 1, 5 ]
                 })
                 .as_object()
                 .unwrap()
