@@ -60,7 +60,7 @@ class Game(Base):
 
     def to_dict(self):
         # update global scripts
-        self.data['data']['scripts'] = self.flatten_scripts_data(self.scripts)
+        self.data['data']['scripts'] = self.flatten_scripts_data()
 
         # update data of each entity_type
         for entity_script in self.entity_scripts:
@@ -88,17 +88,17 @@ class Game(Base):
                 entity_keybindings_data.pop(unincluded_key)
         return self.data
 
-    def flatten_scripts_data(self, scripts):
+    def flatten_scripts_data(self):
         '''Takes all scripts out of folders, transforms them into json, and returns one dictionary with all of the game's script
 
         Returns:
             dict(str, dict): keys are script keys, values are datas of scripts
         '''
         flattened_scripts = {}
-        scripts_queue = scripts.copy()
+        scripts_queue = self.scripts.copy()
         while len(scripts_queue) > 0:
             script = scripts_queue.pop(0)
-            scripts_data = None
+            script_data = None
             # add folder's scripts to the queue
             if isinstance((folder := script), Folder):
                 script_data = folder.to_dict()
@@ -107,6 +107,18 @@ class Game(Base):
                 script_data = script.to_dict(self.project_globals_data)
             flattened_scripts[script_data['key']] = script_data
         return flattened_scripts
+
+    def find_script(self, script_name):
+        scripts_queue = self.scripts.copy()
+        while len(scripts_queue) > 0:
+            script = scripts_queue.pop(0)
+            # add folder's scripts to the queue
+            if isinstance((folder := script), Folder):
+                scripts_queue += folder.scripts
+                continue
+            if script.name == script_name:
+                return script
+        return None
 
 
 def variable_category_name_from_variable_class_name(variable_class_name):

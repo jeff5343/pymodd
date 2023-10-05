@@ -29,16 +29,13 @@ def generate_project(args):
         json_file.read_text())
 
 
-def compile_project(_args):
+def compile_project(args):
     required_files = [Path('mapping.py')]
     for file in required_files:
         if not Path.exists(file):
             _pymodd_helper.log_error(
                 f'{file.name} file not found: is your current working directory a pymodd project?')
             return
-
-    project_directory_name = Path.cwd().name
-    _pymodd_helper.log_cli_start_message("Compiling", project_directory_name)
 
     sys.path.append(str(Path.cwd().absolute()))
     project_data = runpy.run_path('mapping.py')
@@ -57,12 +54,70 @@ def compile_project(_args):
         project_data)
     game = game_classes[0]('utils/game.json', variable_classes, project_data)
 
-    compiled_json_file = Path(f'output/{game.name}.json')
-    compiled_json_file.parent.mkdir(parents=True, exist_ok=True)
-    compiled_json_file.write_text(json.dumps(game.to_dict(), indent=4))
-    _pymodd_helper.log_success(f'{compiled_json_file} written')
+    # create output directory
+    Path('output/').mkdir(parents=True, exist_ok=True)
 
-    _pymodd_helper.log_cli_end_message("compilation", True)
+    project_directory_name = Path.cwd().name
+    is_successful = True
+
+    if len(args.only_scripts) == 0:
+        # compile project if no scripts are given
+        _pymodd_helper.log_cli_start_message(
+            'Compiling', project_directory_name)
+        compiled_json_file = Path(f'output/{game.name}.json')
+        compiled_json_file.write_text(json.dumps(game.to_dict(), indent=4))
+        _pymodd_helper.log_success(f'{compiled_json_file} written')
+    else:
+        # compile scripts individually if they are provided
+        _pymodd_helper.log_cli_start_message(
+            'Compiling scripts for', project_directory_name)
+
+        for script_info in args.only_scripts:
+            script_info = script_info.split('/')
+
+            if len(script_info) not in range(2, 4):
+                is_successful = False
+                _pymodd_helper.log_error(
+                    'script must be provided in the format: `folder_id/script_function_name` or `entity_id/folder_id/script_function_name')
+                continue
+
+            script_data = None
+            output_file_name = None
+            if len(script_info) == 2:
+                # global scripts
+                [script_parent_id, script_function_name] = script_info
+                script_data = game.find_script(
+                    script_function_name.replace('_', ' ')
+                ).to_dict(game.project_globals_data)
+                script_data['parent'] = script_parent_id
+                output_file_name = script_function_name
+            else:
+                # entity scripts
+                [entity_id, script_parent_id, script_function_name] = script_info
+                for entity_script in game.entity_scripts:
+                    if entity_id != entity_script.entity_type.id:
+                        continue
+                    script_data = entity_script.find_script(
+                        script_function_name.replace('_', ' ')
+                    ).to_dict(game.project_globals_data)
+                    script_data['parent'] = script_parent_id
+                    break
+                output_file_name = f'{entity_id}-{script_function_name}'
+
+            if script_data is None:
+                _pymodd_helper.log_error(
+                    f'{script_function_name} script does not exist')
+                is_successful = False
+                continue
+
+            # write data
+            compiled_script_json_file = Path(
+                f'output/{output_file_name}.json')
+            compiled_script_json_file.write_text(json.dumps(
+                script_data))
+            _pymodd_helper.log_success(f'{compiled_script_json_file} written')
+
+    _pymodd_helper.log_cli_end_message("compilation", is_successful)
 
 
 def find_game_classes_in_project_data(project_data: dict):
@@ -103,9 +158,17 @@ def main_cli():
     )
     parser_generate_project.set_defaults(func=generate_project)
 
-    parser_build = subparsers.add_parser(
+    parser_compile = subparsers.add_parser(
         'compile', description='Compile a pymodd project into a modd.io json file')
-    parser_build.set_defaults(func=compile_project)
+    parser_compile.add_argument(
+        '--only-scripts',
+        nargs='*',
+        help='''
+            information of the scripts to compile.
+            for global scripts provide the script_folder_id/script_function_name: `W90gBX/game_over`.
+            for entity scripts provide the entity_id/script_folder_id/script_function_name: `2Di32W/K3Gd92/drop_item`.
+            will NOT compile the entire game''')
+    parser_compile.set_defaults(func=compile_project)
 
     args = parser.parse_args()
     args.func(args)
