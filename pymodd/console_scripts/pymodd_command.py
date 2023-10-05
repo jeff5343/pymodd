@@ -164,9 +164,9 @@ def main_cli():
         '--only-scripts',
         nargs='*',
         help='''
-            python function names of the scripts to compile.
+            information of the scripts to compile.
             for global scripts provide the script_folder_id/script_function_name: `W90gBX/game_over`.
-            for entity scripts provide the entity_id/script_folder_id/script_function_name: `2Di32W/K3Gd92/destroy_self`.
+            for entity scripts provide the entity_id/script_folder_id/script_function_name: `2Di32W/K3Gd92/drop_item`.
             will NOT compile the entire game''')
     parser_compile.set_defaults(func=compile_project)
 
