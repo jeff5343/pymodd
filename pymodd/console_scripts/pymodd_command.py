@@ -60,7 +60,7 @@ def compile_project(args):
     project_directory_name = Path.cwd().name
     is_successful = True
 
-    if len(args.only_scripts) == 0:
+    if args.only_scripts is None or len(args.only_scripts) == 0:
         # compile project if no scripts are given
         _pymodd_helper.log_cli_start_message(
             'Compiling', project_directory_name)

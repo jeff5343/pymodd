@@ -68,8 +68,7 @@ class Game(Base):
             entity_data = self.data['data'][entity_category][entity_id]
 
             # update entity scripts
-            entity_data['scripts'] = self.flatten_scripts_data(
-                entity_script.scripts)
+            entity_data['scripts'] = self.flatten_scripts_data()
 
             if entity_category != "unitTypes":
                 continue
