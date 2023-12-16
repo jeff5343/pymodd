@@ -1,5 +1,3 @@
-from .variable_types import (VariableType, AttributeTypeBase, EntityVariableBase, ItemTypeBase, PlayerTypeBase,
-                             PlayerVariableBase, ProjectileTypeBase, StateBase, UnitTypeBase, VariableBase)
 import pymodd
 from caseconverter import camelcase
 
@@ -69,6 +67,8 @@ class Function(Base):
 
 # only subclasses of Function requires these types
 # (also prevents a circular import)
+from .variable_types import (VariableType, AttributeTypeBase, EntityVariableBase, ItemTypeBase, PlayerTypeBase,
+                             PlayerVariableBase, ProjectileTypeBase, StateBase, UnitTypeBase, VariableBase)
 
 
 # ---------------------------------------------------------------------------- #
