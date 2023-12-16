@@ -296,8 +296,9 @@ def to_dict(obj):
 
 class Trigger(Enum):
     GAME_START = 'gameStart'
-    EVERY_FRAME = 'frameTick'
     EVERY_SECOND = 'secondTick'
+    EVERY_ENGINE_TICK = 'frameTick'
+    EVERY_RENDER_TICK = 'renderTick'
     SERVER_SHUTTING_DOWN = 'serverShuttingDown'
 
     UNIT_TOUCHES_WALL = 'unitTouchesWall'
@@ -318,6 +319,13 @@ class Trigger(Enum):
     UNIT_SELECTS_ITEM = 'unitSelectsItem'
     UNIT_SELECTS_INVENTORY_SLOT = 'unitSelectsInventorySlot'
     UNIT_ENTERS_SENSOR = 'unitEntersSensor'
+
+    THIS_UNIT_USES_ITEM = 'thisUnitUsesItem'
+    THIS_UNIT_STARTS_USING_AN_ITEM = 'thisUnitStartsUsingAnItem'
+    THIS_UNIT_STOPS_USING_AN_ITEM = 'thisUnitStopsUsingAnItem'
+    THIS_UNIT_SELECTS_ITEM = 'thisUnitSelectsItem'
+    THIS_UNIT_DROPPED_AN_ITEM = 'thisUnitDroppedAnItem'
+    THIS_UNIT_PICKED_UP_AN_ITEM = 'thisUnitPickedUpAnItem'
 
     PROJECTILE_TOUCHES_ITEM = 'projectileTouchesItem'
     PROJECTILE_TOUCHES_DEBRIS = 'projectileTouchesDebris'
@@ -342,6 +350,10 @@ class Trigger(Enum):
     ITEM_ENTERS_SENSOR = 'itemEntersSensor'
     RAYCAST_ITEM_FIRED = 'raycastItemFired'
 
+    THIS_ITEM_IS_SELECTED = 'thisItemIsSelected'
+    THIS_ITEM_IS_DROPPED = 'thisItemIsDropped'
+    THIS_ITEM_IS_PICKED_UP = 'thisItemIsPickedUp'
+
     ENTITY_CREATED = 'entityCreated'
     ENTITY_TOUCHES_WALL = 'entityTouchesWall'
     ENTITY_TOUCHES_ITEM = 'entityTouchesItem'
@@ -352,6 +364,9 @@ class Trigger(Enum):
     ENTITY_ENTERS_REGION = 'entityEntersRegion'
     ENTITY_LEAVES_REGION = 'entityLeavesRegion'
     ENTITY_GETS_ATTACKED = 'entityGetsAttacked'
+    A_STAR_ENTITY_PATH_FINDING_FAILED = 'entityAStarPathFindingFailed'
+
+    THIS_ENTITY_INITIATES_DESTROY = 'initEntityDestroy'
 
     DEBRIS_ENTERS_REGION = 'debrisEntersRegion'
 

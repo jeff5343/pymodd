@@ -238,6 +238,16 @@ def transform_dimensions_of_region(x: Number, y: Number, width: Number, height: 
 
 
 @action
+def change_region_color(region, color, alpha, comment=None, disabled=False, run_on_client=False):
+    return {
+        'type': 'changeRegionColor',
+        'region': to_dict(region),
+        'inside': to_dict(color),
+        'alpha': to_dict(alpha),
+    }
+
+
+@action
 def make_entity_invisible_to_friendly_players(entity, comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'makeUnitInvisibleToFriendlyPlayers',
@@ -371,6 +381,25 @@ def set_name_label_of_unit(name_label: String, unit, comment=None, disabled=Fals
 
 
 @action
+def set_unit_name_label_color(unit, color, comment=None, disabled=False, run_on_client=False):
+    return {
+        'type': 'setUnitNameLabelColor',
+        'unit': to_dict(unit),
+        'color': to_dict(color),
+    }
+
+
+@action
+def set_unit_name_label_color_for_player(unit, color, player, comment=None, disabled=False, run_on_client=False):
+    return {
+        'type': 'setUnitNameLabelColorForPlayer',
+        'unit': to_dict(unit),
+        'color': to_dict(color),
+        'player': to_dict(player),
+    }
+
+
+@action
 def open_shop_for_player(shop, player, comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'openShopForPlayer',
@@ -435,11 +464,37 @@ def make_camera_of_player_track_unit(player, unit, comment=None, disabled=False,
 
 
 @action
-def make_unit_cast_ability_once(entity, ability_name, comment=None, disabled=False, run_on_client=False):
+def player_camera_stop_tracking(player, comment=None, disabled=False, run_on_client=False):
+    return {
+        'type': 'playerCameraStopTracking',
+        'player': to_dict(player),
+    }
+
+
+@action
+def make_unit_cast_ability_once(entity, ability, comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'castAbility',
         'entity': to_dict(entity),
-        'abilityName': to_dict(ability_name),
+        'abilityName': to_dict(ability),
+    }
+
+
+@action
+def make_unit_start_casting_ability(entity, ability, comment=None, disabled=False, run_on_client=False):
+    return {
+        'type': 'startCastingAbility',
+        'entity': to_dict(entity),
+        'abilityName': to_dict(ability),
+    }
+
+
+@action
+def make_unit_stop_casting_ability(entity, ability, comment=None, disabled=False, run_on_client=False):
+    return {
+        'type': 'stopCastingAbility',
+        'entity': to_dict(entity),
+        'abilityName': to_dict(ability),
     }
 
 
@@ -544,7 +599,7 @@ def stop_music_for_everyone(comment=None, disabled=False, run_on_client=False):
 
 
 @action
-def emit_particles_from_entity(particle_type, angle, entity, comment=None, disabled=False, run_on_client=False):
+def create_particle_emitter_on_entity(particle_type, entity, angle, comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'emitParticlesFromEntity',
         'particle_type': to_dict(particle_type),
@@ -554,7 +609,7 @@ def emit_particles_from_entity(particle_type, angle, entity, comment=None, disab
 
 
 @action
-def emit_particles_at_position(particle_type, position, angle, comment=None, disabled=False, run_on_client=False):
+def create_particle_emitter_at_position(particle_type, position, angle, comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'emitParticlesAtPosition',
         'particle_type': to_dict(particle_type),
@@ -829,6 +884,16 @@ def apply_torque_on_entity(torque: Number, entity, comment=None, disabled=False,
 
 
 @action
+def apply_torque_on_entity_to_face_position(force, entity, position, comment=None, disabled=False, run_on_client=False):
+    return {
+        'type': 'applyTorqueOnEntityToFacePosition',
+        'force': to_dict(force),
+        'entity': to_dict(entity),
+        'position': to_dict(position),
+    }
+
+
+@action
 def give_new_item_to_unit(item_type, unit, comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'giveNewItemToUnit',
@@ -852,6 +917,54 @@ def move_entity_to_position(entity, position, comment=None, disabled=False, run_
         'type': 'moveEntity',
         'entity': to_dict(entity),
         'position': to_dict(position),
+    }
+
+
+@action
+def start_moving_unit_up(entity, comment=None, disabled=False, run_on_client=False):
+    return {
+        'type': 'startMovingUnitUp',
+        'entity': to_dict(entity),
+    }
+
+
+@action
+def start_moving_unit_down(entity, comment=None, disabled=False, run_on_client=False):
+    return {
+        'type': 'startMovingUnitDown',
+        'entity': to_dict(entity),
+    }
+
+
+@action
+def start_moving_unit_left(entity, comment=None, disabled=False, run_on_client=False):
+    return {
+        'type': 'startMovingUnitLeft',
+        'entity': to_dict(entity),
+    }
+
+
+@action
+def start_moving_unit_right(entity, comment=None, disabled=False, run_on_client=False):
+    return {
+        'type': 'startMovingUnitRight',
+        'entity': to_dict(entity),
+    }
+
+
+@action
+def stop_moving_unit_on_x_axis(entity, comment=None, disabled=False, run_on_client=False):
+    return {
+        'type': 'stopMovingUnitX',
+        'entity': to_dict(entity),
+    }
+
+
+@action
+def stop_moving_unit_on_y_axis(entity, comment=None, disabled=False, run_on_client=False):
+    return {
+        'type': 'stopMovingUnitY',
+        'entity': to_dict(entity),
     }
 
 
@@ -1231,6 +1344,22 @@ def update_ui_target_for_player_for_miliseconds(target, value: String, player, t
 
 
 @action
+def open_backpack_for_player(player, comment=None, disabled=False, run_on_client=False):
+    return {
+        'type': 'openBackpackForPlayer',
+        'player': to_dict(player),
+    }
+
+
+@action
+def close_backpack_for_player(player, comment=None, disabled=False, run_on_client=False):
+    return {
+        'type': 'closeBackpackForPlayer',
+        'player': to_dict(player),
+    }
+
+
+@action
 def command_ai_unit_to_move_to_position(unit, position, comment=None, disabled=False, run_on_client=False):
     return {
         'type': 'aiMoveToPosition',
@@ -1463,6 +1592,16 @@ def send_post_request_and_save_response_in_variable(url: String, value: String, 
         'string': to_dict(value),
         'url': to_dict(url),
         'varName': to_dict(var),
+    }
+
+
+@action
+def request_post_new_version(data, url, var_name, comment=None, disabled=False, run_on_client=False):
+    return {
+        'type': 'requestPost',
+        'data': to_dict(data),
+        'url': to_dict(url),
+        'var_name': to_dict(var_name),
     }
 
 

@@ -1,3 +1,5 @@
+from .variable_types import (VariableType, AttributeTypeBase, EntityVariableBase, ItemTypeBase, PlayerTypeBase,
+                             PlayerVariableBase, ProjectileTypeBase, StateBase, UnitTypeBase, VariableBase)
 import pymodd
 from caseconverter import camelcase
 
@@ -67,8 +69,6 @@ class Function(Base):
 
 # only subclasses of Function requires these types
 # (also prevents a circular import)
-from .variable_types import (VariableType, AttributeTypeBase, EntityVariableBase, ItemTypeBase, PlayerTypeBase,
-                             PlayerVariableBase, ProjectileTypeBase, StateBase, UnitTypeBase, VariableBase)
 
 
 # ---------------------------------------------------------------------------- #
@@ -1051,6 +1051,28 @@ class ElementCount(Number):
         }
 
 
+class GetDefaultAttributeValueOfUnitType(Number):
+    def __init__(self, unit_type):
+        self.function = 'getDefaultAttributeValueOfUnitType'
+        self.options = {
+            'unit_type': to_dict(unit_type),
+        }
+
+
+class GetCameraWidth(Number):
+    def __init__(self, ):
+        self.function = 'getCameraWidth'
+        self.options = {
+        }
+
+
+class GetCameraHeight(Number):
+    def __init__(self, ):
+        self.function = 'getCameraHeight'
+        self.options = {
+        }
+
+
 # ---------------------------------------------------------------------------- #
 #                                    Strings                                   #
 # ---------------------------------------------------------------------------- #
@@ -1444,6 +1466,15 @@ class StringIsANumber(Boolean):
         }
 
 
+class UnitIsCarryingItemType(Boolean):
+    def __init__(self, unit, item_type):
+        self.function = 'unitIsCarryingItemType'
+        self.options = {
+            'unit': to_dict(unit),
+            'item_type': to_dict(item_type),
+        }
+
+
 # ---------------------------------------------------------------------------- #
 #                                    Objects                                   #
 # ---------------------------------------------------------------------------- #
@@ -1815,6 +1846,14 @@ class AllUnitsInRegion(UnitGroup):
         }
 
 
+class AllUnitsOfUnitType(UnitGroup):
+    def __init__(self, unit_type):
+        self.function = 'allUnitsOfUnitType'
+        self.options = {
+            'unit_type': to_dict(unit_type),
+        }
+
+
 # ---------------------------------------------------------------------------- #
 #                               Projectile Groups                              #
 # ---------------------------------------------------------------------------- #
@@ -1840,6 +1879,14 @@ class AllProjectilesInTheGame(ProjectileGroup):
     def __init__(self):
         self.function = 'allProjectiles'
         self.options = {}
+
+
+class AllProjectilesofProjectileType(ProjectileGroup):
+    def __init__(self, projectile_type):
+        self.function = 'allProjectilesofProjectileType'
+        self.options = {
+            'projectile_type': to_dict(projectile_type),
+        }
 
 
 # ---------------------------------------------------------------------------- #
@@ -1880,6 +1927,14 @@ class AllItemsOwnedByUnit(ItemGroup):
         self.function = 'allItemsOwnedByUnit'
         self.options = {
             'entity': to_dict(entity),
+        }
+
+
+class AllItemsOfItemType(ItemGroup):
+    def __init__(self, item_type):
+        self.function = 'allItemsOfItemType'
+        self.options = {
+            'item_type': to_dict(item_type),
         }
 
 
