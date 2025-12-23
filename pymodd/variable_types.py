@@ -2,23 +2,32 @@ from enum import Enum
 
 import pymodd
 
-from pymodd.script import generate_random_key
+from pymodd.script import Script, generate_random_key
 from pymodd.functions import Function
 
 
 class VariableType(Function):
-    def __init__(self, id=None, **data_keys_to_new_values_kwargs):
+    def __init__(self, id=None, **data_path_to_new_values_kwargs):
+        '''
+        Args:
+        id: id of the variable. will be generated if none is given
+        data_path_to_new_values_kwargs: accepts the path to the old value as the name and the new value as the value. data['key1']['key2'] = 1 => key1_key2=1
+        '''
         self.id = generate_random_key() if id is None else id
-        self.data_keys_to_new_values = data_keys_to_new_values_kwargs.items()
+        self.data_keys_to_new_values = data_path_to_new_values_kwargs.items()
         self.function = {
             'direct': True,
             'value': self.id,
         }
 
     def updated_data_with_user_provided_values(self, data):
-        for key, value in self.data_keys_to_new_values:
-            if key in data.keys():
-                data[key] = value
+        for path_to_old, new_value in self.data_keys_to_new_values:
+            keys = str(path_to_old).split('_')
+            d = data
+            for (i, path_to_old) in enumerate(keys):
+                if i == len(keys) - 1:
+                    d[path_to_old] = new_value
+                d = d[path_to_old]
         return data
 
     def get_template_data(self) -> dict:
@@ -258,4 +267,24 @@ class DialogueBase(VariableType):
         return {
             'name': 'New Dialogue', 'dialogueTitle': 'New Dialogue', 'message': '', 'image': '', 'letterPrintSpeed': 20, 'options': []
         }
+
+
+class ParticleTypeBase(VariableType):
+    def __init__(self, id=None, name=None):
+        super().__init__(id, name=name)
+
+    def get_template_data(self):
+        return {
+            "name": "test", "url": "https://cache.modd.io/asset/spriteImage/1702686897115_pymodd-logo.png", "z-index": {"layer": 3, "depth": 5}, "lifeBase": 1000, "deathOpacityBase": 1, "dimensions": {"width": 4, "height": 4}, "emitZone": {"x": 500, "y": 0}, "emitFrequency": 10, "duration": 1000, "angle": {"min": 0, "max": 360}, "speed": {"min": 50, "max": 100}, "fixedRotation": False, "streamMode": 1
+        }
+
+
+class AbilityBase(VariableType):
+    def __init__(self, id=None, name=None, start_casting_script: Script = None, stop_casting_script: Script = None):
+        super().__init__(id, name=name, eventScripts_startCasting=start_casting_script.key,
+                         eventScripts_stopCasting=stop_casting_script.key)
+
+    def get_template_data(self):
+        return {
+            "name": "New Ability", "eventScripts": {"startCasting": None, "stopCasting": None}, "castDuration": None, "cooldown": None, "cost": {"unitAttributes": {}, "playerAttributes": {}}, "streamMode": 0, "visibility": "always", "iconUrl": "", "scriptName": "playerJoinsGame"
         }

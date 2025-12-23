@@ -9,10 +9,11 @@ from pymodd.game import Game
 from pymodd.entity_script import EntityScripts
 
 
+# make sure game_variables.py contain classes with these names
 VARIABLE_TYPE_CLASS_NAMES = [
     'UnitType', 'PlayerType', 'ItemType', 'ProjectileType', 'Region', 'Variable',
     'EntityVariable', 'PlayerVariable', 'AnimationType', 'AttributeType', 'ItemTypeGroup',
-    'UnitTypeGroup', 'State', 'Shop', 'Dialogue', 'Music', 'Sound'
+    'UnitTypeGroup', 'ParticleType', 'Abilities', 'State', 'Shop', 'Dialogue', 'Music', 'Sound'
 ]
 
 
