@@ -10,7 +10,7 @@ class VariableBase(VariableType):
         self, variable_name: str, data_type: DataType, default_value: Any | None = None
     ):
         super().__init__(variable_name)
-        self.data_type: DataType = data_type
+        self.data_type: DataType | None = data_type
         self.default_value: Any | None = default_value
         self.function: str = "getVariable"
         self.options = {
@@ -53,7 +53,7 @@ class VariableBase(VariableType):
 
     def get_template_data(self):
         return {
-            "dataType": f"{self.data_type.value}",
+            "dataType": f"{self.data_type.value if self.data_type else None}",
             "default": self.default_value if self.default_value is not None else None,
         }
 

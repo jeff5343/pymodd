@@ -159,7 +159,7 @@ fn generate_functions_to_pymodd_structure_map() -> HashMap<String, PymoddStructu
         } else {
             "\n\n\n"
         })
-        .skip(5)
+        .skip(1)
         .collect();
     function_classes.into_iter().for_each(|class_content| {
         // skip over invalid classes
