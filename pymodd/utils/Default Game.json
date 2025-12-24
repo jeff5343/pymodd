@@ -25,6 +25,8 @@
   "patchNotes": null,
   "clientSidePredictionEnabled": true,
   "clientPhysicsEngine": "planck",
+  "engineVersion": "2.0.0",
+  "disableAdsPortals": false,
   "enableMiniMap": false,
   "dontResize": false,
   "releases": [
