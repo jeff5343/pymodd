@@ -1,12 +1,12 @@
-from pymodd.game import Folder
+from pymodd.core.folder import Folder
 from pymodd.entity_script import EntityScripts, Key, KeyBehavior
 
 from scripts import *
 
 
-class Pooper(EntityScripts):
+class User(EntityScripts):
     def _build(self):
-        self.entity_type = UnitType.POOPER
+        self.entity_type = UnitType.USER
         self.keybindings = {
             Key.LEFT_CLICK: KeyBehavior(self.use_item(), self.stop_using_item()),
             Key.B: KeyBehavior(open_shop(), None),
