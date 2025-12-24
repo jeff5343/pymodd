@@ -31,6 +31,7 @@ from pymodd.function.type import (
 
 import pymodd.variable_types
 
+
 # ---------------------------------------------------------------------------- #
 #                                     Other                                    #
 # ---------------------------------------------------------------------------- #
@@ -38,7 +39,6 @@ import pymodd.variable_types
 
 class Undefined(Function):
     def __init__(self):
-        super().__init__()
         self.function = "undefinedValue"
         self.options = {}
 

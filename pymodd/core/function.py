@@ -22,3 +22,26 @@ class Function(Base):
         if self.options is not None:
             data.update(self.options)
         return data
+
+    # removes lsp warnings
+    def __gt__(self, other):
+        return True
+
+    def __ge__(self, other):
+        return True
+
+    def __eq__(self, other):
+        return True
+
+    def __lt__(self, other):
+        return True
+
+    def __le__(self, other):
+        return True
+
+    # removes lsp warnings
+    def __iter__(self):
+        return iter([])
+
+    def __next__(self):
+        return iter([]).__next__

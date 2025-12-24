@@ -60,40 +60,40 @@ class Number(Function):
         }
 
     # calculation functions
-    def __add__(self, other: Function):
+    def __add__(self, other):
         return Calculation(self, "+", other)
 
-    def __sub__(self, other: Function):
+    def __sub__(self, other):
         return Calculation(self, "-", other)
 
-    def __mul__(self, other: Function):
+    def __mul__(self, other):
         return Calculation(self, "*", other)
 
-    def __truediv__(self, other: Function):
+    def __truediv__(self, other):
         return Calculation(self, "/", other)
 
-    def __mod__(self, other: Function):
+    def __mod__(self, other):
         return Calculation(self, "%", other)
 
-    def __pow__(self, other: Function):
+    def __pow__(self, other):
         return Exponent(self, other)
 
-    def __radd__(self, other: Function):
+    def __radd__(self, other):
         return Calculation(other, "+", self)
 
-    def __rsub__(self, other: Function):
+    def __rsub__(self, other):
         return Calculation(other, "-", self)
 
-    def __rmul__(self, other: Function):
+    def __rmul__(self, other):
         return Calculation(other, "*", self)
 
-    def __rtruediv__(self, other: Function):
+    def __rtruediv__(self, other):
         return Calculation(other, "/", self)
 
-    def __rmod__(self, other: Function):
+    def __rmod__(self, other):
         return Calculation(other, "%", self)
 
-    def __rpow__(self, other: Function):
+    def __rpow__(self, other):
         return Exponent(other, self)
 
 
@@ -106,10 +106,10 @@ class String(Function):
         }
 
     # concat functions
-    def __add__(self, other: Function):
+    def __add__(self, other):
         return Concat(self, other)
 
-    def __radd__(self, other: Function):
+    def __radd__(self, other):
         return Concat(other, self)
 
 
