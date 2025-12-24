@@ -3,7 +3,7 @@ import inspect
 import textwrap
 from enum import Enum
 from _ast import AnnAssign, Assign, Delete
-from typing import Any
+from typing import Any, override
 
 from pymodd import _pymodd_helper
 from pymodd.core.function import Function
@@ -40,6 +40,7 @@ def script(triggers=[], name=None):
                     self.name = func.__name__.replace("_", " ")
                 self.build_actions_function = func
 
+            @override
             def to_dict(
                 self, project_globals_data: dict[str, Any] = {}
             ) -> dict[str, Any]:

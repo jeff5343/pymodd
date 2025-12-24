@@ -1,11 +1,11 @@
-from typing import override
+from typing import Any, override
 from pymodd.utils.generate_random_key import generate_random_key
 
 from .file import File
 
 
 class Script(File):
-    # dicts map classes by calling id (memory addresses)
+    # this dict maps classes by calling id() (memory addresses)
     # this works because one new NewScript class is created for each @script decorator
     _class_to_key: dict[type, str] = {}
 
@@ -22,6 +22,5 @@ class Script(File):
         self.actions = []
         self.build_actions_function = lambda *args, **kwargs: None
 
-    @override
-    def to_dict(self):
+    def to_dict(self, project_globals_data: dict[str, Any] = {}):
         return super().to_dict()

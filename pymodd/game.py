@@ -4,10 +4,11 @@ from typing import Any
 
 from caseconverter import camelcase
 
+from pymodd.core.script import Script
 from pymodd.variable.variable_type import VariableType
 from pymodd.core.base import Base
 from pymodd.core.folder import Folder
-from pymodd.core.script import Script
+from pymodd.core.file import File
 
 
 class Game(Base):
@@ -24,7 +25,7 @@ class Game(Base):
         self.data: Any = data
         # holds EntityScripts
         self.entity_scripts: list[Any] = []
-        self.scripts: list[Script] = []
+        self.scripts: list[File] = []
         self._update_data_with_variable_classes(game_variable_classes)
         self._build()
         # set position of scripts inside game
@@ -84,15 +85,14 @@ class Game(Base):
 
         # update data of each entity_type
         for entity_script in self.entity_scripts:
+            entity_script.project_globals_data = self.project_globals_data
             entity_category, entity_id = (
                 f"{camelcase(entity_script.entity_type.__class__.__name__)[:-4]}s",
                 entity_script.entity_type.id,
             )
             entity_data = self.data["data"][entity_category][entity_id]
 
-            # TODO: i think this might be wrong??? because self.flatten_scritps_data uses the global scripts
-            # update entity scripts
-            entity_data["scripts"] = self.flatten_scripts_data()
+            entity_data["scripts"] = entity_script.flatten_scripts_data()
 
             if entity_category != "unitTypes":
                 continue
@@ -123,25 +123,29 @@ class Game(Base):
         flattened_scripts = {}
         scripts_queue = self.scripts.copy()
         while len(scripts_queue) > 0:
-            script = scripts_queue.pop(0)
+            script = scripts_queue.pop(0)  # pyright: ignore[reportAssignmentType]
             script_data = None
             # add folder's scripts to the queue
             if isinstance((folder := script), Folder):
                 script_data = folder.to_dict()
                 scripts_queue += folder.scripts
-            else:
+            elif isinstance((s := script), Script):
+                script: Script
                 script_data = script.to_dict(self.project_globals_data)
+            else:
+                script_data = {"key": None}
             flattened_scripts[script_data["key"]] = script_data
         return flattened_scripts
 
     def find_script(self, script_name: str) -> Script | None:
         scripts_queue = self.scripts.copy()
         while len(scripts_queue) > 0:
-            script = scripts_queue.pop(0)
+            script = scripts_queue.pop(0)  # pyright: ignore[reportAssignmentType]
             # add folder's scripts to the queue
             if isinstance((folder := script), Folder):
                 scripts_queue += folder.scripts
                 continue
+            script: Script
             if script.name == script_name:
                 return script
         return None
