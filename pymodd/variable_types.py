@@ -1,146 +1,73 @@
-from enum import Enum
+from typing import Any
 
-import pymodd
-
-from pymodd.script import Script, generate_random_key
-from pymodd.functions import Function
-
-
-class VariableType(Function):
-    def __init__(self, id=None, **data_path_to_new_values_kwargs):
-        '''
-        Args:
-        id: id of the variable. will be generated if none is given
-        data_path_to_new_values_kwargs: accepts the path to the old value as the name and the new value as the value. data['key1']['key2'] = 1 => key1_key2=1
-        '''
-        self.id = generate_random_key() if id is None else id
-        self.data_keys_to_new_values = data_path_to_new_values_kwargs.items()
-        self.function = {
-            'direct': True,
-            'value': self.id,
-        }
-
-    def updated_data_with_user_provided_values(self, data):
-        for path_to_old, new_value in self.data_keys_to_new_values:
-            keys = str(path_to_old).split('_')
-            d = data
-            for (i, path_to_old) in enumerate(keys):
-                if i == len(keys) - 1:
-                    d[path_to_old] = new_value
-                d = d[path_to_old]
-        return data
-
-    def get_template_data(self) -> dict:
-        raise NotImplementedError('_get_template_data method not implemented')
-
-
-class DataType(Enum):
-    NUMBER = 'number'
-    STRING = 'string'
-    BOOLEAN = 'boolean'
-    ITEM = 'item'
-    UNIT = 'unit'
-    PLAYER = 'player'
-    PROJECTILE = 'projectile'
-    ITEM_TYPE = 'itemType'
-    UNIT_TYPE = 'unitType'
-    PLAYER_TYPE = 'playerType'
-    PROJECTILE_TYPE = 'projectileType'
-    ITEM_GROUP = 'itemGroup'
-    UNIT_GROUP = 'unitGroup'
-    PLAYER_GROUP = 'playerGroup'
-    ITEM_TYPE_GROUP = 'itemTypeGroup'
-    UNIT_TYPE_GROUP = 'unitTypeGroup'
-    REGION = 'region'
-    PARTICLE_TYPE = 'particleType'
+from pymodd.core.script import Script
+from pymodd.variable.variable_type import VariableType
+from pymodd.variable.data_type import DataType
 
 
 class VariableBase(VariableType):
-    def __init__(self, variable_name, data_type: DataType, default_value=None):
+    def __init__(
+        self, variable_name: str, data_type: DataType, default_value: Any | None = None
+    ):
         super().__init__(variable_name)
-        self.data_type = data_type
-        self.default_value = default_value
-        self.function = 'getVariable'
+        self.data_type: DataType = data_type
+        self.default_value: Any | None = default_value
+        self.function: str = "getVariable"
         self.options = {
-            'variableName': variable_name,
+            "variableName": variable_name,
         }
 
         if default_value is not None:
             # group types take in a list of types as their default values
-            if data_type in [DataType.ITEM_TYPE_GROUP, DataType.UNIT_TYPE_GROUP] and type(default_value) is list:
+            if (
+                data_type in [DataType.ITEM_TYPE_GROUP, DataType.UNIT_TYPE_GROUP]
+                and type(default_value) is list
+            ):
                 # convert the list of types into modd.io data
                 self.default_value = {}
                 for type_ in default_value:
-                    id = type_.id if isinstance(
-                        type_, (ItemTypeBase, UnitTypeBase)) else type_
-                    self.default_value[id] = {
-                        'probability': 20,
-                        'quantity': 1
-                    }
+                    id = (
+                        type_.id
+                        if isinstance(type_, (ItemTypeBase, UnitTypeBase))
+                        else type_
+                    )
+                    self.default_value[id] = {"probability": 20, "quantity": 1}
             # regions have additional parameters for their default value (currently not supported)
             if data_type == DataType.REGION:
                 self.default_value = {
-                    'x': 0,
-                    'y': 0,
-                    'width': 100,
-                    'height': 100,
-                    'inside': '#FFFFFF',
-                    'outside': '',
-                    'alpha': 100,
-                    'videoChatEnabled': False
+                    "x": 0,
+                    "y": 0,
+                    "width": 100,
+                    "height": 100,
+                    "inside": "#FFFFFF",
+                    "outside": "",
+                    "alpha": 100,
+                    "videoChatEnabled": False,
                 }
 
     def updated_data_with_user_provided_values(self, data):
         data = super().updated_data_with_user_provided_values(data)
         if self.default_value is not None:
-            data['default'] = self.default_value
+            data["default"] = self.default_value
         return data
 
     def get_template_data(self):
         return {
-            'dataType': f'{self.data_type.value}',
-            'default': self.default_value if self.default_value is not None else None
+            "dataType": f"{self.data_type.value}",
+            "default": self.default_value if self.default_value is not None else None,
         }
-
-    def _get_iterating_action(self):
-        '''For group data types only. Used during script compilation'''
-        if self.data_type == DataType.ITEM_GROUP:
-            return pymodd.functions.ItemGroup()._get_iterating_action()
-        elif self.data_type == DataType.UNIT_GROUP:
-            return pymodd.functions.UnitGroup()._get_iterating_action()
-        elif self.data_type == DataType.PLAYER_GROUP:
-            return pymodd.functions.PlayerGroup()._get_iterating_action()
-        elif self.data_type == DataType.ITEM_TYPE_GROUP:
-            return pymodd.functions.ItemTypeGroup()._get_iterating_action()
-        elif self.data_type == DataType.UNIT_TYPE_GROUP:
-            return pymodd.functions.UnitTypeGroup()._get_iterating_action()
-        return None
-
-    def _get_iteration_object(self):
-        '''For group data types only. Used during script compilation'''
-        if self.data_type == DataType.ITEM_GROUP:
-            return pymodd.functions.ItemGroup()._get_iteration_object()
-        elif self.data_type == DataType.UNIT_GROUP:
-            return pymodd.functions.UnitGroup()._get_iteration_object()
-        elif self.data_type == DataType.PLAYER_GROUP:
-            return pymodd.functions.PlayerGroup()._get_iteration_object()
-        elif self.data_type == DataType.ITEM_TYPE_GROUP:
-            return pymodd.functions.ItemTypeGroup()._get_iteration_object()
-        elif self.data_type == DataType.UNIT_TYPE_GROUP:
-            return pymodd.functions.UnitTypeGroup()._get_iteration_object()
-        return None
 
 
 class EntityVariableBase(VariableBase):
     def __init__(self, variable_name, data_type):
         super().__init__(variable_name, data_type)
-        self.function = 'getEntityVariable'
+        self.function = "getEntityVariable"
         self.options = {
-            'variable': {
-                'text': f'{variable_name}',
-                'dataType': f'{data_type.value}',
-                'entity': 'null',
-                'key': f'{variable_name}'
+            "variable": {
+                "text": f"{variable_name}",
+                "dataType": f"{data_type.value}",
+                "entity": "null",
+                "key": f"{variable_name}",
             }
         }
 
@@ -148,13 +75,13 @@ class EntityVariableBase(VariableBase):
 class PlayerVariableBase(VariableBase):
     def __init__(self, variable_name, data_type):
         super().__init__(variable_name, data_type)
-        self.function = 'getPlayerVariable'
+        self.function = "getPlayerVariable"
         self.options = {
-            'variable': {
-                'text': f'{variable_name}',
-                'dataType': f'{data_type.value}',
-                'entity': 'null',
-                'key': f'{variable_name}'
+            "variable": {
+                "text": f"{variable_name}",
+                "dataType": f"{data_type.value}",
+                "entity": "null",
+                "key": f"{variable_name}",
             }
         }
 
@@ -280,9 +207,23 @@ class ParticleTypeBase(VariableType):
 
 
 class AbilityBase(VariableType):
-    def __init__(self, id=None, name=None, start_casting_script: Script = None, stop_casting_script: Script = None):
-        super().__init__(id, name=name, eventScripts_startCasting=start_casting_script.key,
-                         eventScripts_stopCasting=stop_casting_script.key)
+    def __init__(
+        self,
+        id: str | None = None,
+        name: str | None = None,
+        start_casting_script: Script | None = None,
+        stop_casting_script: Script | None = None,
+    ):
+        super().__init__(
+            id,
+            name=name,
+            eventScripts_startCasting=(
+                start_casting_script.key if start_casting_script is not None else None
+            ),
+            eventScripts_stopCasting=(
+                stop_casting_script.key if stop_casting_script is not None else None
+            ),
+        )
 
     def get_template_data(self):
         return {
