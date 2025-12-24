@@ -14,7 +14,8 @@ impl MappingFile {
     pub fn build_content(game_data: &GameData) -> String {
         let game_class_name = game_data.name.to_pascal_case().to_string();
         let mut content = format!(
-            "from pymodd.game import Game, Folder\n\n\
+            "from pymodd.game import Game\n\
+            from pymodd.core.folder import Folder\n\n\
             from scripts import *\n\
             from entity_scripts import * \n\n\n\
             class {game_class_name}(Game):\n\
@@ -72,11 +73,7 @@ pub fn build_directory_items_contents(directory: &Directory) -> Vec<String> {
                 )
             }
             DirectoryIterItem::Script(script) => {
-                format!(
-                    "{}{}(),",
-                    "\t".repeat(curr_depth),
-                    script.function_name
-                )
+                format!("{}{}(),", "\t".repeat(curr_depth), script.function_name)
             }
             DirectoryIterItem::DirectoryEnd => {
                 curr_depth -= 1;

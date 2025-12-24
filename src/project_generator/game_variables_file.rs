@@ -48,7 +48,8 @@ impl GameVariablesFile {
         };
 
         format!(
-            "from pymodd.variable_types import {}, DataType\n\n\n{}",
+            "from pymodd.variable_types import {}\n\
+            from pymodd.variable.data_type import DataType\n\n\n{}",
             classes_to_import.join(", "),
             file_content,
         )

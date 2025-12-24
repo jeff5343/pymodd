@@ -144,31 +144,21 @@ pub fn align_arguments_with_pymodd_structure_parameters(
 ) -> Vec<Argument> {
     let mut aligned_args: Vec<Option<Argument>> = Vec::new();
     pymodd_structure_parameters.iter().for_each(|parameter| {
-        aligned_args.push(
-            arguments
-                .iter()
-                .enumerate()
-                .fold(
-                    (None, None),
-                    |(closest_matching_arg_index, closest_matching_arg), (i, arg)| {
-                        let snake_cased_arg = arg.name.to_snake_case();
-                        if (parameter.contains(&snake_cased_arg)
-                            || snake_cased_arg.contains(parameter))
-                            && snake_cased_arg.len()
-                                > closest_matching_arg
-                                    .as_ref()
-                                    .unwrap_or(&String::new())
-                                    .len()
-                        {
-                            (Some(i), Some(snake_cased_arg))
-                        } else {
-                            (closest_matching_arg_index, closest_matching_arg)
-                        }
-                    },
-                )
-                .0
-                .map(|closest_matching_arg_index| arguments.remove(closest_matching_arg_index)),
-        )
+        let best_match_i = arguments
+            .iter()
+            .enumerate()
+            .filter(|(_, arg)| {
+                let snake_cased_arg = arg.name.to_snake_case();
+                parameter.contains(&snake_cased_arg) || snake_cased_arg.contains(parameter)
+            })
+            .max_by_key(|(_, arg)| arg.name.to_snake_case().len())
+            .map(|(i, _)| i);
+
+        if let Some(i) = best_match_i {
+            aligned_args.push(Some(arguments.remove(i)))
+        } else {
+            aligned_args.push(None)
+        }
     });
     aligned_args
         .into_iter()
