@@ -16,7 +16,7 @@ class EntityScripts(pymodd.game.Game):
         # not calling super because Game loads JSON + holds EntityScripts
         self.entity_type: pymodd.variable_types.UnitTypeBase | None = None
         self.keybindings: dict[Key, KeyBehavior] = {}
-        self.scripts: list[Script] = []
+        self.scripts: list[Any] = []
         self._build()
         # set position of scripts inside entity_scripts
         for i, script in enumerate(self.scripts):
