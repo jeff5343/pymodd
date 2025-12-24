@@ -12,7 +12,7 @@ def initialize():
 
 @script(triggers=[Trigger.PLAYER_JOINS_GAME])
 def player_joins():
-    create_unit_for_player_at_position_with_rotation(UnitType.POOPER, LastTriggeringPlayer(), RandomPositionInRegion(EntireMapRegion()), 0)
+    create_unit_for_player_at_position_with_rotation(UnitType.USER, LastTriggeringPlayer(), RandomPositionInRegion(EntireMapRegion()), 0)
     make_camera_of_player_track_unit(LastTriggeringPlayer(), LastCreatedUnit())
     assign_player_to_player_type(LastTriggeringPlayer(), PlayerType.PLAYER)
 

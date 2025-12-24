@@ -1,4 +1,5 @@
-from pymodd.game import Game, Folder
+from pymodd.game import Game
+from pymodd.core.folder import Folder
 
 from scripts import *
 from entity_scripts import * 
@@ -6,7 +7,7 @@ from entity_scripts import *
 
 class Froge(Game):
     def _build(self):
-        self.entity_scripts = [Pooper(), Frog()]
+        self.entity_scripts = [User(), Frog()]
         self.scripts = [
             initialize(),
             player_joins(),

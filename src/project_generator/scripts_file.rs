@@ -697,6 +697,30 @@ mod tests {
             "update_ui_text_for_everyone(UiTarget.TOP, None)\n"
         )
     }
+
+    #[test]
+    fn parse_action_with_undefined_into_pymodd() {
+        assert_eq!(
+            ScriptsContentBuilder::new(
+                &CategoriesToVariables::new(HashMap::new()),
+                &Directory::new("root", "null", Vec::new())
+            )
+            .build_actions_content(&parse_actions(
+                &json!([{
+                  "type": "updateUiTextForTimeForPlayer",
+                  "player": { "function": "undefinedValue", "vars": [] },
+                  "target": "center-lg",
+                  "time": 5000,
+                  "value": "BOSS SPAWNED",
+                  "vars": []
+                }])
+                .as_array()
+                .unwrap()
+            )),
+            "update_ui_target_for_player_for_miliseconds(UiTarget.CENTER, 'BOSS SPAWNED', Undefined(), 5000)\n"
+        )
+    }
+
     #[test]
     fn parse_comment_action_into_pymodd() {
         assert_eq!(

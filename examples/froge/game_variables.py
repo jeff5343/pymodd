@@ -1,4 +1,5 @@
-from pymodd.variable_types import AnimationTypeBase, AttributeTypeBase, DialogueBase, EntityVariableBase, ItemTypeBase, MusicBase, PlayerTypeBase, PlayerVariableBase, ProjectileTypeBase, ShopBase, SoundBase, StateBase, UnitTypeBase, VariableBase, DataType
+from pymodd.variable_types import AnimationTypeBase, AttributeTypeBase, DialogueBase, EntityVariableBase, ItemTypeBase, MusicBase, PlayerTypeBase, PlayerVariableBase, ProjectileTypeBase, ShopBase, SoundBase, StateBase, UnitTypeBase, VariableBase
+from pymodd.variable.data_type import DataType
 
 
 class ItemType:
@@ -14,7 +15,7 @@ class ProjectileType:
 
 class UnitType:
     FROG_BOSS = UnitTypeBase('TyaKyQzgKc', name='Frog Boss')
-    POOPER = UnitTypeBase('fighter', name='Pooper')
+    USER = UnitTypeBase('fighter', name='User')
     FROG = UnitTypeBase('oTDQ3jlcMa', name='Frog')
 
 
@@ -28,7 +29,7 @@ class ItemTypeGroup:
 
 
 class UnitTypeGroup:
-    UNITTYPEGROUP = VariableBase('unittypegroup', DataType.UNIT_TYPE_GROUP, default_value=[UnitType.FROG_BOSS, UnitType.POOPER, UnitType.FROG])
+    UNITTYPEGROUP = VariableBase('unittypegroup', DataType.UNIT_TYPE_GROUP, default_value=[UnitType.FROG_BOSS, UnitType.USER, UnitType.FROG])
 
 
 class Variable:

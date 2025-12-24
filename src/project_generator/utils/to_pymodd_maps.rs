@@ -9,12 +9,15 @@ const PYMODD_SCRIPT_FILE_CONTENT: &str = include_str!("../../../pymodd/script.py
 const PYMODD_ENTITY_SCRIPT_FILE_CONTENT: &str = include_str!("../../../pymodd/entity_script.py");
 const PYMODD_ACTIONS_FILE_CONTENT: &str = include_str!("../../../pymodd/actions.py");
 const PYMODD_FUNCTIONS_FILE_CONTENT: &str = include_str!("../../../pymodd/functions.py");
-const PYMODD_VARIABLE_TYPES_FILE_CONTENT: &str = include_str!("../../../pymodd/variable_types.py");
+const PYMODD_FUNCTIONS_SELECTED_ENTITY_FILE_CONTENT: &str =
+    include_str!("../../../pymodd/function/selected_entity.py");
+const PYMODD_VARIABLE_DATA_TYPES_FILE_CONTENT: &str =
+    include_str!("../../../pymodd/variable/data_type.py");
 
 lazy_static! {
     // enum maps
     pub static ref TRIGGERS_TO_PYMODD_ENUM: HashMap<String, String> = generate_to_pymodd_enums_map_for_type("Trigger", PYMODD_SCRIPT_FILE_CONTENT);
-    pub static ref VARIABLE_DATA_TYPES_TO_PYMODD_ENUM: HashMap<String, String> = generate_to_pymodd_enums_map_for_type("DataType", PYMODD_VARIABLE_TYPES_FILE_CONTENT);
+    pub static ref VARIABLE_DATA_TYPES_TO_PYMODD_ENUM: HashMap<String, String> = generate_to_pymodd_enums_map_for_type("DataType", PYMODD_VARIABLE_DATA_TYPES_FILE_CONTENT);
     pub static ref KEYS_TO_PYMODD_ENUM: HashMap<String, String> = generate_to_pymodd_enums_map_for_type("Key", PYMODD_ENTITY_SCRIPT_FILE_CONTENT);
     pub static ref UI_TARGET_CONSTANTS_TO_PYMODD_ENUM:HashMap<String, String> = generate_to_pymodd_enums_map_for_type("UiTarget", PYMODD_SCRIPT_FILE_CONTENT);
     pub static ref FLIP_CONSTANTS_TO_PYMODD_ENUM:HashMap<String, String> = generate_to_pymodd_enums_map_for_type("Flip", PYMODD_SCRIPT_FILE_CONTENT);
@@ -133,14 +136,30 @@ fn generate_functions_to_pymodd_structure_map() -> HashMap<String, PymoddStructu
         String::from("condition"),
         PymoddStructure::new("Condition", vec!["item_a", "operator", "item_b"]),
     );
+    functions_to_structure.insert(
+        String::from("calculate"),
+        PymoddStructure::new("Calculation", vec!["item_a", "operator", "item_b"]),
+    );
+    functions_to_structure.insert(
+        String::from("concat"),
+        PymoddStructure::new("Concat", vec!["text_a", "text_b"]),
+    );
+    functions_to_structure.insert(
+        String::from("getExponent"),
+        PymoddStructure::new("Exponent", vec!["base", "power"]),
+    );
 
-    let function_classes: Vec<&str> = PYMODD_FUNCTIONS_FILE_CONTENT
+    let files_content = format!(
+        "{}\r\n\r\n{}",
+        PYMODD_FUNCTIONS_FILE_CONTENT, PYMODD_FUNCTIONS_SELECTED_ENTITY_FILE_CONTENT
+    );
+    let function_classes: Vec<&str> = files_content
         .split(if cfg!(windows) {
             "\r\n\r\n\r\n"
         } else {
             "\n\n\n"
         })
-        .skip(5)
+        .skip(1)
         .collect();
     function_classes.into_iter().for_each(|class_content| {
         // skip over invalid classes
@@ -158,7 +177,7 @@ fn parse_function_type_of_pymodd_function_class(function_class_content: &str) ->
     strip_quotes(
         &function_class_content
             .lines()
-            .find(|line| line.contains("self.function = "))
+            .find(|line| line.contains("self.function"))
             .expect("function's type could not be found")
             .split(" = ")
             .last()

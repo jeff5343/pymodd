@@ -1,4 +1,4 @@
-def generate_project_from_json_file_content(json_file_content):
+def generate_project_from_json_file_content(json_file_content: str) -> None:
     '''Generates a pymodd project from a modd.io game json file
 
     Args:
@@ -6,7 +6,7 @@ def generate_project_from_json_file_content(json_file_content):
     '''
 
 
-def log_success(message):
+def log_success(message: str) -> None:
     '''Logs a success message with colorful formatting
 
     Args:
@@ -14,7 +14,7 @@ def log_success(message):
     '''
 
 
-def log_error(message):
+def log_error(message: str) -> None:
     '''Logs an error message with colorful formatting
 
     Args:
@@ -22,7 +22,7 @@ def log_error(message):
     '''
 
 
-def log_cli_start_message(action, pymodd_project_name):
+def log_cli_start_message(action: str, pymodd_project_name: str) -> None:
     '''Logs a start message for pymodd commands with colorful formatting
 
     Args:
@@ -32,7 +32,7 @@ def log_cli_start_message(action, pymodd_project_name):
     '''
 
 
-def log_cli_end_message(completed_action, ended_successfully):
+def log_cli_end_message(completed_action: str, ended_successfully: bool) -> None:
     '''Logs an end message for pymodd commands with colorful formatting
 
     Args:
